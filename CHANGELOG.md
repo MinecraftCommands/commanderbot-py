@@ -83,14 +83,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
-- Utcnow and datetime fixes (#75)
+- Utcnow and datetime fixes ([Old repo #75](https://github.com/CommanderBot-Dev/commanderbot-py/pull/75))
 
 ## [0.18.0] - 2021-10-04
 
 ### Added
 
 - `automod`: Added support for JSON paths for easier configuration of rules
-- `jira`: Reimplemented link support (#65)
+- `jira`: Reimplemented link support ([Old repo #65](https://github.com/CommanderBot-Dev/commanderbot-py/pull/65))
 - `roles`: Added tips for providing roles
 
 ### Changed
@@ -100,31 +100,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Turned the shortcut prefix into a pattern
   - Consolidated FAQ update commands
   - Reimplement the list of FAQs
-  - Various improvements (#72)
+  - Various improvements ([Old repo #72](https://github.com/CommanderBot-Dev/commanderbot-py/pull/72))
     - Added options in root config to limit or disable certain features
     - Reorganized and added new search commands
     - Improved how tags are used in queries
     - Allowed showing options instead of just setting them
 - `invite`: Multiple invites now go in one message instead of multiple
-- `jira`: Overhauled the issue requesting logic and the embed colors now reflect the status of the bug (#64)
+- `jira`: Overhauled the issue requesting logic and the embed colors now reflect the status of the bug ([Old repo #64](https://github.com/CommanderBot-Dev/commanderbot-py/pull/64))
 - `roles`: Refine role searching logic
 
 ### Fixed
 
 - Fixed instances of timezone-unaware `utcnow()`
-- `jira`: Now checks that issues are in the `<project>-<id>` format and that requested issues have fields (#69)
+- `jira`: Now checks that issues are in the `<project>-<id>` format and that requested issues have fields ([Old repo #69](https://github.com/CommanderBot-Dev/commanderbot-py/pull/69))
 
 ## [0.17.0] - 2021-09-02
 
 ### Added
 
-- Implemented a new cog `stacktracer` for error logging (#55)
-- `automod`: Added a new [`mentions_removed_from_message`](https://github.com/CommanderBot-Dev/commanderbot-py/wiki/Extension:-automod#mentions_removed_from_message-trigger) trigger
-- `automod`: Added `allowed_mentions` field to [`reply_to_message`](https://github.com/CommanderBot-Dev/commanderbot-py/wiki/Extension:-automod#reply_to_message-action) action
+- Implemented a new cog `stacktracer` for error logging ([Old repo #55](https://github.com/CommanderBot-Dev/commanderbot-py/pull/55))
+- `automod`: Added a new [`mentions_removed_from_message`](https://github.com/MinecraftCommands/commanderbot-py/wiki/Extension:-automod#mentions_removed_from_message-trigger) trigger
+- `automod`: Added `allowed_mentions` field to [`reply_to_message`](https://github.com/MinecraftCommands/commanderbot-py/wiki/Extension:-automod#reply_to_message-action) action
 
 ### Changed
 
-- `status` now uses an embed (#45)
+- `status` now uses an embed ([Old repo #45](https://github.com/CommanderBot-Dev/commanderbot-py/pull/45))
 
 ### Fixed
 
@@ -143,45 +143,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - The repository has been renamed to `commanderbot-py`.
   - The package has been renamed to `commanderbot` (which used to belong to `commanderbot-core`).
 - Exception handling logic has been reworked.
-  - Fixes #53
+  - Fixes [Old repo #53](https://github.com/CommanderBot-Dev/commanderbot-py/issues/53)
 - Reconsidered all commands to use a `ctx.reply` wrapper with pings disabled.
-  - Fixes #42
+  - Fixes [Old repo #42](https://github.com/CommanderBot-Dev/commanderbot-py/issues/42)
 - `allowed_mentions` field in root bot config is now supported.
-  - Fixes #52
+  - Fixes [Old repo #52](https://github.com/CommanderBot-Dev/commanderbot-py/issues/52)
 - `automod`:
   - Even data now includes `user` fields.
-    - Fixes #43
+    - Fixes [Old repo #43](https://github.com/CommanderBot-Dev/commanderbot-py/issues/43)
   - Even data now includes member date fields by default.
   - `message` triggers now allow basic matching of message content.
-    - Fixes #44
+    - Fixes [Old repo #44](https://github.com/CommanderBot-Dev/commanderbot-py/issues/44)
 - `roles`:
   - Unresolved roles are now deregistered and cleaned-up automatically.
-    - Fixes #47
+    - Fixes [Old repo #47](https://github.com/CommanderBot-Dev/commanderbot-py/issues/47)
   - Elevated commands can no longer add/remove unregistered roles to/from users.
-    - Fixes #48
+    - Fixes [Old repo #48](https://github.com/CommanderBot-Dev/commanderbot-py/issues/48)
   - Users can now join/leave multiple roles in one command.
-    - Fixes #49
+    - Fixes [Old repo #49](https://github.com/CommanderBot-Dev/commanderbot-py/issues/49)
   - Multiple roles can now be added/removed to/from multiple members all in one command.
   - Roles can now be targeted using a partial name match.
-    - Fixes #50
+    - Fixes [Old repo #50](https://github.com/CommanderBot-Dev/commanderbot-py/issues/50)
   - Roles can now be configured to be able to run elevated commands.
-    - Fixes #18
+    - Fixes [Old repo #18](https://github.com/CommanderBot-Dev/commanderbot-py/issues/18)
 
 ## [0.15.0] - 2021-08-29
 
 ### Added
 
-- Added `manifest` command that generates Bedrock manifests (#51)
+- Added `manifest` command that generates Bedrock manifests ([Old repo #51](https://github.com/CommanderBot-Dev/commanderbot-py/pull/51))
 
 ### Changed
 
-- Improved emoji parsing logic for the `vote` command (#45)
+- Improved emoji parsing logic for the `vote` command ([Old repo #45](https://github.com/CommanderBot-Dev/commanderbot-py/pull/45))
 
 ## [0.14.0] - 2021-08-25
 
 ### Changed
 
-- `automod` improvements (#41):
+- `automod` improvements ([Old repo #41](https://github.com/CommanderBot-Dev/commanderbot-py/pull/41)):
   - Implemented role-based (per-guild) permissions
   - Added a new `log_message` action that suppresses pings by default
   - Pings are now suppressed by default in error messages
@@ -196,7 +196,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
-- Fixed a race condition with `JsonFileDatabaseAdapter` (#39)
+- Fixed a race condition with `JsonFileDatabaseAdapter` ([Old repo #39](https://github.com/CommanderBot-Dev/commanderbot-py/issues/39))
 
 ### Changed
 
@@ -233,8 +233,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Fixed `kick` command not being guild-only
-- Fixed an issue where `invite` descriptions weren't displayed correctly (#29)
-- Fixed an issue where JSON database files weren't being initialized correctly (#28)
+- Fixed an issue where `invite` descriptions weren't displayed correctly ([Old repo #29](https://github.com/CommanderBot-Dev/commanderbot-py/issues/29))
+- Fixed an issue where JSON database files weren't being initialized correctly ([Old repo #28](https://github.com/CommanderBot-Dev/commanderbot-py/issues/28))
 
 ## [0.8.0] - 2021-05-08
 
@@ -309,23 +309,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Implemented `status` and `faq` extensions as an exercise for developing `commanderbot-lib`
 
-[unreleased]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.19.0...HEAD
-[0.19.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.18.0...v0.19.0
-[0.18.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.17.0...v0.18.0
-[0.17.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.16.0...v0.17.0
-[0.16.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.15.0...v0.16.0
-[0.15.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.14.0...v0.15.0
-[0.14.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.13.0...v0.14.0
-[0.13.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.12.0...v0.13.0
-[0.12.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.11.0...v0.12.0
-[0.11.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.10.0...v0.11.0
-[0.10.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.9.0...v0.10.0
-[0.9.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.8.0...v0.9.0
-[0.8.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.7.0...v0.8.0
-[0.7.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.6.0...v0.7.0
-[0.6.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.5.0...v0.6.0
-[0.5.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/CommanderBot-Dev/commanderbot-py/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/CommanderBot-Dev/commanderbot-py/releases/tag/v0.1.0
+[unreleased]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.18.0...v0.19.0
+[0.18.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.17.0...v0.18.0
+[0.17.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.16.0...v0.17.0
+[0.16.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.13.0...v0.14.0
+[0.13.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.12.0...v0.13.0
+[0.12.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.11.0...v0.12.0
+[0.11.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/MinecraftCommands/commanderbot-py/releases/tag/v0.1.0
