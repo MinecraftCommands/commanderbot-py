@@ -1,37 +1,50 @@
 import json
-from datetime import datetime
+from enum import Enum
 from logging import Logger, getLogger
-from typing import Optional
+from typing import List, Optional
 
-import aiohttp
-from discord import Embed
-from discord.ext.commands import Bot, Cog, Context, command, group
-from discord.ext.tasks import loop
-
-from commanderbot.ext.manifest.manifest_data import (
-    Manifest,
-    ModuleType,
-    PackType,
-    Version,
-    add_dependency,
+from discord import Embed, Interaction, Permissions
+from discord.app_commands import (
+    Choice,
+    Group,
+    Transform,
+    Transformer,
+    autocomplete,
+    describe,
 )
-from commanderbot.ext.manifest.manifest_exceptions import InvalidPackType
-from commanderbot.lib.commands import checks
-from commanderbot.lib.utils.datetimes import datetime_to_int
-from commanderbot.lib.utils.utils import str_to_file, utcnow_aware
+from discord.ext.commands import Bot, Cog
+
+from commanderbot.ext.manifest.manifest_data import Manifest, ModuleType, Version
+from commanderbot.ext.manifest.manifest_exceptions import InvalidVersionFormat
+from commanderbot.ext.manifest.manifest_version_manager import ManifestVersionManager
+from commanderbot.lib.interactions import checks
+from commanderbot.lib.utils import str_to_file
 
 DEFAULT_NAME = "pack.name"
 DEFAULT_DESCRIPTION = "pack.description"
-DEFAULT_ENGINE_VERSION = Version(1, 17, 0)
 
-HELP = "\n".join(
-    (
-        f"<pack_type>: ({'|'.join(PackType.values())})",
-        f"[name]: The name of your pack",
-        f"[description]: A short description for your pack",
-        f"[min_engine_version]: The minimum version of Minecraft that this pack was made for",
-    )
-)
+
+class ManifestType(Enum):
+    """
+    Used for automatically creating an app command transformer
+    with autocompletion of these choices
+    """
+
+    addon = [ModuleType.DATA, ModuleType.RESOURCE]
+    behavior = [ModuleType.DATA]
+    resource = [ModuleType.RESOURCE]
+    skin = [ModuleType.SKIN]
+
+
+class VersionTransformer(Transformer):
+    """
+    A transformer that validates version strings
+    """
+
+    async def transform(self, interaction: Interaction, value: str) -> Version:
+        if version := Version.from_str(value):
+            return version
+        raise InvalidVersionFormat
 
 
 class ManifestCog(Cog, name="commanderbot.ext.manifest"):
@@ -39,136 +52,122 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         self.bot: Bot = bot
         self.log: Logger = getLogger(self.qualified_name)
 
-        self.default_engine_version: Version = DEFAULT_ENGINE_VERSION
-        self.previous_request_date: Optional[datetime] = None
-        self.previous_status_code: Optional[int] = None
-
-        self.version_url: Optional[str] = options.get("version_url")
-        if not self.version_url:
+        # Get url option and print a warning if it doesn't exist
+        url: Optional[str] = options.get("version_url")
+        if not url:
             self.log.warn(
                 "No version URL was given in the bot config. "
-                f"Using {DEFAULT_ENGINE_VERSION.as_list()} for 'min_engine_version'."
+                f"Using `{ManifestVersionManager.default_version()}` for the latest version"
             )
 
-        self.update_default_engine_version.start()
+        # Create and start the manifest version manager
+        self.version_manager = ManifestVersionManager(url=url)
+        self.version_manager.start()
 
     def cog_unload(self):
-        self.update_default_engine_version.cancel()
+        self.version_manager.stop()
 
-    @loop(hours=1)
-    async def update_default_engine_version(self):
-        """
-        A task that updates 'self.default_engine_version'. If there was an issue parsing
-        the version, the attribute isn't modified. The patch version will always be set
-        to 0.
-        """
-        # Return early if no URL was given
-        if not self.version_url:
-            return
+    async def min_engine_version_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> List[Choice[str]]:
+        latest_version: str = str(self.version_manager.latest_version)
+        return [Choice(name=f"latest ({latest_version})", value=latest_version)]
 
-        # Request version
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.version_url) as response:
-                self.previous_request_date = utcnow_aware()
-                self.previous_status_code = response.status
-                if response.status == 200:
-                    if version := Version.from_str(await response.text()):
-                        version.patch = 0
-                        self.default_engine_version = version
+    # @@ COMMANDS
 
-    @command(name="manifest", brief="Generate a Bedrock manifest", help=HELP)
-    async def cmd_manifest(
+    # Groups
+    cmd_manifest = Group(name="manifest", description="Generate a Bedrock manifest")
+    cmd_manifests = Group(
+        name="manifests",
+        description="Manage the manifest generator",
+        default_permissions=Permissions(administrator=True),
+    )
+
+    # @@ User facing commands
+
+    @cmd_manifest.command(name="generate", description="Generate a Bedrock manifest")
+    @describe(
+        manifest_type="The type of manifest to generate",
+        name="The name of the manifest",
+        description="The description for the manifest",
+        min_engine_version="The minimum version of Minecraft this manifest is compatible with",
+    )
+    @autocomplete(min_engine_version=min_engine_version_autocomplete)
+    async def cmd_manifest_generate(
         self,
-        ctx: Context,
-        pack_type: str,
+        interaction: Interaction,
+        manifest_type: ManifestType,
         name: Optional[str],
         description: Optional[str],
-        min_engine_version: Optional[str],
+        min_engine_version: Optional[Transform[Version, VersionTransformer]],
     ):
-        # Parse required pack type argument and create a list of modules from it
-        modules: list[ModuleType] = []
-        match PackType.from_str(pack_type):
-            case PackType.ADDON:
-                modules.append(ModuleType.DATA)
-                modules.append(ModuleType.RESOURCE)
-            case (PackType.BEHAVIOR | PackType.DATA):
-                modules.append(ModuleType.DATA)
-            case PackType.RESOURCE:
-                modules.append(ModuleType.RESOURCE)
-            case PackType.SKIN:
-                modules.append(ModuleType.SKIN)
-            case _:
-                raise InvalidPackType(pack_type)
+        # Create manifests
+        manifest_name = name or DEFAULT_NAME
+        manifest_description = description or DEFAULT_DESCRIPTION
+        min_version: Version = min_engine_version or self.version_manager.latest_version
 
-        # Parse optional arguments
-        pack_name: str = name if name else DEFAULT_NAME
-        pack_description: str = description if description else DEFAULT_DESCRIPTION
-        engine_version: Version = self.default_engine_version
-        if version := Version.from_str(str(min_engine_version)):
-            engine_version = version
-
-        # Create a list of manifests from modules
-        manifests: list[Manifest] = [
-            Manifest(module, pack_name, pack_description, engine_version)
-            for module in modules
-        ]
-
-        # If we're generating a complete addon, make the behavior pack dependent
-        # on the resource pack
-        if len(manifests) == 2:
-            add_dependency(manifests[0], manifests[1])
-
-        # Reply to the member with uploaded files
-        for manifest in manifests:
-            manifest_json: str = json.dumps(manifest.as_dict(), indent=4)
-            await ctx.message.reply(
-                content=f"**{manifest.common_name()}**",
-                file=str_to_file(manifest_json, "manifest.json"),
-                mention_author=False,
+        manifests: list[Manifest] = []
+        for module_type in manifest_type.value:
+            manifests.append(
+                Manifest(module_type, manifest_name, manifest_description, min_version)
             )
 
-    @group(name="manifests", brief="Manage manifests")
-    @checks.is_administrator()
-    async def cmd_manifests(self, ctx: Context):
-        if not ctx.invoked_subcommand:
-            await ctx.send_help(self.cmd_manifests)
+        # Add resource manifest as a dependency to the behavior manifest if
+        # an addon manifest is being generated
+        if manifest_type == ManifestType.addon:
+            manifests[0].add_dependency(manifests[1])
 
-    @cmd_manifests.command(name="status", brief="Show the status of version requests")
-    async def cmd_manifests_status(self, ctx: Context):
-        # Format optional attributes
-        url: str = "None set"
-        previous_request_ts: str = "?"
-        next_request_ts: str = "?"
-        previous_status_code: str = "?"
-        self.update_default_engine_version
-        if version_url := self.version_url:
-            url = version_url
-            if dt := self.previous_request_date:
-                previous_request_ts = f"<t:{datetime_to_int(dt)}:R>"
+        # Upload manifest files
+        await interaction.response.defer()
+        for manifest in manifests:
+            manifest_json: str = json.dumps(manifest.as_dict(), indent=4)
+            await interaction.followup.send(
+                f"**{manifest.common_name()}**",
+                file=str_to_file(manifest_json, "manifest.json"),
+            )
 
-            if dt := self.update_default_engine_version.next_iteration:
-                next_request_ts = f"<t:{datetime_to_int(dt)}:R>"
+    # @@ Bot manager commands
 
-            if status := self.previous_status_code:
-                previous_status_code = f"`{status}`"
+    @cmd_manifests.command(
+        name="status", description="Shows the status of the manifest generator"
+    )
+    @checks.is_owner()
+    async def cmd_manifests_status(self, interaction: Interaction):
+        # Format embed fields
+        url: str = self.version_manager.url or "**None set**"
+
+        prev_request_ts: str = "`?`"
+        if ts := self.version_manager.prev_request_ts:
+            prev_request_ts = f"<t:{ts}:R>"
+
+        next_request_ts: str = "`?`"
+        if ts := self.version_manager.next_request_ts:
+            next_request_ts = f"<t:{ts}:R>"
+
+        prev_status_code: str = "`?`"
+        if status := self.version_manager.prev_status_code:
+            prev_status_code = f"`{status}`"
 
         # Create embed
-        status_embed: Embed = Embed(title=self.qualified_name, color=0x00ACED)
-        status_embed.add_field(name="Version URL", value=url, inline=False)
-        status_embed.add_field(name="Previous request", value=previous_request_ts)
-        status_embed.add_field(name="Next request", value=next_request_ts)
-        status_embed.add_field(name="Previous status code", value=previous_status_code)
-        status_embed.add_field(
-            name="Min engine version",
-            value=f"`{self.default_engine_version.as_list()}`",
+        embed = Embed(title=f"Status for {self.qualified_name}", color=0x00ACED)
+        embed.add_field(name="Version URL", value=url, inline=False)
+        embed.add_field(name="Previous request", value=prev_request_ts)
+        embed.add_field(name="Next request", value=next_request_ts)
+        embed.add_field(name="Previous status code", value=prev_status_code)
+        embed.add_field(
+            name="Latest version",
+            value=f"`{self.version_manager.latest_version}`",
         )
 
-        await ctx.send(embed=status_embed)
+        await interaction.response.send_message(embed=embed)
 
-    @cmd_manifests.command(name="update", brief="Manually request the version")
-    async def cmd_manifests_update(self, ctx: Context):
-        if self.version_url:
-            self.update_default_engine_version.restart()
-            await ctx.message.add_reaction("✅")
+    @cmd_manifests.command(name="update", description="Updates the latest version")
+    @checks.is_owner()
+    async def cmd_manifests_update(self, interaction: Interaction):
+        if self.version_manager.url:
+            self.version_manager.restart()
+            await interaction.response.send_message("✅ Updated the latest version")
         else:
-            await ctx.message.add_reaction("❌")
+            await interaction.response.send_message(
+                "❌ Unable to update the latest version"
+            )
