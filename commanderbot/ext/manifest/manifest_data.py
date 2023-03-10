@@ -1,54 +1,38 @@
+import re
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Self
+
+VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
 
 
-class PackType(Enum):
-    ADDON = "addon"
-    BEHAVIOR = "behavior"
-    DATA = "data"
-    RESOURCE = "resource"
-    SKIN = "skin"
-
-    @classmethod
-    def from_str(cls, pack_type_str: str) -> Optional["PackType"]:
-        try:
-            return cls(pack_type_str.strip().lower())
-        except ValueError:
-            return None
+@dataclass(repr=False)
+class Version:
+    major: int
+    minor: int
+    patch: int
 
     @classmethod
-    def values(cls) -> list[str]:
-        return [i.value for i in cls]
+    def from_str(cls, version_str: str) -> Optional["Version"]:
+        if VERSION_PATTERN.match(version_str):
+            version_numbers: list[int] = [int(i) for i in version_str.split(".")][:3]
+            return cls(*version_numbers)
+
+    def as_list(self) -> list[int]:
+        return [self.major, self.minor, self.patch]
+
+    def __repr__(self) -> str:
+        return str(self.as_list())
+
+    def __str__(self) -> str:
+        return f"{self.major}.{self.minor}.{self.patch}"
 
 
 class ModuleType(Enum):
     DATA = "data"
     RESOURCE = "resources"
     SKIN = "skin_pack"
-
-
-@dataclass
-class Version:
-    major: int
-    minor: int
-    patch: int
-
-    def as_list(self) -> list[int]:
-        return [self.major, self.minor, self.patch]
-
-    @classmethod
-    def from_str(cls, version_str: str) -> Optional["Version"]:
-        version_numbers: list[int] = []
-        for i in version_str.strip().split(".")[:3]:
-            if i.isnumeric():
-                version_numbers.append(int(i))
-
-        if len(version_numbers) == 3:
-            return cls(*version_numbers)
-        else:
-            return None
 
 
 class Manifest:
@@ -70,11 +54,17 @@ class Manifest:
 
         self.pack_uuid: str = str(uuid.uuid4())
         self.module_uuid: str = str(uuid.uuid4())
-        self.dependency_uuid: Optional[str] = None
+        self.dependencies: list[str] = []
+
+    def add_dependency(self, other: Self):
+        """
+        Adds `other` as a dependency to this manifest
+        """
+        self.dependencies.append(other.pack_uuid)
 
     def common_name(self) -> str:
         """
-        Common name for a pack that has a manifest with the stored module type
+        Common name for a manifest with the stored module type
         """
         match self.module_type:
             case ModuleType.DATA:
@@ -108,21 +98,13 @@ class Manifest:
             ],
         }
 
-        # Add dependency if the UUID exists
-        if self.dependency_uuid:
+        if self.dependencies:
             manifest["dependencies"] = [
                 {
-                    "uuid": self.dependency_uuid,
+                    "uuid": dep,
                     "version": [1, 0, 0],
                 }
+                for dep in self.dependencies
             ]
 
-        # Serialize object as a json string
         return manifest
-
-
-def add_dependency(manifest: Manifest, dependent_manifest: Manifest):
-    """
-    Adds 'dependent_manifest' as a dependency to 'manifest'
-    """
-    manifest.dependency_uuid = dependent_manifest.pack_uuid
