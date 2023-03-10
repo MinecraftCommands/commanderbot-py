@@ -12,4 +12,5 @@ dist/
 .venv
 
 .env
-.sh
+*.sh
+*.bat
