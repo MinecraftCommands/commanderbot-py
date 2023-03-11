@@ -55,7 +55,11 @@ class ManifestVersionManager:
         self._update.start()
 
     def stop(self):
-        self._update.stop()
+        self._update.cancel()
 
     def restart(self):
+        self._update.restart()
+
+    async def update(self):
+        await self._update()
         self._update.restart()
