@@ -1,6 +1,6 @@
 from discord import Interaction, Member, app_commands
 
-import commanderbot.lib.utils as utils
+from commanderbot.lib import utils
 
 
 def is_owner():
