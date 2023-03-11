@@ -15,7 +15,12 @@ from discord.app_commands import (
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.manifest.manifest_data import Manifest, ModuleType, Version
-from commanderbot.ext.manifest.manifest_exceptions import InvalidVersionFormat
+from commanderbot.ext.manifest.manifest_exceptions import (
+    BadResponseFromVersionURL,
+    InvalidVersionFormat,
+    NoURLInConfig,
+    UnableToUpdateLatestVersion,
+)
 from commanderbot.ext.manifest.manifest_version_manager import ManifestVersionManager
 from commanderbot.lib.interactions import checks
 from commanderbot.lib.utils import str_to_file
@@ -57,7 +62,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         if not url:
             self.log.warn(
                 "No version URL was given in the bot config. "
-                f"Using `{ManifestVersionManager.default_version()}` for the latest version"
+                f"Using `{ManifestVersionManager.default_version()}` for the latest min engine version"
             )
 
         # Create and start the manifest version manager
@@ -70,6 +75,10 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
     async def min_engine_version_autocomplete(
         self, interaction: Interaction, value: str
     ) -> List[Choice[str]]:
+        """
+        An autocomplete callback that alawys returns the latest version
+        from the manifest version manager
+        """
         latest_version: str = str(self.version_manager.latest_version)
         return [Choice(name=f"latest ({latest_version})", value=latest_version)]
 
@@ -155,19 +164,28 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         embed.add_field(name="Next request", value=next_request_ts)
         embed.add_field(name="Previous status code", value=prev_status_code)
         embed.add_field(
-            name="Latest version",
+            name="Latest min engine version",
             value=f"`{self.version_manager.latest_version}`",
         )
 
         await interaction.response.send_message(embed=embed)
 
-    @cmd_manifests.command(name="update", description="Updates the latest version")
+    @cmd_manifests.command(
+        name="update", description="Updates the latest min engine version"
+    )
     @checks.is_owner()
     async def cmd_manifests_update(self, interaction: Interaction):
-        if self.version_manager.url:
-            self.version_manager.restart()
-            await interaction.response.send_message("✅ Updated the latest version")
-        else:
-            await interaction.response.send_message(
-                "❌ Unable to update the latest version"
-            )
+        if not self.version_manager.url:
+            raise NoURLInConfig
+
+        # Try to update the latest version
+        await self.version_manager.update()
+        match self.version_manager.prev_status_code:
+            case 200:
+                await interaction.response.send_message(
+                    f"✅ Updated the latest min engine version to `{self.version_manager.latest_version}`"
+                )
+            case int() as status_code:
+                raise BadResponseFromVersionURL(status_code)
+            case _:
+                raise UnableToUpdateLatestVersion
