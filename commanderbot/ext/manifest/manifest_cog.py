@@ -10,6 +10,7 @@ from discord.app_commands import (
     Transform,
     Transformer,
     autocomplete,
+    command,
     describe,
 )
 from discord.ext.commands import Bot, Cog
@@ -85,7 +86,6 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
     # @@ COMMANDS
 
     # Groups
-    cmd_manifest = Group(name="manifest", description="Generate a Bedrock manifest")
     cmd_manifests = Group(
         name="manifests",
         description="Manage the manifest generator",
@@ -94,7 +94,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
 
     # @@ User facing commands
 
-    @cmd_manifest.command(name="generate", description="Generate a Bedrock manifest")
+    @command(name="manifest", description="Generate a Bedrock manifest")
     @describe(
         manifest_type="The type of manifest to generate",
         name="The name of the manifest",
@@ -102,7 +102,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         min_engine_version="The minimum version of Minecraft this manifest is compatible with",
     )
     @autocomplete(min_engine_version=min_engine_version_autocomplete)
-    async def cmd_manifest_generate(
+    async def cmd_manifest(
         self,
         interaction: Interaction,
         manifest_type: ManifestType,
