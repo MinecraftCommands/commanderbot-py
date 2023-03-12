@@ -12,6 +12,7 @@ from discord.app_commands import (
     autocomplete,
     command,
     describe,
+    rename,
 )
 from discord.ext.commands import Bot, Cog
 
@@ -101,6 +102,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         description="The description for the manifest",
         min_engine_version="The minimum version of Minecraft this manifest is compatible with",
     )
+    @rename(manifest_type="type")
     @autocomplete(min_engine_version=min_engine_version_autocomplete)
     async def cmd_manifest(
         self,
