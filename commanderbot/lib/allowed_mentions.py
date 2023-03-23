@@ -20,6 +20,10 @@ class AllowedMentions(JsonSerializable, discord.AllowedMentions, FromDataMixin):
     def only_replies(cls):
         return cls(everyone=False, users=False, roles=False)
 
+    @classmethod
+    def only_users(cls):
+        return cls(everyone=False, roles=False, replied_user=False)
+
     # @overrides FromDataMixin
     @classmethod
     def try_from_data(cls, data):
