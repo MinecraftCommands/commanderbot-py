@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, TypeAlias, Union
 
 from discord import (
     DMChannel,
@@ -8,9 +8,11 @@ from discord import (
     Message,
     PartialMessageable,
     Reaction,
+    StageChannel,
     TextChannel,
     Thread,
     User,
+    VoiceChannel,
 )
 from discord.ext.commands import Context, MessageConverter
 
@@ -27,6 +29,7 @@ __all__ = (
     "MemberOrUser",
     "PartialMessageableChannel",
     "MessageableChannel",
+    "UnmentionableMessageableChannel",
     "TextMessage",
     "TextReaction",
     "GuildContext",
@@ -34,23 +37,28 @@ __all__ = (
 )
 
 
-IDType = int
+IDType: TypeAlias = int
 
-GuildID = IDType
-ChannelID = IDType
-RoleID = IDType
-UserID = IDType
-ForumTagID = IDType
-AppCommandID = IDType
+GuildID: TypeAlias = IDType
+ChannelID: TypeAlias = IDType
+RoleID: TypeAlias = IDType
+UserID: TypeAlias = IDType
+ForumTagID: TypeAlias = IDType
+AppCommandID: TypeAlias = IDType
 
-RawOptions = Any
+RawOptions: TypeAlias = Any
 
-JsonObject = Dict[str, Any]
+JsonObject: TypeAlias = Dict[str, Any]
 
-MemberOrUser = Member | User
+MemberOrUser: TypeAlias = Union[Member, User]
 
-PartialMessageableChannel = TextChannel | Thread | DMChannel | PartialMessageable
-MessageableChannel = PartialMessageableChannel | GroupChannel
+PartialMessageableChannel: TypeAlias = Union[
+    TextChannel, VoiceChannel, StageChannel, Thread, DMChannel, PartialMessageable
+]
+MessageableChannel: TypeAlias = Union[PartialMessageableChannel, GroupChannel]
+UnmentionableMessageableChannel: TypeAlias = Union[
+    DMChannel, GroupChannel, PartialMessageable
+]
 
 
 class TextMessage(Message):
