@@ -1,8 +1,21 @@
 import re
-from typing import List, Optional
+from typing import Optional
 
-from discord import AllowedMentions, Embed, Member, Message, TextChannel, Thread, User
-from discord.ext.commands import Bot, Cog, Context, command
+from discord import Embed, Interaction, Member, Message
+from discord.app_commands import Transform, command, describe, guild_only
+from discord.ext.commands import Bot, Cog
+
+from commanderbot.ext.quote.quote_exceptions import (
+    ChannelNotMessageable,
+    MissingQuotePermissions,
+)
+from commanderbot.lib import (
+    AllowedMentions,
+    MemberOrUser,
+    MessageableChannel,
+    UnmentionableMessageableChannel,
+)
+from commanderbot.lib.interactions import MessageTransformer
 
 AUTO_EMBED_PATTERN = re.compile(r"^https?:\/\/\S\S+$")
 
@@ -11,78 +24,76 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
 
-    def user_can_quote(
-        self, user: User | Member, channel: TextChannel | Thread
-    ) -> bool:
+    def _user_can_quote(self, user: MemberOrUser, channel: MessageableChannel) -> bool:
+        # Return early if `user` is not a guild member.
         if not isinstance(user, Member):
             return False
+
+        # User is a guild member, so check if they can quote this channel.
         quoter_permissions = channel.permissions_for(user)
         can_quote = (
             quoter_permissions.read_messages and quoter_permissions.read_message_history
         )
         return can_quote
 
-    async def do_quote(
+    def _is_just_media_link(self, message: Message) -> bool:
+        # Check if message is just a media link, which creates a single embed.
+        return (
+            bool(AUTO_EMBED_PATTERN.match(message.content)) and len(message.embeds) == 1
+        )
+
+    async def _do_quote(
         self,
-        ctx: Context,
+        interaction: Interaction,
         message: Message,
         phrasing: str,
         allowed_mentions: AllowedMentions,
     ):
         # Make sure the channel can be quoted from.
-        channel = message.channel
-        if not isinstance(channel, TextChannel | Thread):
-            await ctx.message.reply("😳 I can't quote that.")
-            return
+        channel: MessageableChannel = message.channel
+        if not isinstance(channel, MessageableChannel):
+            raise ChannelNotMessageable
 
         # Make sure the quoter has read permissions in the channel.
-        quoter = ctx.author
-        if not self.user_can_quote(quoter, channel):
-            await ctx.message.reply("😠 You can't quote that.")
-            return
+        quoter: MemberOrUser = interaction.user
+        if not self._user_can_quote(quoter, channel):
+            raise MissingQuotePermissions
 
         # Build the message content containing the quote metadata.
-        lines: List[str] = []
-        created_at_ts = int(message.created_at.timestamp())
-        quote_ts = f"<t:{created_at_ts}:R>"
-        if message.edited_at is not None:
-            edited_at_ts = int(message.edited_at.timestamp())
-            quote_ts += f" (edited <t:{edited_at_ts}:R>)"
-        lines.append(
-            f"{ctx.author.mention} {phrasing} {message.author.mention}"
-            + f" in {channel.mention} from {quote_ts}:"
+        quote_ts: str = f"<t:{int(message.created_at.timestamp())}:R>"
+        if message.edited_at:
+            quote_ts += f" (edited <t:{int(message.edited_at.timestamp())}:R>)"
+
+        channel_mention: Optional[str] = None
+        if not isinstance(channel, UnmentionableMessageableChannel):
+            channel_mention = channel.mention
+
+        content: str = "\n".join(
+            [
+                f"{quoter.mention} {phrasing} {message.author.mention}"
+                + (f" in {channel_mention}" if channel_mention else "")
+                + f" from {quote_ts}:",
+                message.jump_url,
+            ]
         )
-        lines.append(message.jump_url)
-        content = "\n".join(lines)
 
-        content_to_quote: Optional[str] = message.content
-
-        # Special-case: message is just a media link, which creates a single embed.
-        # In this case, omit the quote embed.
-        just_media_link = len(message.embeds) == 1 and AUTO_EMBED_PATTERN.match(
-            content_to_quote
-        )
-        if just_media_link:
-            content_to_quote = None
-
-        # Build the embed containing the actual quote content, if any.
-        quote_embed: Optional[Embed] = None
-        if content_to_quote:
+        # Send the quote response. The embed will be omitted if there's no message content
+        # or the message content is just a media link that creates a single embed.
+        if not message.content or self._is_just_media_link(message):
+            await interaction.response.send_message(
+                content, allowed_mentions=allowed_mentions
+            )
+        else:
             quote_embed = Embed(
-                description=content_to_quote,
+                description=message.content,
             )
             quote_embed.set_author(
                 name=str(message.author),
                 icon_url=message.author.display_avatar.url,
             )
-
-        # Send the message with the quote embed attached, if any.
-        if quote_embed:
-            await ctx.send(
+            await interaction.response.send_message(
                 content, embed=quote_embed, allowed_mentions=allowed_mentions
             )
-        else:
-            await ctx.send(content, allowed_mentions=allowed_mentions)
 
         # Account for any attachments/embeds on the original message. We have to send
         # these separately from the quote embed, because the quote embed takes
@@ -91,29 +102,38 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         embed_urls = [
             embed.url for embed in message.embeds if isinstance(embed.url, str)
         ]
-        urls_to_quote: List[str] = attachment_urls + embed_urls
-        for url in urls_to_quote:
-            await ctx.send(url)
+        urls_to_quote: list[str] = attachment_urls + embed_urls
 
-    @command(name="quote", brief="Quote a message")
-    async def cmd_quote(self, ctx: Context, message: Message):
-        await self.do_quote(
-            ctx,
+        assert isinstance(interaction.channel, MessageableChannel)
+        for url in urls_to_quote:
+            await interaction.channel.send(url)
+
+    @command(name="quote", description="Quote a message")
+    @describe(message="A message link to quote")
+    @guild_only()
+    async def cmd_quote(
+        self,
+        interaction: Interaction,
+        message: Transform[Message, MessageTransformer],
+    ):
+        await self._do_quote(
+            interaction,
             message,
             phrasing="quoted",
             allowed_mentions=AllowedMentions.none(),
         )
 
-    @command(name="quotem", brief="Quote a message and mention the author")
-    async def cmd_quotem(self, ctx: Context, message: Message):
-        await self.do_quote(
-            ctx,
+    @command(name="quotem", description="Quote a message and mention the author")
+    @describe(message="A message link to quote")
+    @guild_only()
+    async def cmd_quotem(
+        self,
+        interaction: Interaction,
+        message: Transform[Message, MessageTransformer],
+    ):
+        await self._do_quote(
+            interaction,
             message,
             phrasing="quote-mentioned",
-            allowed_mentions=AllowedMentions(
-                everyone=False,
-                users=True,
-                roles=False,
-                replied_user=False,
-            ),
+            allowed_mentions=AllowedMentions.only_users(),
         )
