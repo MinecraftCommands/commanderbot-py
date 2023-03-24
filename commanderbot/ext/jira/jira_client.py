@@ -1,46 +1,22 @@
-import re
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 import aiohttp
 
+from commanderbot.ext.jira.jira_exceptions import (
+    ConnectionError,
+    IssueHasNoFields,
+    IssueNotFound,
+    RequestError,
+)
 from commanderbot.ext.jira.jira_issue import JiraIssue, StatusColor
-from commanderbot.lib.responsive_exception import ResponsiveException
-
-JIRA_URL_PATTERN = re.compile(r"^(https?://[^/]+).*?(\w+)-(\d+)")
-JIRA_ISSUE_ID_PATTERN = re.compile(r"^(\w+)-(\d+)")
 
 
-class JiraException(ResponsiveException):
-    pass
-
-
-class IssueNotFound(JiraException):
-    def __init__(self, issue_id: str):
-        self.issue_id = issue_id
-        super().__init__(f"`{self.issue_id}` does not exist or it may be private")
-
-
-class IssueHasNoFields(JiraException):
-    def __init__(self, issue_id: str):
-        self.issue_id = issue_id
-        super().__init__(f"`{self.issue_id}` does not have any fields")
-
-
-class InvalidIssueFormat(JiraException):
-    def __init__(self):
-        super().__init__("Jira issues must use the `<project>-<id>` format or be a URL")
-
-
-class ConnectionError(JiraException):
-    def __init__(self, url: str):
-        self.url = url
-        super().__init__(f"Could not connect to `{self.url}`")
-
-
-class RequestError(JiraException):
-    def __init__(self, issue_id: str):
-        self.issue_id = issue_id
-        super().__init__(f"There was an error while requesting `{self.issue_id}`")
+@dataclass
+class JiraQuery:
+    base_url: Optional[str]
+    issue_id: str
 
 
 class JiraClient:
@@ -63,24 +39,11 @@ class JiraClient:
         except aiohttp.ClientError:
             raise RequestError(issue_id)
 
-    async def get_issue(self, issue: str) -> JiraIssue:
-        # Extract the issue ID parts and base URL or throw an
-        # exception if the regex matches fail
-        unfiltered_url: str = issue.split("?")[0]
-        base_url: str = self.url
-        project: str = ""
-        id: str = ""
-        if matches := JIRA_URL_PATTERN.match(unfiltered_url):
-            base_url, project, id = matches.groups()
-        elif matches := JIRA_ISSUE_ID_PATTERN.match(unfiltered_url):
-            project, id = matches.groups()
-        else:
-            raise InvalidIssueFormat
-
-        # Create issue ID
-        issue_id = "-".join((project.upper(), str(int(id))))
-
+    async def get_issue(self, query: JiraQuery) -> JiraIssue:
         # Request issue data and get its fields
+        base_url: str = query.base_url or self.url
+        issue_id: str = query.issue_id
+
         data: dict = await self._request_issue_data(base_url, issue_id)
         fields: dict = data.get("fields", {})
         if not fields:
