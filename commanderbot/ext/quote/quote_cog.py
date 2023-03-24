@@ -1,5 +1,6 @@
 import re
 from typing import Optional
+from itertools import chain
 
 from discord import Embed, Interaction, Member, Message
 from discord.app_commands import Transform, command, describe, guild_only
@@ -98,14 +99,11 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         # Account for any attachments/embeds on the original message. We have to send
         # these separately from the quote embed, because the quote embed takes
         # precedence and will stop other attachments/embeds from appearing.
-        attachment_urls = [att.url for att in message.attachments]
-        embed_urls = [
-            embed.url for embed in message.embeds if isinstance(embed.url, str)
-        ]
-        urls_to_quote: list[str] = attachment_urls + embed_urls
+        attachment_urls_gen = (att.url for att in message.attachments)
+        embed_urls_gen = (embed.url for embed in message.embeds if embed.url)
 
         assert isinstance(interaction.channel, MessageableChannel)
-        for url in urls_to_quote:
+        for url in chain(attachment_urls_gen, embed_urls_gen):
             await interaction.channel.send(url)
 
     @command(name="quote", description="Quote a message")
