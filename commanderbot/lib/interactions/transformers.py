@@ -6,7 +6,9 @@ from discord.app_commands import AppCommandError, Choice, Transformer
 from discord.ext.commands import BadArgument, CommandError, Context, MessageConverter
 from emoji import is_emoji
 
-from commanderbot.lib import MAX_AUTOCOMPLETE_CHOICES, Color, ResponsiveException
+from commanderbot.lib.color import Color
+from commanderbot.lib.constants import MAX_AUTOCOMPLETE_CHOICES
+from commanderbot.lib.responsive_exception import ResponsiveException
 
 __all__ = (
     "InvalidEmoji",
