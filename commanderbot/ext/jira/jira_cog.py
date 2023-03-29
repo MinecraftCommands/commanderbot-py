@@ -52,6 +52,9 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
         interaction: Interaction,
         query: Transform[JiraQuery, JiraQueryTransformer],
     ):
+        # Repond to the interaction with a defer since the web request may take a while
+        await interaction.response.defer()
+
         # Try to get the issue
         issue: JiraIssue = await self.jira_client.get_issue(query)
 
@@ -76,7 +79,7 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
         jira_link_button: ui.View = ui.View()
         jira_link_button.add_item(ui.Button(label="View on Jira", url=issue.url))
 
-        # Send the message with the issue embed and link button
-        await interaction.response.send_message(
+        # Send the followup message with the issue embed and link button
+        await interaction.followup.send(
             embed=issue_embed, view=jira_link_button
         )
