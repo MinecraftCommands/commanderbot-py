@@ -1,8 +1,8 @@
 from typing import Optional
 
-from discord import AllowedMentions, Interaction
+from discord import AllowedMentions, Interaction, InteractionResponseType
 
-__all__ = ("send_or_followup", "command_name")
+__all__ = ("send_or_followup", "command_name", "is_deferred")
 
 
 async def send_or_followup(
@@ -37,3 +37,13 @@ def command_name(interaction: Interaction) -> Optional[str]:
     """
     if interaction.command:
         return interaction.command.qualified_name
+
+
+def is_deferred(interaction: Interaction) -> bool:
+    """
+    Returns `True` if the interaction response was deferred.
+    """
+    return interaction.response.type in {
+        InteractionResponseType.deferred_channel_message,
+        InteractionResponseType.deferred_message_update,
+    }
