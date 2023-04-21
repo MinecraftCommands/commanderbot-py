@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 from itertools import chain
 
 from discord import Embed, Interaction, Member, Message
@@ -10,12 +9,7 @@ from commanderbot.ext.quote.quote_exceptions import (
     ChannelNotMessageable,
     MissingQuotePermissions,
 )
-from commanderbot.lib import (
-    AllowedMentions,
-    MemberOrUser,
-    MessageableChannel,
-    UnmentionableMessageableChannel,
-)
+from commanderbot.lib import AllowedMentions, MemberOrUser, MessageableChannel
 from commanderbot.lib.interactions import MessageTransformer
 
 AUTO_EMBED_PATTERN = re.compile(r"^https?:\/\/\S\S+$")
@@ -65,18 +59,7 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         if message.edited_at:
             quote_ts += f" (edited <t:{int(message.edited_at.timestamp())}:R>)"
 
-        channel_mention: Optional[str] = None
-        if not isinstance(channel, UnmentionableMessageableChannel):
-            channel_mention = channel.mention
-
-        content: str = "\n".join(
-            [
-                f"{quoter.mention} {phrasing} {message.author.mention}"
-                + (f" in {channel_mention}" if channel_mention else "")
-                + f" from {quote_ts}:",
-                message.jump_url,
-            ]
-        )
+        content: str = f"{phrasing} a message sent by {message.author.mention} {quote_ts}: {message.jump_url}"
 
         # Send the quote response. The embed will be omitted if there's no message content
         # or the message content is just a media link that creates a single embed.
@@ -117,7 +100,7 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         await self._do_quote(
             interaction,
             message,
-            phrasing="quoted",
+            phrasing="Quoted",
             allowed_mentions=AllowedMentions.none(),
         )
 
@@ -132,6 +115,6 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         await self._do_quote(
             interaction,
             message,
-            phrasing="quote-mentioned",
+            phrasing="Quote-mentioned",
             allowed_mentions=AllowedMentions.only_users(),
         )
