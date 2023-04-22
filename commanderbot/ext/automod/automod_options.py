@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
-from commanderbot.lib import (
+from commanderbot.lib.cogs.database import (
     DatabaseOptions,
     InMemoryDatabaseOptions,
     make_database_options,

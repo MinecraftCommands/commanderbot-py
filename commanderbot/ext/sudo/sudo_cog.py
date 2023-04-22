@@ -15,7 +15,7 @@ from commanderbot.ext.sudo.sudo_exceptions import (
     UnknownCog,
     UnsupportedStoreExport,
 )
-from commanderbot.lib import JsonFileDatabaseAdapter
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 from commanderbot.lib.commands import checks
 from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
 from commanderbot.lib.json import json_dumps

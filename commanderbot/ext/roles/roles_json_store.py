@@ -5,13 +5,9 @@ from discord import Guild, Role
 
 from commanderbot.ext.roles.roles_data import RolesData
 from commanderbot.ext.roles.roles_store import RoleEntry
-from commanderbot.lib import (
-    CogStore,
-    GuildID,
-    JsonFileDatabaseAdapter,
-    RoleID,
-    RoleSet,
-)
+from commanderbot.lib import GuildID, RoleID, RoleSet
+from commanderbot.lib.cogs import CogStore
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
 
 # @implements RolesStore

@@ -20,7 +20,8 @@ from commanderbot.ext.help_forum.help_forum_exceptions import (
     UnableToResolveUnregistered,
 )
 from commanderbot.ext.help_forum.help_forum_store import HelpForum, HelpForumStore
-from commanderbot.lib import AllowedMentions, CogGuildState, ForumTagID
+from commanderbot.lib import AllowedMentions, ForumTagID
+from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_buttons
 from commanderbot.lib.forums import format_tag, require_tag_id, thread_has_tag_id
 from commanderbot.lib.utils import async_schedule

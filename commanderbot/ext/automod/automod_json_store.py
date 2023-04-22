@@ -6,13 +6,9 @@ from discord import Guild
 from commanderbot.ext.automod.automod_data import AutomodData
 from commanderbot.ext.automod.automod_event import AutomodEvent
 from commanderbot.ext.automod.automod_store import AutomodRule
-from commanderbot.lib import (
-    CogStore,
-    JsonFileDatabaseAdapter,
-    JsonObject,
-    LogOptions,
-    RoleSet,
-)
+from commanderbot.lib import JsonObject, LogOptions, RoleSet
+from commanderbot.lib.cogs import CogStore
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 from commanderbot.lib.utils import JsonPath, JsonPathOp
 
 
