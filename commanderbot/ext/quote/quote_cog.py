@@ -59,7 +59,7 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         if message.edited_at:
             quote_ts += f" (edited <t:{int(message.edited_at.timestamp())}:R>)"
 
-        content: str = f"{phrasing} a message sent by {message.author.mention} {quote_ts}: {message.jump_url}"
+        content: str = f"{phrasing} {message.author.mention} from {quote_ts} → {message.jump_url}"
 
         # Send the quote response. The embed will be omitted if there's no message content
         # or the message content is just a media link that creates a single embed.
