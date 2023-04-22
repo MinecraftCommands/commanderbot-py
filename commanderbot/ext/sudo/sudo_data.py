@@ -1,16 +1,12 @@
 from enum import Enum, auto
 from typing import Protocol, Union, runtime_checkable
 
-from commanderbot.lib import (
-    JsonFileDatabaseAdapter,
-    SQLDatabaseAdapter,
-    SQLiteDatabaseAdapter,
-)
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter, SQLDatabaseAdapter
 
 
 @runtime_checkable
 class DatabaseAdapter(Protocol):
-    db: Union[JsonFileDatabaseAdapter, SQLiteDatabaseAdapter, SQLDatabaseAdapter]
+    db: Union[JsonFileDatabaseAdapter, SQLDatabaseAdapter]
 
 
 @runtime_checkable

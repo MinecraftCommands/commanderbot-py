@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from commanderbot.ext.faq.faq_guild_state import FaqGuildState
 from commanderbot.ext.faq.faq_store import FaqStore
-from commanderbot.lib import GuildPartitionedCogState
+from commanderbot.lib.cogs import GuildPartitionedCogState
 
 
 @dataclass

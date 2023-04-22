@@ -7,7 +7,8 @@ from commanderbot.ext.stacktracer.stacktracer_exceptions import (
     GuildLoggingNotConfigured,
 )
 from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
-from commanderbot.lib import CogGuildState, Color, LogOptions
+from commanderbot.lib import Color, LogOptions
+from commanderbot.lib.cogs import CogGuildState
 
 
 @dataclass

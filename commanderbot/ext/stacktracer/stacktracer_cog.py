@@ -24,10 +24,9 @@ from commanderbot.ext.stacktracer.stacktracer_json_store import StacktracerJsonS
 from commanderbot.ext.stacktracer.stacktracer_options import StacktracerOptions
 from commanderbot.ext.stacktracer.stacktracer_state import StacktracerState
 from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
-from commanderbot.lib import (
-    CogGuildStateManager,
-    Color,
-    EventData,
+from commanderbot.lib import Color, EventData
+from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

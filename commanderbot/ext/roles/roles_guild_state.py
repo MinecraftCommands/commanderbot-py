@@ -11,7 +11,8 @@ from commanderbot.ext.roles.roles_result import (
     RolesResult,
 )
 from commanderbot.ext.roles.roles_store import RoleEntry, RoleEntryPair, RolesStore
-from commanderbot.lib import CogGuildState, GuildContext, MemberContext, RoleID, RoleSet
+from commanderbot.lib import GuildContext, MemberContext, RoleID, RoleSet
+from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
 
 SAFE_PERMS = Permissions.none()

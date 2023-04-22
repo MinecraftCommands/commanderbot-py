@@ -10,13 +10,12 @@ from commanderbot.ext.faq.faq_json_store import FaqJsonStore
 from commanderbot.ext.faq.faq_options import FaqOptions
 from commanderbot.ext.faq.faq_state import FaqState
 from commanderbot.ext.faq.faq_store import FaqStore
-from commanderbot.lib import (
-    CogGuildStateManager,
-    GuildContext,
+from commanderbot.lib import GuildContext, TextMessage
+from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,
-    TextMessage,
     UnsupportedDatabaseOptions,
 )
 from commanderbot.lib.commands import checks

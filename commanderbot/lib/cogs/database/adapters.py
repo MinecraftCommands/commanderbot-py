@@ -1,16 +1,39 @@
 import asyncio
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Callable, Generic, Optional, TypeVar
+from pathlib import Path
+from typing import Callable, Generic, Optional, Protocol, TypeVar
 
-from commanderbot.lib.database_options import JsonFileDatabaseOptions
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio.engine import AsyncConnection
+
+from commanderbot.lib.cogs.database.options import JsonFileDatabaseOptions, SQLiteDatabaseOptions
 from commanderbot.lib.json import json_dump_async, json_load_async
 from commanderbot.lib.types import JsonObject
 
-__all__ = ("JsonFileDatabaseAdapter",)
+__all__ = (
+    "SQLDatabaseAdapter",
+    "JsonFileDatabaseAdapter",
+    "SQLiteDatabaseAdapter",
+)
 
 
 CacheType = TypeVar("CacheType")
+
+
+class SQLDatabaseAdapter(Protocol):
+    """
+    A protocol class for SQL databases
+    """
+
+    def connect(self) -> AsyncConnection:
+        ...
+
+    def begin(self) -> AsyncConnection:
+        ...
+
+    def session(self) -> AsyncSession:
+        ...
 
 
 @dataclass
@@ -91,4 +114,49 @@ class JsonFileDatabaseAdapter(Generic[CacheType]):
 
     async def write(self, data: JsonObject):
         """Write the given data to the database file."""
-        await json_dump_async(data, self.options.path, indent=self.options.indent)
+        await json_dump_async(data, self.options.path, indent=self.options.indent)  # type: ignore
+
+
+@dataclass
+class SQLiteDatabaseAdapter:
+    """
+    Wraps common operations for persistent data backed by a SQLite database.
+
+    Attributes
+    ----------
+    options
+        Immutable, pre-defined settings that define core database behaviour.
+    log
+        A logger named in a uniquely identifiable way.
+    engine
+        The underlying SQLAlchemy engine object.
+    """
+
+    options: SQLiteDatabaseOptions
+
+    log: Logger = field(init=False)
+    engine: AsyncEngine = field(init=False)
+
+    @property
+    def path_or_in_memory(self) -> Optional[Path]:
+        return self.options.path
+
+    def __post_init__(self):
+        if path := self.path_or_in_memory:
+            self.log = getLogger(f"{path.name} ({self.__class__.__name__}#{id(self)})")
+            self.log.info(f"Creating SQLite engine at: {path}")
+            path_str = f"sqlite+aiosqlite:///{path}"
+        else:
+            self.log = getLogger(f"IN-MEMORY ({self.__class__.__name__}#{id(self)})")
+            self.log.info("Creating IN-MEMORY SQLite engine")
+            path_str = "sqlite://"
+        self.engine = create_async_engine(path_str)
+
+    def connect(self) -> AsyncConnection:
+        return self.engine.connect()
+
+    def begin(self) -> AsyncConnection:
+        return self.engine.begin()
+
+    def session(self) -> AsyncSession:
+        return AsyncSession(self.engine)

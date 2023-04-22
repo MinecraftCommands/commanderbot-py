@@ -7,7 +7,8 @@ from sqlalchemy.sql.expression import insert
 
 from commanderbot.ext.help_chat.help_chat_store import HelpChannel
 from commanderbot.ext.help_chat.sql_store import models
-from commanderbot.lib import CogStore, SQLDatabaseAdapter
+from commanderbot.lib.cogs import CogStore
+from commanderbot.lib.cogs.database import SQLDatabaseAdapter
 
 __all__ = ("HelpChatSQLStore",)
 

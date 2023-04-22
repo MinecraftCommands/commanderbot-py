@@ -4,7 +4,9 @@ from typing import Optional
 from discord import Guild
 
 from commanderbot.ext.stacktracer.stacktracer_data import StacktracerData
-from commanderbot.lib import CogStore, JsonFileDatabaseAdapter, LogOptions
+from commanderbot.lib import LogOptions
+from commanderbot.lib.cogs import CogStore
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
 
 # @implements StacktracerStore

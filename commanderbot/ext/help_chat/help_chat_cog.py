@@ -11,9 +11,9 @@ from commanderbot.ext.help_chat.help_chat_options import HelpChatOptions
 from commanderbot.ext.help_chat.help_chat_state import HelpChatState
 from commanderbot.ext.help_chat.help_chat_store import HelpChatStore
 from commanderbot.ext.help_chat.sql_store import HelpChatSQLStore
-from commanderbot.lib import (
-    CogGuildStateManager,
-    GuildContext,
+from commanderbot.lib import GuildContext
+from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
     SQLiteDatabaseAdapter,
     SQLiteDatabaseOptions,

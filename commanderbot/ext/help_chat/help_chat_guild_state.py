@@ -6,7 +6,8 @@ from discord import CategoryChannel, TextChannel
 
 from commanderbot.ext.help_chat.help_chat_report import HelpChatReportBuildContext
 from commanderbot.ext.help_chat.help_chat_store import HelpChannel, HelpChatStore
-from commanderbot.lib import CogGuildState, GuildContext
+from commanderbot.lib import GuildContext
+from commanderbot.lib.cogs import CogGuildState
 
 
 @dataclass
