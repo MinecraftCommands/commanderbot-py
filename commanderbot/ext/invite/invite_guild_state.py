@@ -3,7 +3,8 @@ from datetime import datetime
 from typing import Optional, Tuple
 
 from commanderbot.ext.invite.invite_store import InviteEntry, InviteStore
-from commanderbot.lib import CogGuildState, GuildContext
+from commanderbot.lib import GuildContext
+from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
 from commanderbot.lib.utils import async_expand
 

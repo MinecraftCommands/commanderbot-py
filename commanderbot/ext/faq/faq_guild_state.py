@@ -9,7 +9,8 @@ from discord.ext.commands import MessageConverter
 
 from commanderbot.ext.faq.faq_options import FaqOptions
 from commanderbot.ext.faq.faq_store import FaqEntry, FaqStore
-from commanderbot.lib import CogGuildState, GuildContext, TextMessage
+from commanderbot.lib import GuildContext, TextMessage
+from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
 from commanderbot.lib.utils import send_message_or_file
 

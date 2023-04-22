@@ -5,7 +5,8 @@ from discord import Guild
 
 from commanderbot.ext.invite.invite_data import InviteData
 from commanderbot.ext.invite.invite_store import InviteEntry
-from commanderbot.lib import CogStore, JsonFileDatabaseAdapter
+from commanderbot.lib.cogs import CogStore
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
 
 # @implements InviteStore

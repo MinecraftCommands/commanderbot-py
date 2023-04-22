@@ -9,9 +9,9 @@ from commanderbot.ext.invite.invite_json_store import InviteJsonStore
 from commanderbot.ext.invite.invite_options import InviteOptions
 from commanderbot.ext.invite.invite_state import InviteState
 from commanderbot.ext.invite.invite_store import InviteStore
-from commanderbot.lib import (
-    CogGuildStateManager,
-    GuildContext,
+from commanderbot.lib import GuildContext
+from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

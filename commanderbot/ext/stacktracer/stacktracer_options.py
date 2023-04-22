@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Any, Optional, Type, TypeVar
 
-from commanderbot.lib import (
+from commanderbot.lib import FromDataMixin
+from commanderbot.lib.cogs.database import (
     DatabaseOptions,
-    FromDataMixin,
     InMemoryDatabaseOptions,
     make_database_options,
 )

@@ -6,7 +6,8 @@ from discord import Guild
 
 from commanderbot.ext.faq.faq_data import FaqData
 from commanderbot.ext.faq.faq_store import FaqEntry
-from commanderbot.lib import CogStore, JsonFileDatabaseAdapter
+from commanderbot.lib.cogs import CogStore
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
 
 # @implements FaqStore

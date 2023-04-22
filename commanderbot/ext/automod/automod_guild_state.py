@@ -25,7 +25,6 @@ from commanderbot.ext.automod.automod_event import AutomodEventBase
 from commanderbot.ext.automod.automod_rule import AutomodRule
 from commanderbot.ext.automod.automod_store import AutomodStore
 from commanderbot.lib import (
-    CogGuildState,
     Color,
     GuildContext,
     LogOptions,
@@ -34,6 +33,7 @@ from commanderbot.lib import (
     TextMessage,
     TextReaction,
 )
+from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
 from commanderbot.lib.json import to_data
 from commanderbot.lib.utils import (

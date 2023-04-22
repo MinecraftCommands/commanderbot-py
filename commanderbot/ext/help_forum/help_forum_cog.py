@@ -9,8 +9,8 @@ from discord import (
     RawThreadUpdateEvent,
     Thread,
 )
-from discord.enums import MessageType
 from discord.app_commands import Group, Transform, command, describe, guild_only
+from discord.enums import MessageType
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.help_forum.help_forum_data import HelpForumData
@@ -23,8 +23,8 @@ from commanderbot.ext.help_forum.help_forum_json_store import HelpForumJsonStore
 from commanderbot.ext.help_forum.help_forum_options import HelpForumOptions
 from commanderbot.ext.help_forum.help_forum_state import HelpForumState
 from commanderbot.ext.help_forum.help_forum_store import HelpForumStore
-from commanderbot.lib import (
-    CogGuildStateManager,
+from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

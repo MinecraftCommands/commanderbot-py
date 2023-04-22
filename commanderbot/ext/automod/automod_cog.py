@@ -25,15 +25,12 @@ from commanderbot.ext.automod.automod_json_store import AutomodJsonStore
 from commanderbot.ext.automod.automod_options import AutomodOptions
 from commanderbot.ext.automod.automod_state import AutomodState
 from commanderbot.ext.automod.automod_store import AutomodStore
-from commanderbot.lib import (
-    CogGuildStateManager,
-    GuildContext,
+from commanderbot.lib import GuildContext, MessageableChannel, TextMessage, TextReaction
+from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,
-    MessageableChannel,
-    TextMessage,
-    TextReaction,
     UnsupportedDatabaseOptions,
 )
 from commanderbot.lib.commands import ColorConverter, checks

@@ -8,7 +8,8 @@ from commanderbot.core.utils import get_app_command
 from commanderbot.ext.stacktracer.stacktracer_exceptions import LoggingNotConfigured
 from commanderbot.ext.stacktracer.stacktracer_guild_state import StacktracerGuildState
 from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
-from commanderbot.lib import Color, EventData, GuildPartitionedCogState, LogOptions
+from commanderbot.lib import Color, EventData, LogOptions
+from commanderbot.lib.cogs import GuildPartitionedCogState
 from commanderbot.lib.interactions import command_name
 from commanderbot.lib.utils import format_context_cause
 
