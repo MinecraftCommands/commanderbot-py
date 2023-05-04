@@ -9,6 +9,7 @@ from emoji import is_emoji
 from commanderbot.lib.color import Color
 from commanderbot.lib.constants import MAX_AUTOCOMPLETE_CHOICES
 from commanderbot.lib.responsive_exception import ResponsiveException
+from commanderbot.lib.utils.utils import is_custom_emoji, is_message_link
 
 __all__ = (
     "InvalidEmoji",
@@ -18,12 +19,6 @@ __all__ = (
     "EmojiTransformer",
     "MessageTransformer",
     "ColorTransformer",
-)
-
-
-CUSTOM_EMOJI_PATTERN = re.compile(r"\<a?\:\w+\:\d+\>")
-MESSAGE_LINK_PATTERN = re.compile(
-    r"https:\/\/discord(?:app)?.com\/channels\/(\d+|@me)\/(\d+)\/(\d+)"
 )
 
 
@@ -67,7 +62,7 @@ class EmojiTransformer(Transformer):
     async def transform(self, interaction: Interaction, value: str) -> str:
         if is_emoji(value):
             return value
-        elif CUSTOM_EMOJI_PATTERN.match(value):
+        elif is_custom_emoji(value):
             return value
         raise InvalidEmoji(value)
 
@@ -79,7 +74,7 @@ class MessageTransformer(Transformer):
 
     async def transform(self, interaction: Interaction, value: str) -> Message:
         # Return early if the string we're trying to transform isn't a valid Discord message link
-        if not MESSAGE_LINK_PATTERN.match(value):
+        if not is_message_link(value):
             raise InvalidMessageLink(value)
 
         # Try to transform `value` into a `discord.Message`
