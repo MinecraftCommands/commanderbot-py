@@ -9,6 +9,11 @@ from commanderbot.lib.cogs import GuildPartitionedCogState
 class InviteState(GuildPartitionedCogState[InviteGuildState]):
     """
     Encapsulates the state and logic of the invite cog, for each guild.
+
+    Attributes
+    -----------
+    store
+        The store used to interface with persistent data in a database-agnostic way.
     """
 
     store: InviteStore
