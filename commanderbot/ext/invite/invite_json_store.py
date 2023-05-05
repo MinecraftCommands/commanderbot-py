@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import AsyncIterable, Optional
+from typing import AsyncIterable, Optional, Union
 
 from discord import Guild
 
@@ -92,6 +92,14 @@ class InviteJsonStore(CogStore):
         cache = await self.db.get_cache()
         async for tag in cache.get_tags(guild, tag_filter=tag_filter):
             yield tag
+
+    # @implements InviteStore
+    async def get_invites_and_tags(
+        self, guild: Guild, *, item_filter: Optional[str] = None
+    ) -> AsyncIterable[Union[InviteEntry, str]]:
+        cache = await self.db.get_cache()
+        async for item in cache.get_invites_and_tags(guild, item_filter=item_filter):
+            yield item
 
     # @implements InviteStore
     async def set_guild_invite(self, guild: Guild, key: str) -> InviteEntry:

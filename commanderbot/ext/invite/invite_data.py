@@ -1,7 +1,8 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterable, Iterable, Optional, Type, TypeVar
+from itertools import chain
+from typing import Any, AsyncIterable, Iterable, Optional, Type, TypeVar, Union
 
 from discord import Guild
 
@@ -66,6 +67,12 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
         self.link = link
         self.description = description
         self.modified_on = datetime.now()
+
+    # @implements InviteEntry
+    def format(self) -> str:
+        if self.description:
+            return f"{self.link} - {self.description}"
+        return self.link
 
 
 @dataclass
@@ -295,6 +302,21 @@ class InviteData(JsonSerializable, FromDataMixin):
             if tag_filter and tag_filter not in tag:
                 continue
             yield tag
+
+    # @implements InviteStore
+    async def get_invites_and_tags(
+        self, guild: Guild, *, item_filter: Optional[str] = None
+    ) -> AsyncIterable[Union[InviteEntry, str]]:
+        item_gen = chain(
+            self.guilds[guild.id].invite_entries.values(),
+            self.guilds[guild.id].invite_entries_by_tag.keys(),
+        )
+        for item in item_gen:
+            if item_filter and item_filter not in (
+                item if isinstance(item, str) else item.key
+            ):
+                continue
+            yield item
 
     # @implements InviteStore
     async def set_guild_invite(self, guild: Guild, key: str) -> InviteEntry:

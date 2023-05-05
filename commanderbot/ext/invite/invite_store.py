@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import AsyncIterable, Optional, Protocol
+from typing import AsyncIterable, Optional, Protocol, Union
 
 from discord import Guild
 
@@ -20,6 +20,9 @@ class InviteEntry(Protocol):
         link: str,
         description: Optional[str],
     ):
+        ...
+
+    def format(self) -> str:
         ...
 
 
@@ -67,6 +70,11 @@ class InviteStore(Protocol):
     def get_tags(
         self, guild: Guild, *, tag_filter: Optional[str] = None
     ) -> AsyncIterable[str]:
+        ...
+
+    def get_invites_and_tags(
+        self, guild: Guild, *, item_filter: Optional[str] = None
+    ) -> AsyncIterable[Union[InviteEntry, str]]:
         ...
 
     async def set_guild_invite(self, guild: Guild, key: str) -> InviteEntry:
