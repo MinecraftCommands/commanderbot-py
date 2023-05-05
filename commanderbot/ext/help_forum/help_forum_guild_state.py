@@ -22,7 +22,7 @@ from commanderbot.ext.help_forum.help_forum_exceptions import (
 from commanderbot.ext.help_forum.help_forum_store import HelpForum, HelpForumStore
 from commanderbot.lib import AllowedMentions, ForumTagID
 from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_buttons
+from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
 from commanderbot.lib.forums import format_tag, require_tag_id, thread_has_tag_id
 from commanderbot.lib.utils import async_schedule
 
@@ -249,28 +249,27 @@ class HelpForumGuildState(CogGuildState):
         # Try to get the forum channel
         forum_data = await self.store.require_help_forum(self.guild, forum)
 
-        # If the forum does exist, send a message to show other users that a response is expected
-        await interaction.response.send_message(
-            f"Waiting for a response from {interaction.user.mention}...",
-            allowed_mentions=AllowedMentions.none(),
-        )
-
-        # Send a confirmation dialogue to the user
-        result = await confirm_with_buttons(
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
             interaction,
-            f"Do you want to deregister <#{forum_data.channel_id}>?",
+            f"Are you sure you want to deregister <#{forum_data.channel_id}>?",
             timeout=10,
         )
 
-        # Handle confirmation dialog result
-        match result:
-            case ConfirmationResult.YES:
-                await self.store.deregister_forum_channel(self.guild, forum)
-                await interaction.edit_original_response(
-                    content=f"Deregistered <#{forum_data.channel_id}> as a help forum"
-                )
-            case _:
-                await interaction.delete_original_response()
+        # Return early if the user pressed `no`
+        if result != ConfirmationResult.YES:
+            await interaction.delete_original_response()
+            return
+
+        # Attempt to deregister the forum channel
+        try:
+            await self.store.deregister_forum_channel(self.guild, forum)
+            await interaction.followup.send(
+                content=f"Deregistered <#{forum_data.channel_id}> as a help forum"
+            )
+        except Exception as ex:
+            await interaction.delete_original_response()
+            raise ex
 
     async def details(self, interaction: Interaction, forum: ForumChannel):
         # Get data from the help forum if it was registered
