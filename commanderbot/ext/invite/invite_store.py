@@ -22,7 +22,8 @@ class InviteEntry(Protocol):
     ):
         ...
 
-    def format(self) -> str:
+    @property
+    def sorted_tags(self) -> list[str]:
         ...
 
 

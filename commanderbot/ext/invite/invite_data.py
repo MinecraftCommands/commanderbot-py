@@ -69,10 +69,9 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
         self.modified_on = datetime.now()
 
     # @implements InviteEntry
-    def format(self) -> str:
-        if self.description:
-            return f"{self.link} - {self.description}"
-        return self.link
+    @property
+    def sorted_tags(self) -> list[str]:
+        return sorted(self.tags)
 
 
 @dataclass
@@ -111,6 +110,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
 
     def _rebuild_tag_mappings(self):
         # Build the tag to invite keys mappings
+        self.invite_entries_by_tag.clear()
         for entry in self.invite_entries.values():
             for tag in entry.tags:
                 self.invite_entries_by_tag[tag].append(entry)
