@@ -131,7 +131,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         await self.state[interaction.guild].get_invite(interaction, invite_or_tag)
 
     # @@ invite list
-    @cmd_invite.command(name="list", description="List all invites")
+    @cmd_invite.command(name="list", description="List all invites and tags")
     async def cmd_invite_list(self, interaction: Interaction):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].list_invites(interaction)
