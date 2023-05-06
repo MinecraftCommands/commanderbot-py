@@ -285,37 +285,44 @@ class InviteData(JsonSerializable, FromDataMixin):
         for entry in self.guilds[guild.id].query_invites(query):
             yield entry
 
-    # @implements InviteStore
-    async def get_invites(
-        self, guild: Guild, *, invite_filter: Optional[str] = None
-    ) -> AsyncIterable[InviteEntry]:
+    def _all_invites_matching(
+        self, guild: Guild, invite_filter: Optional[str] = None
+    ) -> Iterable[InviteEntry]:
         for entry in self.guilds[guild.id].invite_entries.values():
             if invite_filter and invite_filter not in entry.key:
                 continue
             yield entry
 
-    # @implements InviteStore
-    async def get_tags(
-        self, guild: Guild, *, tag_filter: Optional[str] = None
-    ) -> AsyncIterable[str]:
+    def _all_tags_matching(
+        self, guild: Guild, tag_filter: Optional[str] = None
+    ) -> Iterable[str]:
         for tag in self.guilds[guild.id].invite_entries_by_tag.keys():
             if tag_filter and tag_filter not in tag:
                 continue
             yield tag
 
     # @implements InviteStore
+    async def get_invites(
+        self, guild: Guild, *, invite_filter: Optional[str] = None
+    ) -> AsyncIterable[InviteEntry]:
+        for entry in self._all_invites_matching(guild, invite_filter):
+            yield entry
+
+    # @implements InviteStore
+    async def get_tags(
+        self, guild: Guild, *, tag_filter: Optional[str] = None
+    ) -> AsyncIterable[str]:
+        for tag in self._all_tags_matching(guild, tag_filter):
+            yield tag
+
+    # @implements InviteStore
     async def get_invites_and_tags(
         self, guild: Guild, *, item_filter: Optional[str] = None
     ) -> AsyncIterable[Union[InviteEntry, str]]:
-        item_gen = chain(
-            self.guilds[guild.id].invite_entries.values(),
-            self.guilds[guild.id].invite_entries_by_tag.keys(),
-        )
-        for item in item_gen:
-            if item_filter and item_filter not in (
-                item if isinstance(item, str) else item.key
-            ):
-                continue
+        for item in chain(
+            self._all_invites_matching(guild, item_filter),
+            self._all_tags_matching(guild, item_filter),
+        ):
             yield item
 
     # @implements InviteStore

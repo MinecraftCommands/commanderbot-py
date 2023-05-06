@@ -1,3 +1,5 @@
+from typing import Union
+
 from discord import Guild, Interaction, Permissions
 from discord.app_commands import Choice, Group, autocomplete, describe
 from discord.ext.commands import Bot, Cog
@@ -56,7 +58,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
 
     # @@ AUTOCOMPLETE
 
-    async def invite_key_autocomplete(
+    async def invite_autocomplete(
         self, interaction: Interaction, value: str
     ) -> list[Choice[str]]:
         """
@@ -65,22 +67,80 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
 
         # Get all invites filtered by `value`
         assert isinstance(interaction.guild, Guild)
-        filtered_invites: list[InviteEntry] = await async_expand(
+        invites: list[InviteEntry] = await async_expand(
             self.store.get_invites(interaction.guild, invite_filter=value.lower())
         )
+        invites.sort(key=lambda entry: entry.key)
 
         # Create a list of autocomplete choices and return them
         choices: list[Choice] = []
-        for i, entry in enumerate(filtered_invites):
-            if i == MAX_AUTOCOMPLETE_CHOICES:
+        for entry in invites:
+            # Exit early if we've added the max amount of choices
+            if len(choices) == MAX_AUTOCOMPLETE_CHOICES:
                 break
+
+            # Add invite choices
             choices.append(Choice(name=f"🔑 {entry.key}", value=entry.key))
+
+        return choices
+
+    async def invite_and_tag_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        """
+        An autocomplete callback that will return any invites or tags that match `value`
+        """
+
+        # Get all invites and tags filtered by `value`
+        assert isinstance(interaction.guild, Guild)
+        items: list[Union[InviteEntry, str]] = await async_expand(
+            self.store.get_invites_and_tags(
+                interaction.guild, item_filter=value.lower()
+            )
+        )
+        items.sort(key=lambda item: item if isinstance(item, str) else item.key)
+
+        # Create a list of autocomplete choices and return them
+        choices: list[Choice] = []
+        for item in items:
+            # Exit early if we've added the max amount of choices
+            if len(choices) == MAX_AUTOCOMPLETE_CHOICES:
+                break
+
+            # Add invite and tag choices
+            match item:
+                case str():
+                    choices.append(Choice(name=f"🏷️ {item}", value=item))
+                case _:
+                    choices.append(Choice(name=f"🔑 {item.key}", value=item.key))
 
         return choices
 
     # @@ COMMANDS
 
     # @@ invite
+
+    cmd_invite = Group(name="invite", description="Show invites", guild_only=True)
+
+    # @@ invite get
+    @cmd_invite.command(name="get", description="Get invites")
+    @describe(invite_or_tag="The invite or tag to get")
+    @autocomplete(invite_or_tag=invite_and_tag_autocomplete)
+    async def cmd_invite_get(self, interaction: Interaction, invite_or_tag: str):
+        assert isinstance(interaction.guild, Guild)
+        await self.state[interaction.guild].get_invite(interaction, invite_or_tag)
+
+    # @@ invite list
+    @cmd_invite.command(name="list", description="List all invites")
+    async def cmd_invite_list(self, interaction: Interaction):
+        assert isinstance(interaction.guild, Guild)
+        await self.state[interaction.guild].list_invites(interaction)
+
+    # @@ invite here
+    @cmd_invite.command(name="here", description="Get the invite for this guild")
+    async def cmd_invite_here(self, interaction: Interaction):
+        assert isinstance(interaction.guild, Guild)
+        await self.state[interaction.guild].get_guild_invite(interaction)
 
     # @@ invites
 
@@ -100,7 +160,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     # @@ invites modify
     @cmd_invites.command(name="modify", description="Modify an invite")
     @describe(invite="The invite to modify")
-    @autocomplete(invite=invite_key_autocomplete)
+    @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_modify(self, interaction: Interaction, invite: str):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].modify_invite(interaction, invite)
@@ -108,7 +168,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     # @@ invites remove
     @cmd_invites.command(name="remove", description="Remove an invite")
     @describe(invite="The invite to remove")
-    @autocomplete(invite=invite_key_autocomplete)
+    @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_remove(self, interaction: Interaction, invite: str):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].remove_invite(interaction, invite)
@@ -116,7 +176,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     # @@ invites details
     @cmd_invites.command(name="details", description="Show the details of an invite")
     @describe(invite="The invite to show details about")
-    @autocomplete(invite=invite_key_autocomplete)
+    @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_details(self, interaction: Interaction, invite: str):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].show_invite_details(interaction, invite)
@@ -129,7 +189,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     # @@ invites here set
     @cmd_invites_here.command(name="set", description="Set the invite for this guild")
     @describe(invite="The invite to set as the invite for this guild")
-    @autocomplete(invite=invite_key_autocomplete)
+    @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_here_set(self, interaction: Interaction, invite: str):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].set_guild_invite(interaction, invite)
