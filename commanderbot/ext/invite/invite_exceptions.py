@@ -22,6 +22,14 @@ class GuildInviteNotSet(InviteException):
         super().__init__(f"😬 An invite for this guild has not been set")
 
 
+class QueryReturnedNoResults(InviteException):
+    def __init__(self, query: str):
+        self.query: str = query
+        super().__init__(
+            f"😔 Could not find any invites or tags matching `{self.query}`"
+        )
+
+
 class InvalidInviteLink(InviteException):
     def __init__(self, invite: str):
         self.invite: str = invite

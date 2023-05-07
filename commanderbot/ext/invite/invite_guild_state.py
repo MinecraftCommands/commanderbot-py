@@ -6,6 +6,7 @@ from discord.interactions import Interaction
 from discord.ui import TextInput
 from discord.utils import format_dt
 
+from commanderbot.ext.invite.invite_exceptions import QueryReturnedNoResults
 from commanderbot.ext.invite.invite_store import InviteEntry, InviteStore
 from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.cogs.views import CogStateModal
@@ -33,10 +34,65 @@ class InviteGuildState(CogGuildState):
     def tags_to_str(self, tags: Iterable[str], *, delim: str = ",") -> str:
         return f"{delim} ".join(tags)
 
-    def format_invite(self, entry: InviteEntry) -> str:
+    def _format_tags(self, tags: Iterable[str], *, delim: str = ",") -> str:
+        return f"{delim} ".join((f"`{tag}`" for tag in tags))
+
+    def _format_invite(self, entry: InviteEntry) -> str:
+        if entry.description:
+            return f"`{entry.key}` - {entry.description}"
+        return f"`{entry.key}`"
+
+    def _format_invite_line(self, entry: InviteEntry) -> str:
         if entry.description:
             return f"{entry.link} - {entry.description}"
         return entry.link
+
+    async def get_invite(self, interaction: Interaction, query: str):
+        if entries := await async_expand(self.store.query_invites(self.guild, query)):
+            lines: list[str] = []
+            for entry in entries:
+                await self.store.increment_invite_hits(entry)
+                lines.append(self._format_invite_line(entry))
+            await interaction.response.send_message("\n".join(lines))
+        else:
+            raise QueryReturnedNoResults(query)
+
+    async def list_invites(self, interaction: Interaction):
+        # Get all invite entries and tags
+        all_descriptive_entries: list[InviteEntry] = []
+        all_entries: list[InviteEntry] = []
+        async for entry in self.store.get_invites(self.guild, sort=True):
+            if entry.description:
+                all_descriptive_entries.append(entry)
+            else:
+                all_entries.append(entry)
+
+        all_tags = await async_expand(self.store.get_tags(self.guild, sort=True))
+
+        # Format lines for embed description
+        lines: list[str] = [
+            "📩 **Invites**",
+            *(f"• {self._format_invite(e)}" for e in all_descriptive_entries),
+            "",
+            ", ".join((self._format_invite(e) for e in all_entries)),
+            "",
+            "📦 **Tags**",
+            self._format_tags(all_tags),
+        ]
+
+        # Create invite list embed
+        embed = Embed(
+            title="Available Invites and Tags",
+            description="\n".join(lines),
+            color=0x00ACED,
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    async def get_guild_invite(self, interaction: Interaction):
+        entry: InviteEntry = await self.store.require_guild_invite(self.guild)
+        await self.store.increment_invite_hits(entry)
+        await interaction.response.send_message(self._format_invite_line(entry))
 
     async def add_invite(self, interaction: Interaction):
         await interaction.response.send_modal(AddInviteModal(interaction, self))
@@ -76,13 +132,12 @@ class InviteGuildState(CogGuildState):
         entry: InviteEntry = await self.store.require_invite(self.guild, invite)
 
         # Format the tags so each tag is in an inline code block
-        tag_gen = (f"`{tag}`" for tag in entry.tags)
-        formatted_tags: str = self.tags_to_str(tag_gen) if entry.tags else "**None!**"
+        formatted_tags: str = self._format_tags(entry.sorted_tags) or "**None!**"
 
         # Create invite details embed
         embed = Embed(
             title="Invite Details",
-            description=f"**Preview**\n> {self.format_invite(entry)}",
+            description=f"**Preview**\n> {self._format_invite_line(entry)}",
             color=0x00ACED,
         )
         embed.add_field(name="Key", value=f"`{entry.key}`", inline=False)
@@ -141,6 +196,7 @@ class AddInviteModal(CogStateModal[InviteGuildState, InviteStore]):
             label="Description",
             style=TextStyle.short,
             placeholder="A short description about this invite.",
+            max_length=64,
             required=False,
         )
 
@@ -176,7 +232,7 @@ class ModifyInviteModal(CogStateModal[InviteGuildState, InviteStore]):
             label="Tags",
             style=TextStyle.short,
             placeholder="A comma separated list of tags. Ex: foo, bar, baz",
-            default=self.state.tags_to_str(entry.tags),
+            default=self.state.tags_to_str(entry.sorted_tags),
             required=False,
         )
         self.link_field = TextInput(
@@ -191,6 +247,7 @@ class ModifyInviteModal(CogStateModal[InviteGuildState, InviteStore]):
             style=TextStyle.short,
             placeholder="A short description about this invite.",
             default=entry.description,
+            max_length=64,
             required=False,
         )
 
