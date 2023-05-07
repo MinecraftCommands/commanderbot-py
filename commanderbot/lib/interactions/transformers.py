@@ -96,8 +96,8 @@ class ColorTransformer(Transformer):
         self, interaction: Interaction, value: str
     ) -> List[Choice[str]]:
         colors: list[Choice] = []
-        for (i, (name, color)) in enumerate(Color.presets(color_filter=value).items()):
-            if i == MAX_AUTOCOMPLETE_CHOICES:
+        for name, color in Color.presets(color_filter=value).items():
+            if len(colors) == MAX_AUTOCOMPLETE_CHOICES:
                 break
             colors.append(Choice(name=name, value=color.to_hex()))
 
