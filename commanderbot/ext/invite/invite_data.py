@@ -286,7 +286,7 @@ class InviteData(JsonSerializable, FromDataMixin):
             yield entry
 
     def _all_invites_matching(
-        self, guild: Guild, invite_filter: Optional[str] = None
+        self, guild: Guild, invite_filter: Optional[str]
     ) -> Iterable[InviteEntry]:
         for entry in self.guilds[guild.id].invite_entries.values():
             if invite_filter and invite_filter not in entry.key:
@@ -294,7 +294,7 @@ class InviteData(JsonSerializable, FromDataMixin):
             yield entry
 
     def _all_tags_matching(
-        self, guild: Guild, tag_filter: Optional[str] = None
+        self, guild: Guild, tag_filter: Optional[str]
     ) -> Iterable[str]:
         for tag in self.guilds[guild.id].invite_entries_by_tag.keys():
             if tag_filter and tag_filter not in tag:
@@ -303,26 +303,33 @@ class InviteData(JsonSerializable, FromDataMixin):
 
     # @implements InviteStore
     async def get_invites(
-        self, guild: Guild, *, invite_filter: Optional[str] = None
+        self, guild: Guild, *, invite_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[InviteEntry]:
-        for entry in self._all_invites_matching(guild, invite_filter):
+        entries = self._all_invites_matching(guild, invite_filter)
+        for entry in sorted(entries, key=lambda entry: entry.key) if sort else entries:
             yield entry
 
     # @implements InviteStore
     async def get_tags(
-        self, guild: Guild, *, tag_filter: Optional[str] = None
+        self, guild: Guild, *, tag_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[str]:
-        for tag in self._all_tags_matching(guild, tag_filter):
+        tags = self._all_tags_matching(guild, tag_filter)
+        for tag in sorted(tags) if sort else tags:
             yield tag
 
     # @implements InviteStore
     async def get_invites_and_tags(
-        self, guild: Guild, *, item_filter: Optional[str] = None
+        self, guild: Guild, *, item_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[Union[InviteEntry, str]]:
-        for item in chain(
+        items = chain(
             self._all_invites_matching(guild, item_filter),
             self._all_tags_matching(guild, item_filter),
-        ):
+        )
+
+        def item_cmp(item: Union[InviteEntry, str]) -> str:
+            return item if isinstance(item, str) else item.key
+
+        for item in sorted(items, key=item_cmp) if sort else items:
             yield item
 
     # @implements InviteStore

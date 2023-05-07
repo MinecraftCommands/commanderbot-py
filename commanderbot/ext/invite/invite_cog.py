@@ -68,9 +68,10 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         # Get all invites filtered by `value`
         assert isinstance(interaction.guild, Guild)
         invites: list[InviteEntry] = await async_expand(
-            self.store.get_invites(interaction.guild, invite_filter=value.lower())
+            self.store.get_invites(
+                interaction.guild, invite_filter=value.lower(), sort=True
+            )
         )
-        invites.sort(key=lambda entry: entry.key)
 
         # Create a list of autocomplete choices and return them
         choices: list[Choice] = []
@@ -80,7 +81,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
                 break
 
             # Add invite choices
-            choices.append(Choice(name=f"🔑 {entry.key}", value=entry.key))
+            choices.append(Choice(name=f"📩 {entry.key}", value=entry.key))
 
         return choices
 
@@ -95,10 +96,9 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         assert isinstance(interaction.guild, Guild)
         items: list[Union[InviteEntry, str]] = await async_expand(
             self.store.get_invites_and_tags(
-                interaction.guild, item_filter=value.lower()
+                interaction.guild, item_filter=value.lower(), sort=True
             )
         )
-        items.sort(key=lambda item: item if isinstance(item, str) else item.key)
 
         # Create a list of autocomplete choices and return them
         choices: list[Choice] = []
@@ -108,11 +108,10 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
                 break
 
             # Add invite and tag choices
-            match item:
-                case str():
-                    choices.append(Choice(name=f"🏷️ {item}", value=item))
-                case _:
-                    choices.append(Choice(name=f"🔑 {item.key}", value=item.key))
+            if isinstance(item, str):
+                choices.append(Choice(name=f"📦 {item}", value=item))
+            else:
+                choices.append(Choice(name=f"📩 {item.key}", value=item.key))
 
         return choices
 

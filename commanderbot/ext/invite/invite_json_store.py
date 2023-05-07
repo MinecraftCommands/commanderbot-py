@@ -79,26 +79,30 @@ class InviteJsonStore(CogStore):
 
     # @implements InviteStore
     async def get_invites(
-        self, guild: Guild, *, invite_filter: Optional[str] = None
+        self, guild: Guild, *, invite_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[InviteEntry]:
         cache = await self.db.get_cache()
-        async for entry in cache.get_invites(guild, invite_filter=invite_filter):
+        async for entry in cache.get_invites(
+            guild, invite_filter=invite_filter, sort=sort
+        ):
             yield entry
 
     # @implements InviteStore
     async def get_tags(
-        self, guild: Guild, *, tag_filter: Optional[str] = None
+        self, guild: Guild, *, tag_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[str]:
         cache = await self.db.get_cache()
-        async for tag in cache.get_tags(guild, tag_filter=tag_filter):
+        async for tag in cache.get_tags(guild, tag_filter=tag_filter, sort=sort):
             yield tag
 
     # @implements InviteStore
     async def get_invites_and_tags(
-        self, guild: Guild, *, item_filter: Optional[str] = None
+        self, guild: Guild, *, item_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[Union[InviteEntry, str]]:
         cache = await self.db.get_cache()
-        async for item in cache.get_invites_and_tags(guild, item_filter=item_filter):
+        async for item in cache.get_invites_and_tags(
+            guild, item_filter=item_filter, sort=sort
+        ):
             yield item
 
     # @implements InviteStore

@@ -64,17 +64,17 @@ class InviteStore(Protocol):
         ...
 
     def get_invites(
-        self, guild: Guild, *, invite_filter: Optional[str] = None
+        self, guild: Guild, *, invite_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[InviteEntry]:
         ...
 
     def get_tags(
-        self, guild: Guild, *, tag_filter: Optional[str] = None
+        self, guild: Guild, *, tag_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[str]:
         ...
 
     def get_invites_and_tags(
-        self, guild: Guild, *, item_filter: Optional[str] = None
+        self, guild: Guild, *, item_filter: Optional[str] = None, sort: bool = False
     ) -> AsyncIterable[Union[InviteEntry, str]]:
         ...
 
