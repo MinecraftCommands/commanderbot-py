@@ -262,7 +262,7 @@ class HelpForumGuildState(CogGuildState):
                 try:
                     await self.store.deregister_forum_channel(self.guild, forum)
                     await interaction.followup.send(
-                        content=f"Deregistered <#{forum_data.channel_id}> as a help forum"
+                        content=f"Deregistered <#{forum_data.channel_id}> from being a help forum"
                     )
                 except Exception as ex:
                     await interaction.delete_original_response()
@@ -270,7 +270,7 @@ class HelpForumGuildState(CogGuildState):
             case ConfirmationResult.NO:
                 # If the answer was no, send a response
                 await interaction.followup.send(
-                    f"Did not deregister <#{forum_data.channel_id}> as a help forum"
+                    f"Did not deregister <#{forum_data.channel_id}> from being a help forum"
                 )
 
     async def details(self, interaction: Interaction, forum: ForumChannel):
