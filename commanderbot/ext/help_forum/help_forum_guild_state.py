@@ -256,20 +256,22 @@ class HelpForumGuildState(CogGuildState):
             timeout=10,
         )
 
-        # Return early if the user pressed `no`
-        if result != ConfirmationResult.YES:
-            await interaction.delete_original_response()
-            return
-
-        # Attempt to deregister the forum channel
-        try:
-            await self.store.deregister_forum_channel(self.guild, forum)
-            await interaction.followup.send(
-                content=f"Deregistered <#{forum_data.channel_id}> as a help forum"
-            )
-        except Exception as ex:
-            await interaction.delete_original_response()
-            raise ex
+        match result:
+            case ConfirmationResult.YES:
+                # If the answer was yes, attempt to deregister the forum channel and send a response
+                try:
+                    await self.store.deregister_forum_channel(self.guild, forum)
+                    await interaction.followup.send(
+                        content=f"Deregistered <#{forum_data.channel_id}> as a help forum"
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ex
+            case ConfirmationResult.NO:
+                # If the answer was no, send a response
+                await interaction.followup.send(
+                    f"Did not deregister <#{forum_data.channel_id}> as a help forum"
+                )
 
     async def details(self, interaction: Interaction, forum: ForumChannel):
         # Get data from the help forum if it was registered

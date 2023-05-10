@@ -114,18 +114,20 @@ class InviteGuildState(CogGuildState):
             timeout=10.0,
         )
 
-        # Return early if the user pressed `no`
-        if result != ConfirmationResult.YES:
-            await interaction.delete_original_response()
-            return
-
-        # Attempt to remove the invite
-        try:
-            await self.store.remove_invite(self.guild, entry.key)
-            await interaction.followup.send(content=f"Removed invite: `{entry.key}`")
-        except Exception as ex:
-            await interaction.delete_original_response()
-            raise ex
+        match result:
+            case ConfirmationResult.YES:
+                # If the answer was yes, attempt to remove the invite and send a response
+                try:
+                    await self.store.remove_invite(self.guild, entry.key)
+                    await interaction.followup.send(
+                        content=f"Removed invite: `{entry.key}`"
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ex
+            case ConfirmationResult.NO:
+                # If the answer was no, send a response
+                await interaction.followup.send(f"Did not remove invite: `{entry.key}`")
 
     async def show_invite_details(self, interaction: Interaction, invite: str):
         # Try to get the invite
