@@ -172,7 +172,7 @@ class AddInviteModal(CogStateModal[InviteGuildState, InviteStore]):
         super().__init__(
             interaction,
             state,
-            title="Add a new Invite",
+            title="Add a New Invite",
             custom_id="commanderbot_ext:invite.add",
         )
 
@@ -195,7 +195,7 @@ class AddInviteModal(CogStateModal[InviteGuildState, InviteStore]):
             required=True,
         )
         self.description_field = TextInput(
-            label="Description",
+            label="Description (64 characters max)",
             style=TextStyle.short,
             placeholder="A short description about this invite.",
             max_length=64,
@@ -226,7 +226,7 @@ class ModifyInviteModal(CogStateModal[InviteGuildState, InviteStore]):
         super().__init__(
             interaction,
             state,
-            title=f"Modifying invite: {entry.key}",
+            title=f"Modifying Invite: {entry.key}",
             custom_id="commanderbot_ext:invite.modify",
         )
 
@@ -245,7 +245,7 @@ class ModifyInviteModal(CogStateModal[InviteGuildState, InviteStore]):
             required=True,
         )
         self.description_field = TextInput(
-            label="Description",
+            label="Description (64 characters max)",
             style=TextStyle.short,
             placeholder="A short description about this invite.",
             default=entry.description,
