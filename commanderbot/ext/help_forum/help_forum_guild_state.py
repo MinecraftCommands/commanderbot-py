@@ -267,7 +267,7 @@ class HelpForumGuildState(CogGuildState):
                 except Exception as ex:
                     await interaction.delete_original_response()
                     raise ex
-            case ConfirmationResult.NO:
+            case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(
                     f"Did not deregister <#{forum_data.channel_id}> from being a help forum"

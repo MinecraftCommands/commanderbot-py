@@ -125,7 +125,7 @@ class InviteGuildState(CogGuildState):
                 except Exception as ex:
                     await interaction.delete_original_response()
                     raise ex
-            case ConfirmationResult.NO:
+            case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(f"Did not remove invite: `{entry.key}`")
 
