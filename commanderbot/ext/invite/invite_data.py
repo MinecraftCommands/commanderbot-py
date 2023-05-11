@@ -99,9 +99,9 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
     def to_json(self) -> Any:
         # Omit empty entries
         return dict_without_falsies(
-            invite_entries={
-                key: entry.to_json() for key, entry in self.invite_entries.items()
-            },
+            invite_entries=dict_without_falsies(
+                {key: entry.to_json() for key, entry in self.invite_entries.items()},
+            ),
             guild_key=self.guild_key,
         )
 

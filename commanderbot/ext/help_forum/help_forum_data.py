@@ -93,10 +93,12 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
     def to_json(self) -> Any:
         # Omit empty help forums
         return dict_without_falsies(
-            help_forums={
-                str(channel_id): forum_data.to_json()
-                for channel_id, forum_data in self.help_forums.items()
-            }
+            help_forums=dict_without_falsies(
+                {
+                    str(channel_id): forum_data.to_json()
+                    for channel_id, forum_data in self.help_forums.items()
+                }
+            )
         )
 
     def _is_forum_registered(self, forum: ForumChannel):
