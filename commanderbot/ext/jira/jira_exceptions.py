@@ -11,28 +11,34 @@ class JiraTransformerException(ResponsiveException, AppCommandError):
     pass
 
 
-class IssueNotFound(JiraException):
+class InvalidURL(JiraException):
     def __init__(self, issue_id: str):
-        self.issue_id = issue_id
-        super().__init__(f"😬 `{self.issue_id}` does not exist or it may be private")
-
-
-class IssueHasNoFields(JiraException):
-    def __init__(self, issue_id: str):
-        self.issue_id = issue_id
-        super().__init__(f"😬 `{self.issue_id}` does not have any fields")
+        self.issue_id: str = issue_id
+        super().__init__(f"😵 Unable to request `{self.issue_id}` from an invalid URL")
 
 
 class ConnectionError(JiraException):
     def __init__(self, url: str):
-        self.url = url
+        self.url: str = url
         super().__init__(f"😵 Could not connect to `{self.url}`")
+
+
+class IssueNotFound(JiraException):
+    def __init__(self, issue_id: str):
+        self.issue_id: str = issue_id
+        super().__init__(f"😬 `{self.issue_id}` does not exist or it may be private")
 
 
 class RequestError(JiraException):
     def __init__(self, issue_id: str):
-        self.issue_id = issue_id
-        super().__init__(f"😵 There was an error while requesting `{self.issue_id}`")
+        self.issue_id: str = issue_id
+        super().__init__(f"😵 An error occured while requesting `{self.issue_id}`")
+
+
+class IssueHasNoFields(JiraException):
+    def __init__(self, issue_id: str):
+        self.issue_id: str = issue_id
+        super().__init__(f"😬 `{self.issue_id}` does not have any fields")
 
 
 class InvalidIssueFormat(JiraTransformerException):
