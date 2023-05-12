@@ -84,6 +84,4 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
         jira_link_button.add_item(ui.Button(label="View on Jira", url=issue.url))
 
         # Send the followup message with the issue embed and link button
-        await interaction.followup.send(
-            embed=issue_embed, view=jira_link_button
-        )
+        await interaction.followup.send(embed=issue_embed, view=jira_link_button)

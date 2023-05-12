@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from discord.utils import format_dt
+
 
 class StatusColor(Enum):
     UNKNOWN = 0x00ACED
@@ -53,8 +55,8 @@ class JiraIssue:
         return {
             "Reported by": self.reporter,
             "Assigned to": self.assignee,
-            "Created": f"<t:{int(self.created.timestamp())}:R>",
-            "Updated": f"<t:{int(self.updated.timestamp())}:R>",
+            "Created": format_dt(self.created, "R"),
+            "Updated": format_dt(self.updated, "R"),
             "Since version": self.since_version,
             "Fix version": self.fix_version,
             "Status": self.status,

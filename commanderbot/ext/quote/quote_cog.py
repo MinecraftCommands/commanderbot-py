@@ -4,6 +4,7 @@ from itertools import chain
 from discord import Embed, Interaction, Member, Message
 from discord.app_commands import Transform, command, describe, guild_only
 from discord.ext.commands import Bot, Cog
+from discord.utils import format_dt
 
 from commanderbot.ext.quote.quote_exceptions import (
     ChannelNotMessageable,
@@ -55,11 +56,13 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
             raise MissingQuotePermissions
 
         # Build the message content containing the quote metadata.
-        quote_ts: str = f"<t:{int(message.created_at.timestamp())}:R>"
+        quote_ts: str = format_dt(message.created_at, "R")
         if message.edited_at:
-            quote_ts += f" (edited <t:{int(message.edited_at.timestamp())}:R>)"
+            quote_ts += f" (edited {format_dt(message.edited_at, 'R')})"
 
-        content: str = f"{phrasing} {message.author.mention} from {quote_ts} → {message.jump_url}"
+        content: str = (
+            f"{phrasing} {message.author.mention} from {quote_ts} → {message.jump_url}"
+        )
 
         # Send the quote response. The embed will be omitted if there's no message content
         # or the message content is just a media link that creates a single embed.
