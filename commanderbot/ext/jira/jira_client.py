@@ -6,6 +6,7 @@ import aiohttp
 
 from commanderbot.ext.jira.jira_exceptions import (
     ConnectionError,
+    InvalidURL,
     IssueHasNoFields,
     IssueNotFound,
     RequestError,
@@ -20,8 +21,8 @@ class JiraQuery:
 
 
 class JiraClient:
-    def __init__(self, url: str):
-        self.url = url
+    def __init__(self, url: Optional[str]):
+        self.url: Optional[str] = url
 
     async def _request_issue_data(self, base_url: str, issue_id: str) -> dict:
         try:
@@ -30,18 +31,21 @@ class JiraClient:
                 async with session.get(issue_url, raise_for_status=True) as response:
                     return await response.json()
 
-        except aiohttp.ClientResponseError:
-            raise IssueNotFound(issue_id)
+        except aiohttp.InvalidURL:
+            raise InvalidURL(issue_id)
 
         except aiohttp.ClientConnectorError:
             raise ConnectionError(base_url)
+
+        except aiohttp.ClientResponseError:
+            raise IssueNotFound(issue_id)
 
         except aiohttp.ClientError:
             raise RequestError(issue_id)
 
     async def get_issue(self, query: JiraQuery) -> JiraIssue:
         # Request issue data and get its fields
-        base_url: str = query.base_url or self.url
+        base_url: str = query.base_url or self.url or ""
         issue_id: str = query.issue_id
 
         data: dict = await self._request_issue_data(base_url, issue_id)

@@ -1,5 +1,6 @@
 import re
 from logging import Logger, getLogger
+from typing import Optional
 
 from discord import Embed, Interaction, ui
 from discord.app_commands import Transform, Transformer, command, describe
@@ -37,13 +38,15 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
         self.log: Logger = getLogger(self.qualified_name)
 
         # Get the URL from the config
-        url = options.get("url", "")
+        url: Optional[str] = options.get("url")
         if not url:
-            # Log an error if the URL doesn't exist
-            self.log.error("No Jira URL was given in the bot config")
+            self.log.warn(
+                "No Jira URL was given in the bot config. "
+                "You can still request Jira issues, but you'll need to use the full URL."
+            )
 
         # Create the Jira client
-        self.jira_client: JiraClient = JiraClient(url)
+        self.jira_client = JiraClient(url)
 
     @command(name="jira", description="Query a Jira issue")
     @describe(query="The issue ID or URL to query")
