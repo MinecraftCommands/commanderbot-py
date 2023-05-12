@@ -37,7 +37,7 @@ class CommandCache:
                 if cmd.id == int(command):
                     return cmd
 
-    def update(self, commands: list[AppCommand], *, override: bool = True):
+    def update(self, commands: list[AppCommand], *, override: bool = False):
         """
         Updates the cache using the commands passed to `commands`.
         Also has an option to override the cache if necessary.
