@@ -3,6 +3,8 @@ from typing import AsyncIterable, Optional, Protocol, Union
 
 from discord import Guild
 
+from commanderbot.lib import UserID
+
 
 class InviteEntry(Protocol):
     key: str
@@ -10,15 +12,17 @@ class InviteEntry(Protocol):
     link: str
     description: Optional[str]
     hits: int
+    added_by_id: UserID
+    modified_by_id: UserID
     added_on: datetime
     modified_on: datetime
 
     def modify(
         self,
-        *,
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ):
         ...
 
@@ -41,6 +45,7 @@ class InviteStore(Protocol):
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntry:
         ...
 
@@ -51,6 +56,7 @@ class InviteStore(Protocol):
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntry:
         ...
 

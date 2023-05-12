@@ -145,8 +145,14 @@ class InviteGuildState(CogGuildState):
         embed.add_field(name="Key", value=f"`{entry.key}`", inline=False)
         embed.add_field(name="Tags", value=formatted_tags, inline=False)
         embed.add_field(name="Hits", value=f"`{entry.hits}`")
-        embed.add_field(name="Added", value=format_dt(entry.added_on, "R"))
-        embed.add_field(name="Modified", value=format_dt(entry.modified_on, "R"))
+        embed.add_field(
+            name="Added By",
+            value=f"<@{entry.added_by_id}> ({format_dt(entry.added_on, 'R')})",
+        )
+        embed.add_field(
+            name="Modified By",
+            value=f"<@{entry.modified_by_id}> ({format_dt(entry.modified_on, 'R')})",
+        )
 
         await interaction.response.send_message(embed=embed)
 
@@ -214,6 +220,7 @@ class AddInviteModal(CogStateModal[InviteGuildState, InviteStore]):
             tags=self.state.tags_from_str(self.tags_field.value),
             link=self.link_field.value.strip(),
             description=self.description_field.value.strip() or None,
+            user_id=interaction.user.id,
         )
         await interaction.response.send_message(f"Added invite: `{entry.key}`")
 
@@ -264,5 +271,6 @@ class ModifyInviteModal(CogStateModal[InviteGuildState, InviteStore]):
             tags=self.state.tags_from_str(self.tags_field.value),
             link=self.link_field.value.strip(),
             description=self.description_field.value.strip() or None,
+            user_id=interaction.user.id,
         )
         await interaction.response.send_message(f"Modified invite: `{entry.key}`")

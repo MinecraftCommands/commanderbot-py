@@ -5,6 +5,7 @@ from discord import Guild
 
 from commanderbot.ext.invite.invite_data import InviteData
 from commanderbot.ext.invite.invite_store import InviteEntry
+from commanderbot.lib import UserID
 from commanderbot.lib.cogs import CogStore
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
@@ -36,9 +37,10 @@ class InviteJsonStore(CogStore):
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntry:
         cache = await self.db.get_cache()
-        entry = await cache.add_invite(guild, key, tags, link, description)
+        entry = await cache.add_invite(guild, key, tags, link, description, user_id)
         await self.db.dirty()
         return entry
 
@@ -50,9 +52,10 @@ class InviteJsonStore(CogStore):
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntry:
         cache = await self.db.get_cache()
-        entry = await cache.modify_invite(guild, key, tags, link, description)
+        entry = await cache.modify_invite(guild, key, tags, link, description, user_id)
         await self.db.dirty()
         return entry
 

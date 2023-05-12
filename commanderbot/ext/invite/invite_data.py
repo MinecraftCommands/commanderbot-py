@@ -13,7 +13,7 @@ from commanderbot.ext.invite.invite_exceptions import (
     InviteDoesNotExist,
 )
 from commanderbot.ext.invite.invite_store import InviteEntry
-from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable
+from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
 from commanderbot.lib.utils.utils import dict_without_falsies, is_invite_link
 
 ST = TypeVar("ST")
@@ -26,6 +26,8 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
     link: str
     description: Optional[str]
     hits: int
+    added_by_id: UserID
+    modified_by_id: UserID
     added_on: datetime
     modified_on: datetime
 
@@ -39,6 +41,8 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
                 link=data["link"],
                 description=data["description"],
                 hits=data["hits"],
+                added_by_id=data["added_by_id"],
+                modified_by_id=data["modified_by_id"],
                 added_on=datetime.fromisoformat(data["added_on"]),
                 modified_on=datetime.fromisoformat(data["modified_on"]),
             )
@@ -51,6 +55,8 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
             "link": self.link,
             "description": self.description,
             "hits": self.hits,
+            "added_by_id": self.added_by_id,
+            "modified_by_id": self.modified_by_id,
             "added_on": self.added_on.isoformat(),
             "modified_on": self.modified_on.isoformat(),
         }
@@ -58,14 +64,15 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
     # @implements InviteEntry
     def modify(
         self,
-        *,
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ):
         self.tags = set(tags)
         self.link = link
         self.description = description
+        self.modified_by_id = user_id
         self.modified_on = datetime.now()
 
     # @implements InviteEntry
@@ -134,7 +141,12 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
         raise GuildInviteNotSet
 
     def add_invite(
-        self, key: str, tags: list[str], link: str, description: Optional[str]
+        self,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntryData:
         # Check if the invite key already exists
         if not self._is_invite_key_available(key):
@@ -146,7 +158,15 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
 
         # Create and add a new invite entry
         entry = InviteEntryData(
-            key, set(tags), link, description, 0, datetime.now(), datetime.now()
+            key,
+            set(tags),
+            link,
+            description,
+            0,
+            user_id,
+            user_id,
+            datetime.now(),
+            datetime.now(),
         )
         self.invite_entries[key] = entry
         self._rebuild_tag_mappings()
@@ -155,7 +175,12 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
         return entry
 
     def modify_invite(
-        self, key: str, tags: list[str], link: str, description: Optional[str]
+        self,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntryData:
         # The invite must exist
         entry = self.require_invite(key)
@@ -165,7 +190,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
             raise InvalidInviteLink(link)
 
         # Modify the invite entry
-        entry.modify(tags=tags, link=link, description=description)
+        entry.modify(tags, link, description, user_id)
         self._rebuild_tag_mappings()
         return entry
 
@@ -256,8 +281,9 @@ class InviteData(JsonSerializable, FromDataMixin):
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntry:
-        return self.guilds[guild.id].add_invite(key, tags, link, description)
+        return self.guilds[guild.id].add_invite(key, tags, link, description, user_id)
 
     # @implements InviteStore
     async def modify_invite(
@@ -267,8 +293,11 @@ class InviteData(JsonSerializable, FromDataMixin):
         tags: list[str],
         link: str,
         description: Optional[str],
+        user_id: UserID,
     ) -> InviteEntry:
-        return self.guilds[guild.id].modify_invite(key, tags, link, description)
+        return self.guilds[guild.id].modify_invite(
+            key, tags, link, description, user_id
+        )
 
     # @implements InviteStore
     async def increment_invite_hits(self, entry: InviteEntry):
