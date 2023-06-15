@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `status`: Ported to slash commands
 - `ping`: Ported to slash commands
 - `manifest`: Ported to slash commands
+- `invite`: Ported to slash commands
 - `stacktracer`:
   - Ported to slash commands
   - Errors now use an embed
