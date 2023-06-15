@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Ported to slash commands
   - Errors now use an embed
 - `automod`: Errors now use an embed
+- `mccq`: Changed syntax highlighting to `hs`
 
 ## [0.19.0] - 2022-08-27
 
