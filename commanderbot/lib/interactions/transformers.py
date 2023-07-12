@@ -1,4 +1,3 @@
-import re
 from typing import List
 
 from discord import Interaction, Message
