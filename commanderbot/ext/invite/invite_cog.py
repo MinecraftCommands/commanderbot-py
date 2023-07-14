@@ -167,7 +167,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         await self.state[interaction.guild].remove_invite(interaction, invite)
 
     # @@ invites details
-    @cmd_invites.command(name="details", description="Show the details of an invite")
+    @cmd_invites.command(name="details", description="Show the details about an invite")
     @describe(invite="The invite to show details about")
     @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_details(self, interaction: Interaction, invite: str):

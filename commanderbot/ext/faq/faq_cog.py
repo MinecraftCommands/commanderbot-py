@@ -180,7 +180,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         await self.state[interaction.guild].remove_faq(interaction, faq)
 
     # @@ faqs details
-    @cmd_faqs.command(name="details", description="Show the details of a FAQ")
+    @cmd_faqs.command(name="details", description="Show the details about a FAQ")
     @describe(faq="The FAQ to show details about")
     @autocomplete(faq=faq_autocomplete)
     async def cmd_faqs_details(self, interaction: Interaction, faq: str):
