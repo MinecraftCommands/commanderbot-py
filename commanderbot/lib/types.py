@@ -55,10 +55,25 @@ MemberOrUser: TypeAlias = Union[Member, User]
 PartialMessageableChannel: TypeAlias = Union[
     TextChannel, VoiceChannel, StageChannel, Thread, DMChannel, PartialMessageable
 ]
+"""
+Channel types that can be partial messageable.
+
+A redefinition of the type alias found in `discord.abc`.
+"""
+
 MessageableChannel: TypeAlias = Union[PartialMessageableChannel, GroupChannel]
+"""
+Channel types that messages can be sent in.
+
+A redefinition of the type alias found in `discord.abc`.
+"""
+
 UnmentionableMessageableChannel: TypeAlias = Union[
     DMChannel, GroupChannel, PartialMessageable
 ]
+"""
+Channel types that messages can be sent in, but have no way to be mentioned.
+"""
 
 
 class TextMessage(Message):
