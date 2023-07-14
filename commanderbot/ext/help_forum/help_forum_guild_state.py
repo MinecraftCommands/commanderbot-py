@@ -117,7 +117,7 @@ class HelpForumGuildState(CogGuildState):
 
     async def _setup_thread(self, thread: Thread, forum_data: HelpForum):
         # Delay setup so the thread is hopefully created on Discord's end
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.0)
 
         # Get `/resolve` command mention if it exists
         resolve_cmd: str = "`/resolve`"
