@@ -1,3 +1,4 @@
+from itertools import islice
 from typing import List
 
 from discord import Interaction, Message
@@ -95,9 +96,9 @@ class ColorTransformer(Transformer):
         self, interaction: Interaction, value: str
     ) -> List[Choice[str]]:
         colors: list[Choice] = []
-        for name, color in Color.presets(color_filter=value).items():
-            if len(colors) == MAX_AUTOCOMPLETE_CHOICES:
-                break
+        for name, color in islice(
+            Color.presets(color_filter=value).items(), MAX_AUTOCOMPLETE_CHOICES
+        ):
             colors.append(Choice(name=name, value=color.to_hex()))
 
         return colors
