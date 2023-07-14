@@ -44,5 +44,5 @@ class IssueHasNoFields(JiraException):
 class InvalidIssueFormat(JiraTransformerException):
     def __init__(self):
         super().__init__(
-            "😬 Jira issues must use the `<project>-<id>` format or be a URL"
+            "😬 Jira issues must use the `<project>-<id>` format or be a valid Jira URL"
         )
