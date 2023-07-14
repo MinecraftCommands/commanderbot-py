@@ -17,6 +17,10 @@ class InviteEntry(Protocol):
     added_on: datetime
     modified_on: datetime
 
+    @property
+    def sorted_tags(self) -> list[str]:
+        ...
+
     def modify(
         self,
         tags: list[str],
@@ -24,10 +28,6 @@ class InviteEntry(Protocol):
         description: Optional[str],
         user_id: UserID,
     ):
-        ...
-
-    @property
-    def sorted_tags(self) -> list[str]:
         ...
 
 
@@ -70,17 +70,32 @@ class InviteStore(Protocol):
         ...
 
     def get_invites(
-        self, guild: Guild, *, invite_filter: Optional[str] = None, sort: bool = False
+        self,
+        guild: Guild,
+        *,
+        invite_filter: Optional[str] = None,
+        sort: bool = False,
+        cap: Optional[int] = None
     ) -> AsyncIterable[InviteEntry]:
         ...
 
     def get_tags(
-        self, guild: Guild, *, tag_filter: Optional[str] = None, sort: bool = False
+        self,
+        guild: Guild,
+        *,
+        tag_filter: Optional[str] = None,
+        sort: bool = False,
+        cap: Optional[int] = None
     ) -> AsyncIterable[str]:
         ...
 
     def get_invites_and_tags(
-        self, guild: Guild, *, item_filter: Optional[str] = None, sort: bool = False
+        self,
+        guild: Guild,
+        *,
+        item_filter: Optional[str] = None,
+        sort: bool = False,
+        cap: Optional[int] = None
     ) -> AsyncIterable[Union[InviteEntry, str]]:
         ...
 

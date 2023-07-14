@@ -69,20 +69,17 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         assert isinstance(interaction.guild, Guild)
         invites: list[InviteEntry] = await async_expand(
             self.store.get_invites(
-                interaction.guild, invite_filter=value.lower(), sort=True
+                interaction.guild,
+                invite_filter=value,
+                sort=True,
+                cap=MAX_AUTOCOMPLETE_CHOICES,
             )
         )
 
         # Create a list of autocomplete choices and return them
         choices: list[Choice] = []
         for entry in invites:
-            # Exit early if we've added the max amount of choices
-            if len(choices) == MAX_AUTOCOMPLETE_CHOICES:
-                break
-
-            # Add invite choices
             choices.append(Choice(name=f"📩 {entry.key}", value=entry.key))
-
         return choices
 
     async def invite_and_tag_autocomplete(
@@ -96,23 +93,20 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         assert isinstance(interaction.guild, Guild)
         items: list[Union[InviteEntry, str]] = await async_expand(
             self.store.get_invites_and_tags(
-                interaction.guild, item_filter=value.lower(), sort=True
+                interaction.guild,
+                item_filter=value,
+                sort=True,
+                cap=MAX_AUTOCOMPLETE_CHOICES,
             )
         )
 
         # Create a list of autocomplete choices and return them
         choices: list[Choice] = []
         for item in items:
-            # Exit early if we've added the max amount of choices
-            if len(choices) == MAX_AUTOCOMPLETE_CHOICES:
-                break
-
-            # Add invite and tag choices
             if isinstance(item, str):
                 choices.append(Choice(name=f"📦 {item}", value=item))
             else:
                 choices.append(Choice(name=f"📩 {item.key}", value=item.key))
-
         return choices
 
     # @@ COMMANDS
@@ -130,7 +124,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         await self.state[interaction.guild].get_invite(interaction, invite_or_tag)
 
     # @@ invite list
-    @cmd_invite.command(name="list", description="List all invites and tags")
+    @cmd_invite.command(name="list", description="List available invites")
     async def cmd_invite_list(self, interaction: Interaction):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].list_invites(interaction)
@@ -181,6 +175,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         await self.state[interaction.guild].show_invite_details(interaction, invite)
 
     # @@ invites here
+
     cmd_invites_here = Group(
         name="here", description="Manage guild invite", parent=cmd_invites
     )

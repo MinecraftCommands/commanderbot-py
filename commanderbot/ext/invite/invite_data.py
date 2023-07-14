@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from itertools import chain
+from itertools import chain, islice
 from typing import Any, AsyncIterable, Iterable, Optional, Type, TypeVar, Union
 
 from discord import Guild
@@ -37,7 +37,7 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
         if isinstance(data, dict):
             return cls(
                 key=data["key"],
-                tags=set(data["tags"]),
+                tags=set(data.get("tags", [])),
                 link=data["link"],
                 description=data["description"],
                 hits=data["hits"],
@@ -62,6 +62,11 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
         }
 
     # @implements InviteEntry
+    @property
+    def sorted_tags(self) -> list[str]:
+        return sorted(self.tags)
+
+    # @implements InviteEntry
     def modify(
         self,
         tags: list[str],
@@ -74,11 +79,6 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
         self.description = description
         self.modified_by_id = user_id
         self.modified_on = datetime.now()
-
-    # @implements InviteEntry
-    @property
-    def sorted_tags(self) -> list[str]:
-        return sorted(self.tags)
 
 
 @dataclass
@@ -104,8 +104,8 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        # Omit empty entries
         return dict_without_falsies(
+            # Omit empty entries
             invite_entries=dict_without_falsies(
                 {key: entry.to_json() for key, entry in self.invite_entries.items()},
             ),
@@ -170,8 +170,6 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
         )
         self.invite_entries[key] = entry
         self._rebuild_tag_mappings()
-
-        # Return the newly created invite entry
         return entry
 
     def modify_invite(
@@ -231,6 +229,7 @@ def _guilds_defaultdict_factory() -> defaultdict[GuildID, InviteGuildData]:
     return defaultdict(lambda: InviteGuildData())
 
 
+# @implements InviteStore
 @dataclass
 class InviteData(JsonSerializable, FromDataMixin):
     """
@@ -318,7 +317,7 @@ class InviteData(JsonSerializable, FromDataMixin):
         self, guild: Guild, invite_filter: Optional[str]
     ) -> Iterable[InviteEntry]:
         for entry in self.guilds[guild.id].invite_entries.values():
-            if invite_filter and invite_filter not in entry.key:
+            if invite_filter and (invite_filter not in entry.key):
                 continue
             yield entry
 
@@ -326,29 +325,48 @@ class InviteData(JsonSerializable, FromDataMixin):
         self, guild: Guild, tag_filter: Optional[str]
     ) -> Iterable[str]:
         for tag in self.guilds[guild.id].invite_entries_by_tag.keys():
-            if tag_filter and tag_filter not in tag:
+            if tag_filter and (tag_filter not in tag):
                 continue
             yield tag
 
     # @implements InviteStore
     async def get_invites(
-        self, guild: Guild, *, invite_filter: Optional[str] = None, sort: bool = False
+        self,
+        guild: Guild,
+        *,
+        invite_filter: Optional[str] = None,
+        sort: bool = False,
+        cap: Optional[int] = None,
     ) -> AsyncIterable[InviteEntry]:
         entries = self._all_invites_matching(guild, invite_filter)
-        for entry in sorted(entries, key=lambda entry: entry.key) if sort else entries:
+        maybe_sorted_entries = (
+            sorted(entries, key=lambda entry: entry.key) if sort else entries
+        )
+        for entry in islice(maybe_sorted_entries, cap):
             yield entry
 
     # @implements InviteStore
     async def get_tags(
-        self, guild: Guild, *, tag_filter: Optional[str] = None, sort: bool = False
+        self,
+        guild: Guild,
+        *,
+        tag_filter: Optional[str] = None,
+        sort: bool = False,
+        cap: Optional[int] = None,
     ) -> AsyncIterable[str]:
         tags = self._all_tags_matching(guild, tag_filter)
-        for tag in sorted(tags) if sort else tags:
+        maybe_sorted_tags = sorted(tags) if sort else tags
+        for tag in islice(maybe_sorted_tags, cap):
             yield tag
 
     # @implements InviteStore
     async def get_invites_and_tags(
-        self, guild: Guild, *, item_filter: Optional[str] = None, sort: bool = False
+        self,
+        guild: Guild,
+        *,
+        item_filter: Optional[str] = None,
+        sort: bool = False,
+        cap: Optional[int] = None,
     ) -> AsyncIterable[Union[InviteEntry, str]]:
         items = chain(
             self._all_invites_matching(guild, item_filter),
@@ -358,7 +376,8 @@ class InviteData(JsonSerializable, FromDataMixin):
         def item_cmp(item: Union[InviteEntry, str]) -> str:
             return item if isinstance(item, str) else item.key
 
-        for item in sorted(items, key=item_cmp) if sort else items:
+        maybe_sorted_items = sorted(items, key=item_cmp) if sort else items
+        for item in islice(maybe_sorted_items, cap):
             yield item
 
     # @implements InviteStore
