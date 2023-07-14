@@ -8,7 +8,12 @@ from commanderbot.lib.cogs import GuildPartitionedCogState
 @dataclass
 class FaqState(GuildPartitionedCogState[FaqGuildState]):
     """
-    Encapsulates the state and logic of the FAQ cog, for each guild.
+    Encapsulates the state and logic of the faq cog, for each guild.
+
+    Attributes
+    -----------
+    store
+        The store used to interface with persistent data in a database-agnostic way.
     """
 
     store: FaqStore
