@@ -117,11 +117,11 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
 
     # @@ invite get
     @cmd_invite.command(name="get", description="Get invites")
-    @describe(invite_or_tag="The invite or tag to get")
-    @autocomplete(invite_or_tag=invite_and_tag_autocomplete)
-    async def cmd_invite_get(self, interaction: Interaction, invite_or_tag: str):
+    @describe(query="The invite or tag to get")
+    @autocomplete(query=invite_and_tag_autocomplete)
+    async def cmd_invite_get(self, interaction: Interaction, query: str):
         assert isinstance(interaction.guild, Guild)
-        await self.state[interaction.guild].get_invite(interaction, invite_or_tag)
+        await self.state[interaction.guild].get_invite(interaction, query)
 
     # @@ invite list
     @cmd_invite.command(name="list", description="List available invites")
