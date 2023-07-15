@@ -61,7 +61,7 @@ class FaqGuildState(CogGuildState):
         prefix_pattern: Optional[re.Pattern] = await self._get_prefix_pattern()
         match_pattern: Optional[re.Pattern] = await self._get_match_pattern()
 
-        # Check if the prefix is being used
+        # Check if the prefix pattern is being used and get faqs using it
         if (
             self.options.allow_prefix
             and prefix_pattern
@@ -76,6 +76,7 @@ class FaqGuildState(CogGuildState):
                 )
             except QueryReturnedNoResults as ex:
                 await message.channel.send(str(ex))
+            return
 
         # Otherwise scan the message using the match pattern, if any
         if self.options.allow_match and match_pattern:
@@ -132,7 +133,7 @@ class FaqGuildState(CogGuildState):
 
         match result:
             case ConfirmationResult.YES:
-                # If the answer was yes, attempt to remove the FAQ and send a response
+                # If the answer was yes, attempt to remove the faq and send a response
                 try:
                     await self.store.remove_faq(self.guild, entry.key)
                     await interaction.followup.send(
@@ -160,7 +161,7 @@ class FaqGuildState(CogGuildState):
             f", ".join((f"`{tag}`" for tag in entry.sorted_tags)) or "**None!**"
         )
 
-        # Create FAQ details embed
+        # Create faq details embed
         embed = Embed(
             title=f"Details For FAQ `{entry.key}`",
             description=f"**Preview**\n{formatted_content}",
@@ -183,14 +184,14 @@ class FaqGuildState(CogGuildState):
 
     async def set_prefix_pattern(self, interaction: Interaction, prefix: str):
         pattern: re.Pattern = await self.store.set_prefix_pattern(self.guild, prefix)
-        self._prefix_pattern = pattern
+        self._prefix_pattern_cache = pattern
         await interaction.response.send_message(
             f"Set the FAQ prefix pattern to `{pattern.pattern}`"
         )
 
     async def clear_prefix_pattern(self, interaction: Interaction):
         await self.store.clear_prefix_pattern(self.guild)
-        self._prefix_pattern = None
+        self._prefix_pattern_cache = None
         await interaction.response.send_message("Cleared the FAQ prefix pattern")
 
     async def show_prefix_pattern(self, interaction: Interaction):
@@ -201,14 +202,14 @@ class FaqGuildState(CogGuildState):
 
     async def set_match_pattern(self, interaction: Interaction, match: str):
         pattern: re.Pattern = await self.store.set_match_pattern(self.guild, match)
-        self._match_pattern = pattern
+        self._match_pattern_cache = pattern
         await interaction.response.send_message(
             f"Set the FAQ match pattern to `{pattern.pattern}`"
         )
 
     async def clear_match_pattern(self, interaction: Interaction):
         await self.store.clear_match_pattern(self.guild)
-        self._match_pattern = None
+        self._match_pattern_cache = None
         await interaction.response.send_message("Cleared the FAQ match pattern")
 
     async def show_match_pattern(self, interaction: Interaction):
