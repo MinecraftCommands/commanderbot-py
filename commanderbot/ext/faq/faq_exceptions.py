@@ -27,12 +27,11 @@ class QueryReturnedNoResults(FaqException):
     def __init__(self, query: str, *suggestions: str):
         self.query: str = query
         self.suggestions = ", ".join((f"`{key}`" for key in suggestions))
-
-        msg: str = f"😔 Could not find any FAQs matching `{self.query}`"
-        if self.suggestions:
-            msg = f"🤔 Could not find any FAQs matching `{self.query}`, but maybe you meant: {self.suggestions}"
-
-        super().__init__(msg)
+        super().__init__(
+            f"🤔 Could not find any FAQs matching `{self.query}`, but maybe you meant: {self.suggestions}"
+            if self.suggestions
+            else f"😔 Could not find any FAQs matching `{self.query}`"
+        )
 
 
 class InvalidPrefixPattern(FaqException):
@@ -40,7 +39,7 @@ class InvalidPrefixPattern(FaqException):
         self.prefix: str = prefix
         self.reason: str = reason
         super().__init__(
-            f"😬 Invalid prefix pattern\n> **Pattern**: `{self.prefix}`\n> **Reason**: {self.reason}"
+            f"😬 Invalid FAQ prefix pattern\n> **Pattern**: `{self.prefix}`\n> **Reason**: {self.reason}"
         )
 
 
@@ -49,15 +48,15 @@ class InvalidMatchPattern(FaqException):
         self.match: str = match
         self.reason: str = reason
         super().__init__(
-            f"😬 Invalid match pattern\n> **Pattern**: `{self.match}`\n> **Reason**: {self.reason}"
+            f"😬 Invalid FAQ match pattern\n> **Pattern**: `{self.match}`\n> **Reason**: {self.reason}"
         )
 
 
 class PrefixPatternNotSet(FaqException):
     def __init__(self):
-        super().__init__("😬 A prefix pattern has not been set")
+        super().__init__("😬 A FAQ prefix pattern has not been set")
 
 
 class MatchPatternNotSet(FaqException):
     def __init__(self):
-        super().__init__("😬 A match pattern has not been set")
+        super().__init__("😬 A FAQ match pattern has not been set")
