@@ -72,7 +72,7 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
         self._rebuild_match_terms()
 
     def _rebuild_match_terms(self):
-        # Build match terms from keys and aliases
+        # Build match terms from keys, aliases, and tags
         self.match_terms.clear()
         for term in (self.key, *self.aliases, *self.tags):
             self.match_terms.add(term)
@@ -262,7 +262,7 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
         if self.match:
             # Find all instances of the match pattern in `content`
             # and try to find faqs that match it
-            queried_faq_entries = set()
+            queried_faq_entries: set[str] = set()
             for match in self.match.finditer(content):
                 query: str = "".join(match.groups())
                 entry: Optional[FaqEntryData] = self.query_faq(query)
