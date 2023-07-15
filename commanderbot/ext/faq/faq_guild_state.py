@@ -106,7 +106,7 @@ class FaqGuildState(CogGuildState):
         # Create faq list embed
         embed = Embed(
             title="Available FAQs",
-            description=formatted_entries,
+            description=formatted_entries or "**None!**",
             color=0x00ACED,
         )
         embed.set_footer(text=f"FAQs: {len(entries)}")
@@ -186,7 +186,7 @@ class FaqGuildState(CogGuildState):
         pattern: re.Pattern = await self.store.set_prefix_pattern(self.guild, prefix)
         self._prefix_pattern_cache = pattern
         await interaction.response.send_message(
-            f"Set the FAQ prefix pattern to `{pattern.pattern}`"
+            f"Set the FAQ prefix pattern to: `{pattern.pattern}`"
         )
 
     async def clear_prefix_pattern(self, interaction: Interaction):
@@ -197,14 +197,14 @@ class FaqGuildState(CogGuildState):
     async def show_prefix_pattern(self, interaction: Interaction):
         pattern: re.Pattern = await self.store.require_prefix_pattern(self.guild)
         await interaction.response.send_message(
-            f"The FAQ prefix pattern is set to `{pattern.pattern}`"
+            f"The FAQ prefix pattern is set to: `{pattern.pattern}`"
         )
 
     async def set_match_pattern(self, interaction: Interaction, match: str):
         pattern: re.Pattern = await self.store.set_match_pattern(self.guild, match)
         self._match_pattern_cache = pattern
         await interaction.response.send_message(
-            f"Set the FAQ match pattern to `{pattern.pattern}`"
+            f"Set the FAQ match pattern to: `{pattern.pattern}`"
         )
 
     async def clear_match_pattern(self, interaction: Interaction):
@@ -215,7 +215,7 @@ class FaqGuildState(CogGuildState):
     async def show_match_pattern(self, interaction: Interaction):
         pattern: re.Pattern = await self.store.require_match_pattern(self.guild)
         await interaction.response.send_message(
-            f"The FAQ match pattern is set to `{pattern.pattern}`"
+            f"The FAQ match pattern is set to: `{pattern.pattern}`"
         )
 
 
