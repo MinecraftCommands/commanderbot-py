@@ -109,7 +109,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         for item in items:
             if isinstance(item, tuple):
                 choices.append(
-                    Choice(name=f"💬 {item[0]} → {item[1].key}", value=item[1].key)
+                    Choice(name=f"💬 {item[0]} → {item[1].key}", value=item[0])
                 )
             else:
                 choices.append(Choice(name=f"💬 {item.key}", value=item.key))
@@ -136,11 +136,11 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
 
     # @@ faq get
     @cmd_faq.command(name="get", description="Get a frequently asked question (FAQ)")
-    @describe(faq="The FAQ to get")
-    @autocomplete(faq=faq_and_alias_autocomplete)
-    async def cmd_faq_get(self, interaction: Interaction, faq: str):
+    @describe(query="The FAQ to get")
+    @autocomplete(query=faq_and_alias_autocomplete)
+    async def cmd_faq_get(self, interaction: Interaction, query: str):
         assert isinstance(interaction.guild, Guild)
-        await self.state[interaction.guild].get_faq(interaction, faq)
+        await self.state[interaction.guild].get_faq(interaction, query)
 
     # @@ faq list
     @cmd_faq.command(name="list", description="List available FAQs")
