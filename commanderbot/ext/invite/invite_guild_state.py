@@ -64,20 +64,31 @@ class InviteGuildState(CogGuildState):
         all_tags = await async_expand(self.store.get_tags(self.guild, sort=True))
 
         # Format lines for embed description
-        lines: list[str] = [
-            "📩 **Invites**",
-            *(f"• {self._format_invite(e)}" for e in all_descriptive_entries),
-            "",
-            ", ".join((self._format_invite(e) for e in all_entries)),
-            "",
-            "📦 **Tags**",
-            self._format_tags(all_tags),
-        ]
+        lines: list[str] = []
+        if all_descriptive_entries or all_entries:
+            lines.append("📩 **Invites**")
+
+            # Add descriptive entries if they exist
+            if all_descriptive_entries:
+                entries_gen = (
+                    f"• {self._format_invite(e)}" for e in all_descriptive_entries
+                )
+                lines.extend((*entries_gen, ""))
+
+            # Add regular entries if they exist
+            if all_entries:
+                lines.extend(
+                    (", ".join((self._format_invite(e) for e in all_entries)), "")
+                )
+
+            # Add tags if they exist
+            if all_tags:
+                lines.append(f"📦 **Tags**\n{self._format_tags(all_tags)}")
 
         # Create invite list embed
         embed = Embed(
             title="Available Invites and Tags",
-            description="\n".join(lines),
+            description="\n".join(lines) or "**None!**",
             color=0x00ACED,
         )
         embed.set_footer(text=f"Invites: {total_invites} | Tags: {len(all_tags)}")
