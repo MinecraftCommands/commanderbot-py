@@ -5,16 +5,33 @@ class FaqException(ResponsiveException):
     pass
 
 
-class FaqAlreadyExists(FaqException):
+class FaqKeyAlreadyExists(FaqException):
     def __init__(self, key: str):
         self.key: str = key
-        super().__init__(f"🤷 FAQ `{self.key}` already exists")
+        super().__init__(f"🤷 FAQ key `{self.key}` already exists")
+
+
+class FaqKeyMatchesExistingAlias(FaqException):
+    def __init__(self, key: str):
+        self.key: str = key
+        super().__init__(f"🤷 FAQ key `{self.key}` matches an existing FAQ alias")
+
+
+class FaqKeyMatchesOwnAlias(FaqException):
+    def __init__(self):
+        super().__init__("🤷 A FAQ's aliases can't contain the key")
 
 
 class FaqAliasAlreadyExists(FaqException):
     def __init__(self, alias: str):
         self.alias: str = alias
         super().__init__(f"🤷 FAQ alias `{self.alias}` already exists")
+
+
+class FaqAliasMatchesExistingKey(FaqException):
+    def __init__(self, alias: str):
+        self.alias: str = alias
+        super().__init__(f"🤷 FAQ alias `{self.alias}` matches an existing FAQ key")
 
 
 class FaqDoesNotExist(FaqException):

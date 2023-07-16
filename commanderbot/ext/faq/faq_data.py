@@ -9,8 +9,11 @@ from discord import Guild
 
 from commanderbot.ext.faq.faq_exceptions import (
     FaqAliasAlreadyExists,
-    FaqAlreadyExists,
+    FaqAliasMatchesExistingKey,
     FaqDoesNotExist,
+    FaqKeyAlreadyExists,
+    FaqKeyMatchesExistingAlias,
+    FaqKeyMatchesOwnAlias,
     InvalidMatchPattern,
     InvalidPrefixPattern,
     MatchPatternNotSet,
@@ -196,12 +199,25 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
     ) -> FaqEntryData:
         # Check if the faq key already exists
         if not self._is_faq_key_available(key):
-            raise FaqAlreadyExists(key)
+            raise FaqKeyAlreadyExists(key)
+        
+        # Check if the faq key matches an existing faq alias
+        if not self._is_faq_alias_available(key):
+            raise FaqKeyMatchesExistingAlias(key)
 
-        # Check if the faq aliases already exist
+        # Check if the faq key is in this faq's aliases
+        if key in aliases:
+            raise FaqKeyMatchesOwnAlias
+
+        # Check the faq aliases
         for alias in aliases:
+            # Check if the faq alias already exists
             if not self._is_faq_alias_available(alias):
                 raise FaqAliasAlreadyExists(alias)
+
+            # Check if the faq alias matches an existing faq key
+            if not self._is_faq_key_available(alias):
+                raise FaqAliasMatchesExistingKey(alias)
 
         # Create and add a new faq entry
         entry = FaqEntryData(
@@ -230,11 +246,20 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
         # The faq must exist
         entry = self.require_faq(key)
 
-        # Check if the new faq aliases already exist
+        # Check if the faq key is in this faq's aliases
+        if entry.key in aliases:
+            raise FaqKeyMatchesOwnAlias
+
+        # Check the new faq aliases
         new_aliases = set(aliases).difference(entry.aliases)
         for alias in new_aliases:
+            # Check if the faq alias already exists
             if not self._is_faq_alias_available(alias):
                 raise FaqAliasAlreadyExists(alias)
+
+            # Check if the faq alias matches an existing faq key
+            if not self._is_faq_key_available(alias):
+                raise FaqAliasMatchesExistingKey(alias)
 
         # Modify the faq entry
         entry.modify(aliases, tags, content, user_id)
