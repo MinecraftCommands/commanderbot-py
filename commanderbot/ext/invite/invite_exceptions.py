@@ -5,10 +5,27 @@ class InviteException(ResponsiveException):
     pass
 
 
-class InviteAlreadyExists(InviteException):
+class InviteKeyAlreadyExists(InviteException):
     def __init__(self, key: str):
         self.key: str = key
-        super().__init__(f"🤷 Invite `{self.key}` already exists")
+        super().__init__(f"🤷 Invite key `{self.key}` already exists")
+
+
+class InviteKeyMatchesExistingTag(InviteException):
+    def __init__(self, key: str):
+        self.key: str = key
+        super().__init__(f"🤷 Invite key `{self.key}` matches an existing invite tag")
+
+
+class InviteKeyMatchesOwnTag(InviteException):
+    def __init__(self):
+        super().__init__("🤷 An invite's tags can't contain the key")
+
+
+class InviteTagMatchesExistingKey(InviteException):
+    def __init__(self, tag: str):
+        self.tag: str = tag
+        super().__init__(f"🤷 Invite tag `{self.tag}` matches an existing invite key")
 
 
 class InviteDoesNotExist(InviteException):

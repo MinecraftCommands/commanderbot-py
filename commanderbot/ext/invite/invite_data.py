@@ -9,8 +9,11 @@ from discord import Guild
 from commanderbot.ext.invite.invite_exceptions import (
     GuildInviteNotSet,
     InvalidInviteLink,
-    InviteAlreadyExists,
     InviteDoesNotExist,
+    InviteKeyAlreadyExists,
+    InviteKeyMatchesExistingTag,
+    InviteKeyMatchesOwnTag,
+    InviteTagMatchesExistingKey,
 )
 from commanderbot.ext.invite.invite_store import InviteEntry
 from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
@@ -126,6 +129,10 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
         # Check whether the given invite key is already in use
         return key not in self.invite_entries.keys()
 
+    def _is_invite_tag_available(self, tag: str) -> bool:
+        # Check whether the given invite tag is already in use
+        return tag not in self.invite_entries_by_tag.keys()
+
     def require_invite(self, key: str) -> InviteEntryData:
         # Returns the invite entry if it exists
         if entry := self.invite_entries.get(key):
@@ -150,7 +157,21 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
     ) -> InviteEntryData:
         # Check if the invite key already exists
         if not self._is_invite_key_available(key):
-            raise InviteAlreadyExists(key)
+            raise InviteKeyAlreadyExists(key)
+
+        # Check if the invite key matches an existing invite tag
+        if not self._is_invite_tag_available(key):
+            raise InviteKeyMatchesExistingTag(key)
+
+        # Check if the invite key is in this invite's tags
+        if key in tags:
+            raise InviteKeyMatchesOwnTag
+
+        # Check the invite tags
+        for tag in tags:
+            # Check if the invite tag matches an existing invite key
+            if not self._is_invite_key_available(tag):
+                raise InviteTagMatchesExistingKey(tag)
 
         # Check if the invite link is valid
         if not is_invite_link(link):
@@ -182,6 +203,16 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
     ) -> InviteEntryData:
         # The invite must exist
         entry = self.require_invite(key)
+
+        # Check if the invite key is in this invite's tags
+        if entry.key in tags:
+            raise InviteKeyMatchesOwnTag
+
+        # Check the invite tags
+        for tag in tags:
+            # Check if the invite tag matches an existing invite key
+            if not self._is_invite_key_available(tag):
+                raise InviteTagMatchesExistingKey(tag)
 
         # Check if the invite link is valid
         if not is_invite_link(link):
