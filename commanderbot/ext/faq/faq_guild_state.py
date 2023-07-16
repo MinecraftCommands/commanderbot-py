@@ -9,6 +9,7 @@ from discord.utils import format_dt
 from commanderbot.ext.faq.faq_exceptions import QueryReturnedNoResults
 from commanderbot.ext.faq.faq_options import FaqOptions
 from commanderbot.ext.faq.faq_store import FaqEntry, FaqStore
+from commanderbot.lib import MAX_MESSAGE_LENGTH
 from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.cogs.views import CogStateModal
 from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
@@ -277,6 +278,7 @@ class AddFaqModal(FaqModal):
             label="Content",
             style=TextStyle.paragraph,
             placeholder="The content of this FAQ.",
+            max_length=MAX_MESSAGE_LENGTH,
             required=True,
         )
 
@@ -311,14 +313,14 @@ class ModifyFaqModal(FaqModal):
             label="Aliases",
             style=TextStyle.short,
             placeholder="A comma separated list of aliases. Ex: foo, bar, baz",
-            default=self.aliases_to_str(entry.aliases),
+            default=self.aliases_to_str(entry.sorted_aliases),
             required=False,
         )
         self.tags_field = TextInput(
             label="Tags (Used for FAQ suggestions)",
             style=TextStyle.short,
             placeholder="A comma separated list of tags. Ex: foo, bar, baz",
-            default=self.tags_to_str(entry.tags),
+            default=self.tags_to_str(entry.sorted_tags),
             required=False,
         )
         self.content_field = TextInput(
@@ -326,6 +328,7 @@ class ModifyFaqModal(FaqModal):
             style=TextStyle.paragraph,
             placeholder="The content of this FAQ.",
             default=entry.content,
+            max_length=MAX_MESSAGE_LENGTH,
             required=True,
         )
 
