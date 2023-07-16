@@ -118,7 +118,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
     # @@ LISTENERS
     @Cog.listener()
     async def on_message(self, message: Message):
-        # Make sure this message wasn't sent by the bot
+        # Make sure the message wasn't sent by the bot
         if is_bot(self.bot, message.author):
             return
 
