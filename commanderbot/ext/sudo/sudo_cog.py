@@ -148,8 +148,8 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
     async def _export_json_store(
         self, ctx: Context, cog: Cog, db: JsonFileDatabaseAdapter
     ):
-        data = await db.get_cache()
-        data = db.serializer(data)
+        cache = await db.get_cache()
+        data = db.serializer(cache)
         await ctx.reply(
             content=f"Exported Json store for `{cog.qualified_name}`",
             file=str_to_file(json_dumps(data), f"{cog.qualified_name}.json"),

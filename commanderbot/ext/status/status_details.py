@@ -5,9 +5,9 @@ from importlib.metadata import version
 from typing import Dict, Optional
 
 from discord.ext.commands import Bot
+from discord.utils import format_dt
 
 from commanderbot.core.utils import check_commander_bot
-from commanderbot.lib.utils.datetimes import datetime_to_int
 
 
 class StatusDetails:
@@ -52,10 +52,10 @@ class StatusDetails:
         }
 
         if dt := self.started_at:
-            all_fields["Started"] = f"<t:{datetime_to_int(dt)}:R>"
+            all_fields["Started"] = format_dt(dt, "R")
 
         if dt := self.last_reconnect:
-            all_fields["Last reconnect"] = f"<t:{datetime_to_int(dt)}:R>"
+            all_fields["Last reconnect"] = format_dt(dt, "R")
 
         if td := self.uptime:
             all_fields["Uptime"] = f"`{self._format_timedelta(td)}`"

@@ -64,14 +64,16 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         if not url:
             self.log.warn(
                 "No version URL was given in the bot config. "
-                f"Using `{ManifestVersionManager.default_version()}` for the latest min engine version"
+                f"Using `{ManifestVersionManager.default_version()}` for the latest min engine version."
             )
 
-        # Create and start the manifest version manager
+        # Create the manifest version manager
         self.version_manager = ManifestVersionManager(url=url)
+
+    async def cog_load(self):
         self.version_manager.start()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.version_manager.stop()
 
     async def min_engine_version_autocomplete(

@@ -223,7 +223,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].deregister_forum_channel(interaction, forum)
 
-    @cmd_forum.command(name="details", description="Show the details of a help forum")
+    @cmd_forum.command(name="details", description="Show the details about a help forum")
     @describe(forum="The help forum to show details about")
     async def cmd_forum_details(self, interaction: Interaction, forum: ForumChannel):
         assert isinstance(interaction.guild, Guild)

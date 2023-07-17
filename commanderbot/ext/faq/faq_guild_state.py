@@ -1,26 +1,25 @@
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Optional, Tuple, cast
+from typing import Iterable, Optional
 
-from discord import AllowedMentions
-from discord.abc import Messageable
-from discord.ext.commands import MessageConverter
+from discord import AllowedMentions, Embed, Interaction, Message, TextStyle
+from discord.ui import TextInput
+from discord.utils import format_dt
 
+from commanderbot.ext.faq.faq_exceptions import QueryReturnedNoResults
 from commanderbot.ext.faq.faq_options import FaqOptions
 from commanderbot.ext.faq.faq_store import FaqEntry, FaqStore
-from commanderbot.lib import GuildContext, TextMessage
+from commanderbot.lib import MAX_MESSAGE_LENGTH
 from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
-from commanderbot.lib.utils import send_message_or_file
-
-LAZY: None = cast(None, object())
+from commanderbot.lib.cogs.views import CogStateModal
+from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
+from commanderbot.lib.utils import async_expand
 
 
 @dataclass
 class FaqGuildState(CogGuildState):
     """
-    Encapsulates the state and logic of the FAQ cog, at the guild level.
+    Encapsulates the state and logic of the faq cog, at the guild level.
 
     Attributes
     -----------
@@ -31,230 +30,319 @@ class FaqGuildState(CogGuildState):
     store: FaqStore
     options: FaqOptions
 
-    _prefix_pattern: Optional[re.Pattern] = field(init=False, default=LAZY)
-    _match_pattern: Optional[re.Pattern] = field(init=False, default=LAZY)
+    _prefix_pattern_cache: Optional[re.Pattern] = field(init=False, default=None)
+    _match_pattern_cache: Optional[re.Pattern] = field(init=False, default=None)
 
-    async def get_prefix_pattern(self) -> Optional[re.Pattern]:
-        if self._prefix_pattern is LAZY:
-            self._prefix_pattern = await self.store.get_prefix_pattern(self.guild)
-        return self._prefix_pattern
+    async def _get_prefix_pattern(self) -> Optional[re.Pattern]:
+        if not self._prefix_pattern_cache:
+            self._prefix_pattern_cache = await self.store.get_prefix_pattern(self.guild)
+        return self._prefix_pattern_cache
 
-    async def get_match_pattern(self) -> Optional[re.Pattern]:
-        if self._match_pattern is LAZY:
-            self._match_pattern = await self.store.get_match_pattern(self.guild)
-        return self._match_pattern
+    async def _get_match_pattern(self) -> Optional[re.Pattern]:
+        if not self._match_pattern_cache:
+            self._match_pattern_cache = await self.store.get_match_pattern(self.guild)
+        return self._match_pattern_cache
 
-    async def _send_faq(self, destination: Messageable, faq: FaqEntry):
-        await self.store.increment_faq_hits(faq)
-        await destination.send(faq.content)
+    async def _query_faq(self, query: str) -> FaqEntry:
+        # Try to get the faq by its key or alias
+        if entry := await self.store.query_faq(self.guild, query):
+            return entry
 
-    async def _show_faq(self, destination: Messageable, name: str):
-        # Check for FAQ by name (key/alias).
-        if faq := await self.store.get_faq_by_name(self.guild, name):
-            await self._send_faq(destination, faq)
+        # If no faq was found, raise an exception with suggestions
+        suggestions_gen = self.store.query_faqs_by_terms(
+            self.guild, query, sort=True, cap=self.options.term_cap
+        )
+        suggestions: list[str] = await async_expand(
+            (entry.key async for entry in suggestions_gen)
+        )
+        raise QueryReturnedNoResults(query, *suggestions)
 
-        # If none matched, suggest FAQs if any are produced by a generic query.
-        elif faqs := await self.store.get_faqs_by_query(
-            self.guild, name, self.options.query_cap
-        ):
-            sorted_faqs = sorted(faqs, key=lambda faq: faq.key)
-            keys = " ".join(f"`{faq.key}`" for faq in sorted_faqs)
-            await destination.send(
-                f"No FAQ named `{name}`, but maybe you meant: {keys}"
-            )
+    async def on_message(self, message: Message):
+        content: str = message.content
+        prefix_pattern: Optional[re.Pattern] = await self._get_prefix_pattern()
+        match_pattern: Optional[re.Pattern] = await self._get_match_pattern()
 
-        # Otherwise, let the user know nothing was found.
-        else:
-            await destination.send(f"No FAQ named `{name}`")
-
-    async def on_message(self, message: TextMessage):
-        content = message.content
-
-        prefix_pattern = await self.get_prefix_pattern()
-        match_pattern = await self.get_match_pattern()
-
-        # Check if the prefix is being used.
+        # Check if the prefix pattern is being used and get faqs using it
         if (
-            prefix_pattern
-            and self.options.allow_prefix
-            and (prefix_match := prefix_pattern.match(content))
+            self.options.allow_prefix
+            and prefix_pattern
+            and (match := prefix_pattern.match(content))
         ):
-            name = "".join(prefix_match.groups())
-            await self._show_faq(message.channel, name)
+            try:
+                query: str = "".join(match.groups())
+                entry: FaqEntry = await self._query_faq(query)
+                await self.store.increment_faq_hits(entry)
+                await message.channel.send(
+                    entry.content, allowed_mentions=AllowedMentions.none()
+                )
+            except QueryReturnedNoResults as ex:
+                await message.channel.send(str(ex))
             return
 
-        # Otherwise scan the message using the match pattern, if any.
-        if match_pattern and self.options.allow_match:
-            faqs = await self.store.get_faqs_by_match(
-                self.guild, content, self.options.match_cap
+        # Otherwise scan the message using the match pattern, if any
+        if self.options.allow_match and match_pattern:
+            entries_gen = self.store.query_faqs_by_match(
+                self.guild, content, cap=self.options.match_cap
             )
-            for faq in faqs:
-                await self._send_faq(message.channel, faq)
+            async for entry in entries_gen:
+                await self.store.increment_faq_hits(entry)
+                await message.channel.send(
+                    entry.content, allowed_mentions=AllowedMentions.none()
+                )
 
-    async def show_faq(self, ctx: GuildContext, name: str):
-        await self._show_faq(ctx, name)
-
-    async def show_faq_details(self, ctx: GuildContext, name: str):
-        if faq := await self.store.get_faq_by_name(self.guild, name):
-            aliases_str = ", ".join(faq.sorted_aliases)
-            tags_str = ", ".join(faq.sorted_tags)
-            now = datetime.utcnow()
-            added_on_timestamp = faq.added_on.isoformat()
-            added_on_delta = now - faq.added_on
-            added_on_str = f"{added_on_timestamp} ({added_on_delta})"
-            modified_on_delta = now - faq.modified_on
-            modified_on_timestamp = faq.modified_on.isoformat()
-            modified_on_str = f"{modified_on_timestamp} ({modified_on_delta})"
-            lines = [
-                f"Link: <{faq.link}>",
-                "```",
-                f"Key:         {faq.key}",
-                f"Aliases:     {aliases_str}",
-                f"Tags:        {tags_str}",
-                f"Added on:    {added_on_str}",
-                f"Modified on: {modified_on_str}",
-                f"Hits:        {faq.hits}",
-                "```",
-            ]
-            content = "\n".join(lines)
-            await ctx.send(content)
-        else:
-            await ctx.send(f"No FAQ named `{name}`")
-
-    async def list_faqs(self, ctx: GuildContext):
-        if faqs := await self.store.get_all_faqs(self.guild):
-            sorted_faqs = sorted(faqs, key=lambda faq: faq.key)
-            keys = ", ".join(f"`{faq.key}`" for faq in sorted_faqs)
-            count = len(sorted_faqs)
-            header = f"There are {count} FAQs available:"
-            content = f"{header} {keys}"
-            file_callback = lambda: (
-                header,
-                "\n".join(faq.key for faq in sorted_faqs),
-                "faqs.txt",
-            )
-            await send_message_or_file(
-                ctx,
-                content,
-                file_callback=file_callback,
-                allowed_mentions=AllowedMentions.none(),
-            )
-        else:
-            await ctx.send("No FAQs available")
-
-    async def search_faqs(self, ctx: GuildContext, query: str):
-        if faqs := await self.store.get_faqs_by_query(
-            self.guild, query, cap=self.options.query_cap
-        ):
-            sorted_faqs = sorted(faqs, key=lambda faq: faq.key)
-            keys = " ".join(f"`{faq.key}`" for faq in sorted_faqs)
-            count = len(sorted_faqs)
-            text = f"Here are {count} FAQs matching `{query}`: {keys}"
-            await ctx.send(text)
-        else:
-            await ctx.send(f"No FAQs matching `{query}`")
-
-    async def _parse_message_or_content(
-        self, ctx: GuildContext, message_or_content: str
-    ) -> Tuple[str, str]:
-        try:
-            message = await MessageConverter().convert(ctx, message_or_content)
-            content = message.content
-        except:
-            message = ctx.message
-            content = message_or_content
-        return message.jump_url, content
-
-    async def add_faq(self, ctx: GuildContext, key: str, message_or_content: str):
-        link, content = await self._parse_message_or_content(ctx, message_or_content)
-        faq = await self.store.add_faq(self.guild, key, link=link, content=content)
-        await ctx.send(f"Added FAQ `{faq.key}`")
-
-    async def remove_faq(self, ctx: GuildContext, name: str):
-        # Get the corresponding FAQ entry.
-        faq = await self.store.require_faq_by_name(self.guild, name)
-        # Then ask for confirmation to actually remove it.
-        conf = await confirm_with_reaction(
-            self.bot,
-            ctx,
-            f"Are you sure you want to remove FAQ `{faq.key}`?",
+    async def get_faq(self, interaction: Interaction, query: str):
+        entry: FaqEntry = await self._query_faq(query)
+        await self.store.increment_faq_hits(entry)
+        await interaction.response.send_message(
+            entry.content, allowed_mentions=AllowedMentions.none()
         )
-        # If the answer was yes, attempt to remove the FAQ and send a response.
-        if conf == ConfirmationResult.YES:
-            removed_entry = await self.store.remove_faq(self.guild, name)
-            await ctx.send(f"Removed FAQ `{removed_entry.key}`")
-        # If the answer was no, send a response.
-        elif conf == ConfirmationResult.NO:
-            await ctx.send(f"Did not remove FAQ `{name}`")
-        # If no answer was provided, don't do anything.
 
-    async def modify_faq_content(
-        self, ctx: GuildContext, name: str, message_or_content: str
-    ):
-        link, content = await self._parse_message_or_content(ctx, message_or_content)
-        faq = await self.store.modify_faq_content(
-            self.guild, name, link=link, content=content
+    async def list_faqs(self, interaction: Interaction):
+        # Get all faqs and format them
+        entries: list[FaqEntry] = await async_expand(
+            self.store.get_faqs(self.guild, sort=True)
         )
-        await ctx.send(f"Set content for FAQ `{faq.key}` using: {link}")
+        formatted_entries: str = ", ".join((f"`{entry.key}`" for entry in entries))
 
-    async def modify_faq_aliases(
-        self, ctx: GuildContext, name: str, aliases: Tuple[str, ...]
-    ):
-        faq = await self.store.modify_faq_aliases(self.guild, name, aliases)
-        if aliases:
-            aliases_str = "`" + "` `".join(faq.sorted_aliases) + "`"
-            await ctx.send(f"Set aliases for FAQ `{faq.key}` to: {aliases_str}")
-        else:
-            await ctx.send(f"Removed aliases for FAQ `{faq.key}`")
+        # Create faq list embed
+        embed = Embed(
+            title="Available FAQs",
+            description=formatted_entries or "**None!**",
+            color=0x00ACED,
+        )
+        embed.set_footer(text=f"FAQs: {len(entries)}")
 
-    async def modify_faq_tags(
-        self, ctx: GuildContext, name: str, tags: Tuple[str, ...]
-    ):
-        faq = await self.store.modify_faq_tags(self.guild, name, tags)
-        if tags:
-            tags_str = "`" + "` `".join(faq.sorted_tags) + "`"
-            await ctx.send(f"Set tags for FAQ `{faq.key}` to: {tags_str}")
-        else:
-            await ctx.send(f"Removed tags for FAQ `{faq.key}`")
+        await interaction.response.send_message(embed=embed)
 
-    async def show_prefix_pattern(self, ctx: GuildContext):
-        if prefix := await self.store.get_prefix_pattern(self.guild):
-            await ctx.send(
-                f"FAQ prefix pattern is currently set to: `{prefix.pattern}`"
-            )
-        else:
-            await ctx.send("No FAQ prefix pattern is currently configured")
+    async def add_faq(self, interaction: Interaction):
+        await interaction.response.send_modal(AddFaqModal(interaction, self))
 
-    async def set_prefix_pattern(self, ctx: GuildContext, prefix: str):
-        try:
-            result = await self.store.set_prefix_pattern(self.guild, prefix)
-        except re.error as ex:
-            await ctx.send(f"Invalid pattern: {ex}")
-        else:
-            self._prefix_pattern = result
-            await ctx.send(f"Set FAQ prefix pattern to: `{prefix}`")
+    async def modify_faq(self, interaction: Interaction, faq: str):
+        entry: FaqEntry = await self.store.require_faq(self.guild, faq)
+        await interaction.response.send_modal(ModifyFaqModal(interaction, self, entry))
 
-    async def clear_prefix_pattern(self, ctx: GuildContext):
-        await self.store.set_prefix_pattern(self.guild, None)
-        self._prefix_pattern = None
-        await ctx.send(f"Removed FAQ prefix pattern")
+    async def remove_faq(self, interaction: Interaction, faq: str):
+        # Try to get the faq
+        entry: FaqEntry = await self.store.require_faq(self.guild, faq)
 
-    async def show_match_pattern(self, ctx: GuildContext):
-        if match := await self.store.get_match_pattern(self.guild):
-            await ctx.send(f"FAQ match pattern is currently set to: `{match.pattern}`")
-        else:
-            await ctx.send("No FAQ match pattern is currently configured")
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove FAQ `{entry.key}`?",
+            timeout=10.0,
+        )
 
-    async def set_match_pattern(self, ctx: GuildContext, match: str):
-        try:
-            result = await self.store.set_match_pattern(self.guild, match)
-        except re.error as ex:
-            await ctx.send(f"Invalid pattern: {ex}")
-        else:
-            self._match_pattern = result
-            await ctx.send(f"Set FAQ match pattern to: `{match}`")
+        match result:
+            case ConfirmationResult.YES:
+                # If the answer was yes, attempt to remove the faq and send a response
+                try:
+                    await self.store.remove_faq(self.guild, entry.key)
+                    await interaction.followup.send(
+                        content=f"Removed FAQ: `{entry.key}`"
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ex
+            case _:
+                # If the answer was no, send a response
+                await interaction.followup.send(f"Did not remove FAQ: `{entry.key}`")
 
-    async def clear_match_pattern(self, ctx: GuildContext):
-        await self.store.set_match_pattern(self.guild, None)
-        self._match_pattern = None
-        await ctx.send(f"Removed FAQ match pattern")
+    async def show_faq_details(self, interaction: Interaction, faq: str):
+        # Try to get the faq
+        entry: FaqEntry = await self.store.require_faq(self.guild, faq)
+
+        # Format faq data
+        formatted_content: str = "\n".join(
+            (f"> {line}" for line in entry.content.split("\n"))
+        )
+        formatted_aliases: str = (
+            f", ".join((f"`{alias}`" for alias in entry.sorted_aliases)) or "**None!**"
+        )
+        formatted_tags: str = (
+            f", ".join((f"`{tag}`" for tag in entry.sorted_tags)) or "**None!**"
+        )
+
+        # Create faq details embed
+        embed = Embed(
+            title=f"Details For FAQ `{entry.key}`",
+            description=f"**Preview**\n{formatted_content}",
+            color=0x00ACED,
+        )
+        embed.add_field(name="Key", value=f"`{entry.key}`", inline=False)
+        embed.add_field(name="Aliases", value=formatted_aliases, inline=False)
+        embed.add_field(name="Tags", value=formatted_tags, inline=False)
+        embed.add_field(name="Hits", value=f"`{entry.hits}`")
+        embed.add_field(
+            name="Added By",
+            value=f"<@{entry.added_by_id}> ({format_dt(entry.added_on, style='R')})",
+        )
+        embed.add_field(
+            name="Modified By",
+            value=f"<@{entry.modified_by_id}> ({format_dt(entry.modified_on, style='R')})",
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    async def set_prefix_pattern(self, interaction: Interaction, prefix: str):
+        pattern: re.Pattern = await self.store.set_prefix_pattern(self.guild, prefix)
+        self._prefix_pattern_cache = pattern
+        await interaction.response.send_message(
+            f"Set the FAQ prefix pattern to: `{pattern.pattern}`"
+        )
+
+    async def clear_prefix_pattern(self, interaction: Interaction):
+        await self.store.clear_prefix_pattern(self.guild)
+        self._prefix_pattern_cache = None
+        await interaction.response.send_message("Cleared the FAQ prefix pattern")
+
+    async def show_prefix_pattern(self, interaction: Interaction):
+        pattern: re.Pattern = await self.store.require_prefix_pattern(self.guild)
+        await interaction.response.send_message(
+            f"The FAQ prefix pattern is set to: `{pattern.pattern}`"
+        )
+
+    async def set_match_pattern(self, interaction: Interaction, match: str):
+        pattern: re.Pattern = await self.store.set_match_pattern(self.guild, match)
+        self._match_pattern_cache = pattern
+        await interaction.response.send_message(
+            f"Set the FAQ match pattern to: `{pattern.pattern}`"
+        )
+
+    async def clear_match_pattern(self, interaction: Interaction):
+        await self.store.clear_match_pattern(self.guild)
+        self._match_pattern_cache = None
+        await interaction.response.send_message("Cleared the FAQ match pattern")
+
+    async def show_match_pattern(self, interaction: Interaction):
+        pattern: re.Pattern = await self.store.require_match_pattern(self.guild)
+        await interaction.response.send_message(
+            f"The FAQ match pattern is set to: `{pattern.pattern}`"
+        )
+
+
+class FaqModal(CogStateModal[FaqGuildState, FaqStore]):
+    """
+    Base class for all faq modals
+    """
+
+    # Delimiter used between alias and tag items
+    delim: str = ","
+
+    @classmethod
+    def aliases_from_str(cls, aliases_str: str) -> list[str]:
+        alias_gen = (alias.strip() for alias in aliases_str.split(cls.delim))
+        return [alias for alias in alias_gen if alias]
+
+    @classmethod
+    def aliases_to_str(cls, aliases: Iterable[str]) -> str:
+        return f"{cls.delim} ".join(aliases)
+
+    @classmethod
+    def tags_from_str(cls, tag_str: str) -> list[str]:
+        tag_gen = (tag.strip() for tag in tag_str.split(cls.delim))
+        return [tag for tag in tag_gen if tag]
+
+    @classmethod
+    def tags_to_str(cls, tags: Iterable[str]) -> str:
+        return f"{cls.delim} ".join(tags)
+
+
+class AddFaqModal(FaqModal):
+    def __init__(self, interaction: Interaction, state: FaqGuildState):
+        super().__init__(
+            interaction,
+            state,
+            title="Add a New FAQ",
+            custom_id="commanderbot_ext:faq.add",
+        )
+
+        self.key_field = TextInput(
+            label="Key",
+            style=TextStyle.short,
+            placeholder="Ex: sample-text",
+            required=True,
+        )
+        self.aliases_field = TextInput(
+            label="Aliases",
+            style=TextStyle.short,
+            placeholder="A comma separated list of aliases. Ex: foo, bar, baz",
+            required=False,
+        )
+        self.tags_field = TextInput(
+            label="Tags (Used for FAQ suggestions)",
+            style=TextStyle.short,
+            placeholder="A comma separated list of tags. Ex: foo, bar, baz",
+            required=False,
+        )
+        self.content_field = TextInput(
+            label="Content",
+            style=TextStyle.paragraph,
+            placeholder="The content of this FAQ.",
+            max_length=MAX_MESSAGE_LENGTH,
+            required=True,
+        )
+
+        self.add_item(self.key_field)
+        self.add_item(self.aliases_field)
+        self.add_item(self.tags_field)
+        self.add_item(self.content_field)
+
+    async def on_submit(self, interaction: Interaction):
+        entry: FaqEntry = await self.store.add_faq(
+            guild=self.state.guild,
+            key=self.key_field.value.strip(),
+            aliases=self.aliases_from_str(self.aliases_field.value),
+            tags=self.tags_from_str(self.tags_field.value),
+            content=self.content_field.value,
+            user_id=interaction.user.id,
+        )
+        await interaction.response.send_message(f"Added FAQ: `{entry.key}`")
+
+
+class ModifyFaqModal(FaqModal):
+    def __init__(self, interaction: Interaction, state: FaqGuildState, entry: FaqEntry):
+        self.faq_key: str = entry.key
+        super().__init__(
+            interaction,
+            state,
+            title=f"Modifying FAQ: {self.faq_key}",
+            custom_id="commanderbot_ext:faq.modify",
+        )
+
+        self.aliases_field = TextInput(
+            label="Aliases",
+            style=TextStyle.short,
+            placeholder="A comma separated list of aliases. Ex: foo, bar, baz",
+            default=self.aliases_to_str(entry.sorted_aliases),
+            required=False,
+        )
+        self.tags_field = TextInput(
+            label="Tags (Used for FAQ suggestions)",
+            style=TextStyle.short,
+            placeholder="A comma separated list of tags. Ex: foo, bar, baz",
+            default=self.tags_to_str(entry.sorted_tags),
+            required=False,
+        )
+        self.content_field = TextInput(
+            label="Content",
+            style=TextStyle.paragraph,
+            placeholder="The content of this FAQ.",
+            default=entry.content,
+            max_length=MAX_MESSAGE_LENGTH,
+            required=True,
+        )
+
+        self.add_item(self.aliases_field)
+        self.add_item(self.tags_field)
+        self.add_item(self.content_field)
+
+    async def on_submit(self, interaction: Interaction):
+        entry: FaqEntry = await self.store.modify_faq(
+            guild=self.state.guild,
+            key=self.faq_key,
+            aliases=self.aliases_from_str(self.aliases_field.value),
+            tags=self.tags_from_str(self.tags_field.value),
+            content=self.content_field.value,
+            user_id=interaction.user.id,
+        )
+        await interaction.response.send_message(f"Modified FAQ: `{entry.key}`")

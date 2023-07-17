@@ -19,7 +19,7 @@ from commanderbot.lib import (
     JsonSerializable,
 )
 from commanderbot.lib.forums import require_tag
-from commanderbot.lib.utils.utils import dict_without_ellipsis, dict_without_falsies
+from commanderbot.lib.utils.utils import dict_without_falsies
 
 ST = TypeVar("ST")
 
@@ -91,20 +91,15 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        help_forums = {
-            str(channel_id): forum_data.to_json()
-            for channel_id, forum_data in self.help_forums.items()
-        }
-
         # Omit empty help forums
-        trimmed_help_forums = dict_without_falsies(help_forums)
-
-        # Omit empty fields
-        data = dict_without_ellipsis(
-            help_forums=trimmed_help_forums or ...,
+        return dict_without_falsies(
+            help_forums=dict_without_falsies(
+                {
+                    str(channel_id): forum_data.to_json()
+                    for channel_id, forum_data in self.help_forums.items()
+                }
+            )
         )
-
-        return data
 
     def _is_forum_registered(self, forum: ForumChannel):
         return forum.id in self.help_forums.keys()
@@ -217,18 +212,15 @@ class HelpForumData(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        guilds = {
-            str(guild_id): guild_data.to_json()
-            for guild_id, guild_data in self.guilds.items()
-        }
-
-        # Omit empty guilds
-        trimmed_guilds = dict_without_falsies(guilds)
-
-        # Omit empty fields
-        data = dict_without_ellipsis(guilds=trimmed_guilds or ...)
-
-        return data
+        # Omit empty guilds, as well as an empty list of guilds
+        return dict_without_falsies(
+            guilds=dict_without_falsies(
+                {
+                    str(guild_id): guild_data.to_json()
+                    for guild_id, guild_data in self.guilds.items()
+                }
+            )
+        )
 
     # @implements HelpForumStore
     async def require_help_forum(self, guild: Guild, forum: ForumChannel) -> HelpForum:

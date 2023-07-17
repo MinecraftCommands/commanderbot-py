@@ -1,294 +1,431 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import (
-    AsyncIterable,
-    DefaultDict,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-)
+from itertools import chain, islice
+from typing import Any, AsyncIterable, Iterable, Optional, Type, TypeVar, Union
 
 from discord import Guild
 
-from commanderbot.ext.invite.invite_store import (
-    InviteEntry,
+from commanderbot.ext.invite.invite_exceptions import (
+    GuildInviteNotSet,
+    InvalidInviteLink,
+    InviteDoesNotExist,
     InviteKeyAlreadyExists,
-    NoSuchInvite,
+    InviteKeyMatchesExistingTag,
+    InviteKeyMatchesOwnTag,
+    InviteTagMatchesExistingKey,
 )
-from commanderbot.lib import GuildID, JsonObject
-from commanderbot.lib.utils import dict_without_falsies
+from commanderbot.ext.invite.invite_store import InviteEntry
+from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
+from commanderbot.lib.utils.utils import dict_without_falsies, is_invite_link
+
+ST = TypeVar("ST")
 
 
-# @implements InviteEntry
 @dataclass
-class InviteDataInviteEntry:
+class InviteEntryData(JsonSerializable, FromDataMixin):
     key: str
+    tags: set[str]
+    link: str
+    description: Optional[str]
+    hits: int
+    added_by_id: UserID
+    modified_by_id: UserID
     added_on: datetime
     modified_on: datetime
-    hits: int
-    link: str
-    tags: Set[str]
-    description: Optional[str]
 
-    @staticmethod
-    def deserialize(data: JsonObject, key: str) -> "InviteDataInviteEntry":
-        return InviteDataInviteEntry(
-            key=key,
-            added_on=datetime.fromisoformat(data["added_on"]),
-            modified_on=datetime.fromisoformat(data["modified_on"]),
-            hits=data["hits"],
-            link=data["link"],
-            tags=set(data["tags"]),
-            description=data.get("description"),
-        )
+    # @overrides FromDataMixin
+    @classmethod
+    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+        if isinstance(data, dict):
+            return cls(
+                key=data["key"],
+                tags=set(data.get("tags", [])),
+                link=data["link"],
+                description=data["description"],
+                hits=data["hits"],
+                added_by_id=data["added_by_id"],
+                modified_by_id=data["modified_by_id"],
+                added_on=datetime.fromisoformat(data["added_on"]),
+                modified_on=datetime.fromisoformat(data["modified_on"]),
+            )
 
-    def serialize(self) -> JsonObject:
+    # @implements JsonSerializable
+    def to_json(self) -> Any:
         return {
+            "key": self.key,
+            "tags": list(self.tags),
+            "link": self.link,
+            "description": self.description,
+            "hits": self.hits,
+            "added_by_id": self.added_by_id,
+            "modified_by_id": self.modified_by_id,
             "added_on": self.added_on.isoformat(),
             "modified_on": self.modified_on.isoformat(),
-            "hits": self.hits,
-            "link": self.link,
-            "tags": list(self.tags),
-            "description": self.description,
         }
 
     # @implements InviteEntry
     @property
-    def sorted_tags(self) -> List[str]:
+    def sorted_tags(self) -> list[str]:
         return sorted(self.tags)
 
     # @implements InviteEntry
-    @property
-    def line(self) -> str:
-        if self.description:
-            return f"{self.link} - {self.description}"
-        return self.link
-
-    def update_modified_on(self) -> datetime:
-        self.modified_on = datetime.utcnow()
-        return self.modified_on
+    def modify(
+        self,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
+    ):
+        self.tags = set(tags)
+        self.link = link
+        self.description = description
+        self.modified_by_id = user_id
+        self.modified_on = datetime.now()
 
 
 @dataclass
-class InviteDataGuild:
-    invite_entries: Dict[str, InviteDataInviteEntry] = field(default_factory=dict)
-    guild_key: Optional[str] = None
-
-    invite_entries_by_tag: DefaultDict[str, List[InviteDataInviteEntry]] = field(
+class InviteGuildData(JsonSerializable, FromDataMixin):
+    invite_entries: dict[str, InviteEntryData] = field(default_factory=dict)
+    invite_entries_by_tag: defaultdict[str, list[InviteEntryData]] = field(
         init=False, default_factory=lambda: defaultdict(list)
     )
+    guild_key: Optional[str] = None
 
-    @property
-    def guild_invite_entry(self) -> Optional[InviteDataInviteEntry]:
-        if self.guild_key:
-            return self.invite_entries[self.guild_key]
+    # @overrides FromDataMixin
+    @classmethod
+    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+        # Note that tags will be constructed from entries, during post-init
+        if isinstance(data, dict):
+            return cls(
+                invite_entries={
+                    key: InviteEntryData.from_data(raw_entry)
+                    for key, raw_entry in data.get("invite_entries", {}).items()
+                },
+                guild_key=data.get("guild_key"),
+            )
 
-    @staticmethod
-    def deserialize(data: JsonObject) -> "InviteDataGuild":
-        # Note that tags will be constructed from entries, during post-init.
-        return InviteDataGuild(
-            guild_key=data.get("guild_key"),
-            invite_entries={
-                key: InviteDataInviteEntry.deserialize(raw_entry, key)
-                for key, raw_entry in data.get("invite_entries", {}).items()
-            },
+    # @implements JsonSerializable
+    def to_json(self) -> Any:
+        return dict_without_falsies(
+            # Omit empty entries
+            invite_entries=dict_without_falsies(
+                {key: entry.to_json() for key, entry in self.invite_entries.items()},
+            ),
+            guild_key=self.guild_key,
         )
 
     def __post_init__(self):
-        # Build the list of tags from entries.
+        self._rebuild_tag_mappings()
+
+    def _rebuild_tag_mappings(self):
+        # Build the tag to invite keys mappings
+        self.invite_entries_by_tag.clear()
         for entry in self.invite_entries.values():
             for tag in entry.tags:
                 self.invite_entries_by_tag[tag].append(entry)
 
-    def _is_invite_key_available(self, invite_key: str) -> bool:
-        # Check whether the given invite key is already in use.
-        return invite_key not in self.invite_entries
+    def _is_invite_key_available(self, key: str) -> bool:
+        # Check whether the given invite key is already in use
+        return key not in self.invite_entries.keys()
 
-    def _get_tags_from_query(self, invite_query: str) -> Set[str]:
-        return set(invite_query.split())
+    def _is_invite_tag_available(self, tag: str) -> bool:
+        # Check whether the given invite tag is already in use
+        return tag not in self.invite_entries_by_tag.keys()
 
-    def serialize(self) -> JsonObject:
-        return dict_without_falsies(
-            guild_key=self.guild_key,
-            invite_entries={
-                key: entry.serialize() for key, entry in self.invite_entries.items()
-            },
+    def require_invite(self, key: str) -> InviteEntryData:
+        # Returns the invite entry if it exists
+        if entry := self.invite_entries.get(key):
+            return entry
+        # Otherwise, raise
+        raise InviteDoesNotExist(key)
+
+    def require_guild_invite(self) -> InviteEntryData:
+        # Returns the guild invite if it exists
+        if self.guild_key and (entry := self.invite_entries.get(self.guild_key)):
+            return entry
+        # Otherwise, raise
+        raise GuildInviteNotSet
+
+    def add_invite(
+        self,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
+    ) -> InviteEntryData:
+        # Check if the invite key already exists
+        if not self._is_invite_key_available(key):
+            raise InviteKeyAlreadyExists(key)
+
+        # Check if the invite key matches an existing invite tag
+        if not self._is_invite_tag_available(key):
+            raise InviteKeyMatchesExistingTag(key)
+
+        # Check if the invite key is in this invite's tags
+        if key in tags:
+            raise InviteKeyMatchesOwnTag
+
+        # Check the invite tags
+        for tag in tags:
+            # Check if the invite tag matches an existing invite key
+            if not self._is_invite_key_available(tag):
+                raise InviteTagMatchesExistingKey(tag)
+
+        # Check if the invite link is valid
+        if not is_invite_link(link):
+            raise InvalidInviteLink(link)
+
+        # Create and add a new invite entry
+        entry = InviteEntryData(
+            key,
+            set(tags),
+            link,
+            description,
+            0,
+            user_id,
+            user_id,
+            datetime.now(),
+            datetime.now(),
         )
+        self.invite_entries[key] = entry
+        self._rebuild_tag_mappings()
+        return entry
 
-    def require_invite_entry(self, invite_key: str) -> InviteDataInviteEntry:
-        # Return the invite entry, if it exists.
-        if invite_entry := self.invite_entries.get(invite_key):
-            return invite_entry
-        # Otherwise, raise.
-        raise NoSuchInvite(invite_key)
+    def modify_invite(
+        self,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
+    ) -> InviteEntryData:
+        # The invite must exist
+        entry = self.require_invite(key)
 
-    def query_invite_entries(
-        self, invite_query: str
-    ) -> Iterable[InviteDataInviteEntry]:
-        # First, check for an exact match by key.
-        if by_key := self.invite_entries.get(invite_query):
-            yield by_key
-        # Next, check for any number of matches by tags.
-        elif tags := self._get_tags_from_query(invite_query):
-            # Yield invite entries that have *any* of the tags.
-            for invite_entry in self.invite_entries.values():
-                if tags.intersection(invite_entry.tags):
-                    yield invite_entry
+        # Check if the invite key is in this invite's tags
+        if entry.key in tags:
+            raise InviteKeyMatchesOwnTag
 
-    def add_invite(self, invite_key: str, link: str) -> InviteDataInviteEntry:
-        # Ensure the given key is available.
-        if not self._is_invite_key_available(invite_key):
-            raise InviteKeyAlreadyExists(invite_key)
-        # Create and register a new invite entry.
-        now = datetime.utcnow()
-        invite_entry = InviteDataInviteEntry(
-            key=invite_key,
-            added_on=now,
-            modified_on=now,
-            hits=0,
-            link=link,
-            tags=set(),
-            description="",
-        )
-        self.invite_entries[invite_key] = invite_entry
-        # Return the newly-created invite entry.
-        return invite_entry
+        # Check the invite tags
+        for tag in tags:
+            # Check if the invite tag matches an existing invite key
+            if not self._is_invite_key_available(tag):
+                raise InviteTagMatchesExistingKey(tag)
 
-    def remove_invite(self, invite_key: str) -> InviteDataInviteEntry:
-        # Remove and return the invite entry, if it exists.
-        if invite_entry := self.invite_entries.pop(invite_key, None):
-            # Remove the guild key, if necessary.
-            if self.guild_key == invite_entry.key:
-                self.guild_key = None
-            # Return the invite entry.
-            return invite_entry
-        # Otherwise, if it does not exist, raise.
-        raise NoSuchInvite(invite_key)
+        # Check if the invite link is valid
+        if not is_invite_link(link):
+            raise InvalidInviteLink(link)
 
-    def modify_invite_link(self, invite_key: str, link: str) -> InviteDataInviteEntry:
-        invite_entry = self.require_invite_entry(invite_key)
-        invite_entry.update_modified_on()
-        invite_entry.link = link
-        return invite_entry
+        # Modify the invite entry
+        entry.modify(tags, link, description, user_id)
+        self._rebuild_tag_mappings()
+        return entry
 
-    def modify_invite_tags(
-        self, invite_key: str, tags: Tuple[str, ...]
-    ) -> InviteDataInviteEntry:
-        invite_entry = self.require_invite_entry(invite_key)
-        invite_entry.tags = set(tags)
-        return invite_entry
+    def remove_invite(self, key: str) -> InviteEntryData:
+        # The invite must exist
+        entry = self.require_invite(key)
 
-    def modify_invite_description(
-        self, invite_key: str, description: Optional[str]
-    ) -> InviteDataInviteEntry:
-        invite_entry = self.require_invite_entry(invite_key)
-        invite_entry.description = description
-        return invite_entry
+        # Remove entry
+        del self.invite_entries[key]
+        self._rebuild_tag_mappings()
 
-    def configure_guild_key(self, invite_key: Optional[str]) -> Optional[InviteEntry]:
-        if not invite_key:
+        # Clear guild key if it was set to this entry
+        if self.guild_key == entry.key:
             self.guild_key = None
-            return
-        invite_entry = self.require_invite_entry(invite_key)
-        self.guild_key = invite_key
-        return invite_entry
+
+        return entry
+
+    def query_invites(self, query: str) -> Iterable[InviteEntryData]:
+        # First, check for an exact match by key
+        if entry := self.invite_entries.get(query):
+            yield entry
+        # Next, check if it matches any tags
+        elif entries := self.invite_entries_by_tag.get(query):
+            yield from entries
+
+    def set_guild_invite(self, key: str) -> InviteEntryData:
+        entry = self.require_invite(key)
+        self.guild_key = entry.key
+        return entry
+
+    def clear_guild_invite(self) -> InviteEntryData:
+        entry = self.require_guild_invite()
+        self.guild_key = None
+        return entry
 
 
-def _guilds_defaultdict_factory() -> DefaultDict[GuildID, InviteDataGuild]:
-    return defaultdict(lambda: InviteDataGuild())
+def _guilds_defaultdict_factory() -> defaultdict[GuildID, InviteGuildData]:
+    return defaultdict(lambda: InviteGuildData())
 
 
 # @implements InviteStore
 @dataclass
-class InviteData:
+class InviteData(JsonSerializable, FromDataMixin):
     """
     Implementation of `InviteStore` using an in-memory object hierarchy.
     """
 
-    guilds: DefaultDict[GuildID, InviteDataGuild] = field(
+    guilds: defaultdict[GuildID, InviteGuildData] = field(
         default_factory=_guilds_defaultdict_factory
     )
 
-    @staticmethod
-    def deserialize(data: JsonObject) -> "InviteData":
-        guilds = _guilds_defaultdict_factory()
-        guilds.update(
-            {
-                int(guild_id): InviteDataGuild.deserialize(raw_guild_data)
-                for guild_id, raw_guild_data in data.get("guilds", {}).items()
-            }
-        )
-        return InviteData(guilds=guilds)
+    # @overrides FromDataMixin
+    @classmethod
+    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+        if isinstance(data, dict):
+            # Construct guild data
+            guilds = _guilds_defaultdict_factory()
+            for raw_guild_id, raw_guild_data in data.get("guilds", {}).items():
+                guild_id = int(raw_guild_id)
+                guilds[guild_id] = InviteGuildData.from_data(raw_guild_data)
 
-    def serialize(self) -> JsonObject:
-        # Omit empty guilds, as well as an empty list of guilds.
+            return cls(guilds=guilds)
+
+    # @implements JsonSerializable
+    def to_json(self) -> Any:
+        # Omit empty guilds, as well as an empty list of guilds
         return dict_without_falsies(
             guilds=dict_without_falsies(
                 {
-                    str(guild_id): guild_data.serialize()
+                    str(guild_id): guild_data.to_json()
                     for guild_id, guild_data in self.guilds.items()
                 }
             )
         )
 
     # @implements InviteStore
-    async def get_invite_entries(self, guild: Guild) -> List[InviteEntry]:
-        return [
-            invite_entry
-            for invite_entry in self.guilds[guild.id].invite_entries.values()
-        ]
+    async def require_invite(self, guild: Guild, key: str) -> InviteEntry:
+        return self.guilds[guild.id].require_invite(key)
 
     # @implements InviteStore
-    async def require_invite_entry(self, guild: Guild, invite_key: str) -> InviteEntry:
-        return self.guilds[guild.id].require_invite_entry(invite_key)
+    async def require_guild_invite(self, guild: Guild) -> InviteEntry:
+        return self.guilds[guild.id].require_guild_invite()
 
     # @implements InviteStore
-    async def query_invite_entries(
-        self, guild: Guild, invite_query: str
+    async def add_invite(
+        self,
+        guild: Guild,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
+    ) -> InviteEntry:
+        return self.guilds[guild.id].add_invite(key, tags, link, description, user_id)
+
+    # @implements InviteStore
+    async def modify_invite(
+        self,
+        guild: Guild,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
+    ) -> InviteEntry:
+        return self.guilds[guild.id].modify_invite(
+            key, tags, link, description, user_id
+        )
+
+    # @implements InviteStore
+    async def increment_invite_hits(self, entry: InviteEntry):
+        entry.hits += 1
+
+    # @implements InviteStore
+    async def remove_invite(self, guild: Guild, key: str) -> InviteEntry:
+        return self.guilds[guild.id].remove_invite(key)
+
+    # @implements InviteStore
+    async def query_invites(
+        self, guild: Guild, query: str
     ) -> AsyncIterable[InviteEntry]:
-        for invite_entry in self.guilds[guild.id].query_invite_entries(invite_query):
-            yield invite_entry
+        for entry in self.guilds[guild.id].query_invites(query):
+            yield entry
+
+    def _all_invites_matching(
+        self, guild: Guild, invite_filter: Optional[str], case_sensitive: bool
+    ) -> Iterable[InviteEntry]:
+        if not invite_filter:
+            yield from self.guilds[guild.id].invite_entries.values()
+        else:
+            invite_filter = invite_filter if case_sensitive else invite_filter.lower()
+            for entry in self.guilds[guild.id].invite_entries.values():
+                invite_key: str = entry.key if case_sensitive else entry.key.lower()
+                if invite_filter in invite_key:
+                    yield entry
+
+    def _all_tags_matching(
+        self, guild: Guild, tag_filter: Optional[str], case_sensitive: bool
+    ) -> Iterable[str]:
+        if not tag_filter:
+            yield from self.guilds[guild.id].invite_entries_by_tag.keys()
+        else:
+            tag_filter = tag_filter if case_sensitive else tag_filter.lower()
+            for tag in self.guilds[guild.id].invite_entries_by_tag.keys():
+                invite_tag: str = tag if case_sensitive else tag.lower()
+                if tag_filter in invite_tag:
+                    yield tag
 
     # @implements InviteStore
-    async def get_guild_invite_entry(self, guild: Guild) -> Optional[InviteEntry]:
-        return self.guilds[guild.id].guild_invite_entry
+    async def get_invites(
+        self,
+        guild: Guild,
+        *,
+        invite_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None,
+    ) -> AsyncIterable[InviteEntry]:
+        entries = self._all_invites_matching(guild, invite_filter, case_sensitive)
+        maybe_sorted_entries = (
+            sorted(entries, key=lambda entry: entry.key) if sort else entries
+        )
+        for entry in islice(maybe_sorted_entries, cap):
+            yield entry
 
     # @implements InviteStore
-    async def increment_invite_hits(self, invite_entry: InviteEntry):
-        invite_entry.hits += 1
+    async def get_tags(
+        self,
+        guild: Guild,
+        *,
+        tag_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None,
+    ) -> AsyncIterable[str]:
+        tags = self._all_tags_matching(guild, tag_filter, case_sensitive)
+        maybe_sorted_tags = sorted(tags) if sort else tags
+        for tag in islice(maybe_sorted_tags, cap):
+            yield tag
 
     # @implements InviteStore
-    async def add_invite(self, guild: Guild, invite_key: str, link: str) -> InviteEntry:
-        return self.guilds[guild.id].add_invite(invite_key, link=link)
+    async def get_invites_and_tags(
+        self,
+        guild: Guild,
+        *,
+        item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None,
+    ) -> AsyncIterable[Union[InviteEntry, str]]:
+        items = chain(
+            self._all_invites_matching(guild, item_filter, case_sensitive),
+            self._all_tags_matching(guild, item_filter, case_sensitive),
+        )
+
+        def item_cmp(item: Union[InviteEntry, str]) -> str:
+            return item if isinstance(item, str) else item.key
+
+        maybe_sorted_items = sorted(items, key=item_cmp) if sort else items
+        for item in islice(maybe_sorted_items, cap):
+            yield item
 
     # @implements InviteStore
-    async def remove_invite(self, guild: Guild, invite_key: str) -> InviteEntry:
-        return self.guilds[guild.id].remove_invite(invite_key)
+    async def set_guild_invite(self, guild: Guild, key: str) -> InviteEntry:
+        return self.guilds[guild.id].set_guild_invite(key)
 
     # @implements InviteStore
-    async def modify_invite_link(
-        self, guild: Guild, invite_key: str, link: str
-    ) -> InviteEntry:
-        return self.guilds[guild.id].modify_invite_link(invite_key, link)
-
-    # @implements InviteStore
-    async def modify_invite_tags(
-        self, guild: Guild, invite_key: str, tags: Tuple[str, ...]
-    ) -> InviteEntry:
-        return self.guilds[guild.id].modify_invite_tags(invite_key, tags)
-
-    # @implements InviteStore
-    async def modify_invite_description(
-        self, guild: Guild, invite_key: str, description: Optional[str]
-    ) -> InviteEntry:
-        return self.guilds[guild.id].modify_invite_description(invite_key, description)
-
-    # @implements InviteStore
-    async def configure_guild_key(
-        self, guild: Guild, invite_key: Optional[str]
-    ) -> Optional[InviteEntry]:
-        return self.guilds[guild.id].configure_guild_key(invite_key)
+    async def clear_guild_invite(self, guild: Guild) -> InviteEntry:
+        return self.guilds[guild.id].clear_guild_invite()

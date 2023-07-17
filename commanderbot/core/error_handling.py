@@ -170,7 +170,6 @@ class ErrorHandling:
                 self.log.exception(
                     f"Ignoring unhandled exception from command: `{command_name(interaction)}`"
                 )
-
             await send_or_followup(
                 interaction,
                 f"🔥 Something went wrong trying to do that.",

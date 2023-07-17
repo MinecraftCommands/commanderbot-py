@@ -41,6 +41,13 @@ from discord.ext.commands import Bot, Context
 from commanderbot.lib.types import RoleID
 
 CHARACTER_CAP = 1900
+INVITE_LINK_PATTERN = re.compile(
+    r"(?:https?://)?discord(?:app)?\.(?:com/invite|gg)/[a-zA-Z0-9]+/?"
+)
+MESSAGE_LINK_PATTERN = re.compile(
+    r"https:\/\/discord(?:app)?\.com\/channels\/(\d+|@me)\/(\d+)\/(\d+)"
+)
+CUSTOM_EMOJI_PATTERN = re.compile(r"\<a?\:\w+\:\d+\>")
 
 T = TypeVar("T")
 
@@ -58,6 +65,21 @@ def is_owner(client: Client, user: Union[User, Member]) -> bool:
         return user.id in [i.id for i in info.team.members]
     else:
         return user == info.owner
+
+
+def is_invite_link(invite: str) -> bool:
+    """Return true if `invite` is a valid Discord invite link"""
+    return bool(INVITE_LINK_PATTERN.match(invite))
+
+
+def is_message_link(message: str) -> bool:
+    """Return true if `message` is a valid Discord message link"""
+    return bool(MESSAGE_LINK_PATTERN.match(message))
+
+
+def is_custom_emoji(emoji: str) -> bool:
+    """Return true if `emoji` is a valid custom Discord emoji"""
+    return bool(CUSTOM_EMOJI_PATTERN.match(emoji))
 
 
 def member_roles_from(member: User | Member, role_ids: Set[RoleID]) -> Set[RoleID]:

@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, Union
 
-from discord import Interaction, AllowedMentions
+from discord import AllowedMentions, Interaction
 from discord.ext.commands import Context
 
 __all__ = ("ResponsiveException",)
@@ -21,7 +21,7 @@ class ResponsiveException(Exception):
 
     async def respond(
         self,
-        ctx: Context | Interaction,
+        context: Union[Context, Interaction],
         allowed_mentions: Optional[AllowedMentions] = None,
     ):
         allowed_mentions = (
@@ -30,14 +30,19 @@ class ResponsiveException(Exception):
             or self.allowed_mentions_default_factory()
         )
 
-        if isinstance(ctx, Context):
-            await ctx.message.reply(str(self), allowed_mentions=allowed_mentions)
-        elif isinstance(ctx, Interaction):
-            if not ctx.response.is_done():
-                await ctx.response.send_message(
-                    str(self), allowed_mentions=allowed_mentions, ephemeral=True
-                )
-            else:
-                await ctx.followup.send(
-                    str(self), allowed_mentions=allowed_mentions, ephemeral=True
-                )
+        # Handle command errors
+        if isinstance(context, Context):
+            await context.message.reply(str(self), allowed_mentions=allowed_mentions)
+            return
+
+        # Handle app command errors that haven't had their interaction responded to
+        if not context.response.is_done():
+            await context.response.send_message(
+                str(self), allowed_mentions=allowed_mentions, ephemeral=True
+            )
+            return
+
+        # Handle app command errors that had their interaction responded to
+        await context.followup.send(
+            str(self), allowed_mentions=allowed_mentions, ephemeral=True
+        )

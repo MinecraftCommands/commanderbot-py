@@ -1,11 +1,15 @@
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional, Tuple
+from typing import Iterable
 
+from discord import Embed, Interaction, TextStyle
+from discord.ui import TextInput
+from discord.utils import format_dt
+
+from commanderbot.ext.invite.invite_exceptions import QueryReturnedNoResults
 from commanderbot.ext.invite.invite_store import InviteEntry, InviteStore
-from commanderbot.lib import GuildContext
 from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
+from commanderbot.lib.cogs.views import CogStateModal
+from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
 from commanderbot.lib.utils import async_expand
 
 
@@ -22,128 +26,275 @@ class InviteGuildState(CogGuildState):
 
     store: InviteStore
 
-    async def show_invite(self, ctx: GuildContext, invite_query: str):
-        if invite_entries := await async_expand(
-            self.store.query_invite_entries(self.guild, invite_query)
-        ):
-            lines = []
-            for invite_entry in invite_entries:
-                await self.store.increment_invite_hits(invite_entry)
-                lines.append(invite_entry.line)
-            content = "\n".join(lines)
-            await ctx.send(content)
+    def _format_tags(self, tags: Iterable[str], *, delim: str = ",") -> str:
+        return f"{delim} ".join((f"`{tag}`" for tag in tags))
+
+    def _format_invite(self, entry: InviteEntry) -> str:
+        if entry.description:
+            return f"`{entry.key}` - {entry.description}"
+        return f"`{entry.key}`"
+
+    def _format_invite_line(self, entry: InviteEntry) -> str:
+        if entry.description:
+            return f"{entry.link} - {entry.description}"
+        return entry.link
+
+    async def get_invite(self, interaction: Interaction, query: str):
+        if entries := await async_expand(self.store.query_invites(self.guild, query)):
+            lines: list[str] = []
+            for entry in entries:
+                await self.store.increment_invite_hits(entry)
+                lines.append(self._format_invite_line(entry))
+            await interaction.response.send_message("\n".join(lines))
         else:
-            await ctx.send(f"No invites matching `{invite_query}`")
+            raise QueryReturnedNoResults(query)
 
-    async def show_guild_invite(self, ctx: GuildContext):
-        if invite_entry := await self.store.get_guild_invite_entry(self.guild):
-            await self.store.increment_invite_hits(invite_entry)
-            await ctx.send(invite_entry.line)
-        else:
-            await self.list_invites(ctx)
+    async def list_invites(self, interaction: Interaction):
+        # Get all invites and tags
+        total_invites: int = 0
+        all_descriptive_entries: list[InviteEntry] = []
+        all_entries: list[InviteEntry] = []
+        async for entry in self.store.get_invites(self.guild, sort=True):
+            total_invites += 1
+            if entry.description:
+                all_descriptive_entries.append(entry)
+            else:
+                all_entries.append(entry)
 
-    async def show_invite_details(self, ctx: GuildContext, invite_query: str):
-        if invite_entries := await async_expand(
-            self.store.query_invite_entries(self.guild, invite_query)
-        ):
-            for invite_entry in invite_entries:
-                tags_str = ", ".join(invite_entry.sorted_tags)
-                now = datetime.utcnow()
-                added_on_timestamp = invite_entry.added_on.isoformat()
-                added_on_delta = now - invite_entry.added_on
-                added_on_str = f"{added_on_timestamp} ({added_on_delta})"
-                modified_on_timestamp = invite_entry.modified_on.isoformat()
-                modified_on_delta = now - invite_entry.modified_on
-                modified_on_str = f"{modified_on_timestamp} ({modified_on_delta})"
-                lines = [
-                    "```",
-                    f"Key:         {invite_entry.key}",
-                    f"Tags:        {tags_str}",
-                    f"Description: {invite_entry.description}",
-                    f"Added on:    {added_on_str}",
-                    f"Modified on: {modified_on_str}",
-                    f"Hits:        {invite_entry.hits}",
-                    "```",
-                ]
-                content = "\n".join(lines)
-                await ctx.send(content)
-        else:
-            await ctx.send(f"No invites matching `{invite_query}`")
+        all_tags = await async_expand(self.store.get_tags(self.guild, sort=True))
 
-    async def list_invites(self, ctx: GuildContext):
-        if invite_entries := await self.store.get_invite_entries(self.guild):
-            # Sort entries alphabetically by key.
-            sorted_invite_entries = sorted(
-                invite_entries, key=lambda invite_entry: invite_entry.key
-            )
-            count = len(sorted_invite_entries)
-            lines = [f"There are {count} invites available:", "```"]
-            for invite_entry in sorted_invite_entries:
-                if invite_entry.description:
-                    lines.append(f"{invite_entry.key} - {invite_entry.description}")
-                else:
-                    lines.append(f"{invite_entry.key}")
-            lines.append("```")
-            text = "\n".join(lines)
-            await ctx.send(text)
-        else:
-            await ctx.send(f"No invites available")
+        # Format lines for embed description
+        lines: list[str] = []
+        if all_descriptive_entries or all_entries:
+            lines.append("📩 **Invites**")
 
-    async def add_invite(self, ctx: GuildContext, invite_key: str, link: str):
-        invite_entry = await self.store.add_invite(self.guild, invite_key, link=link)
-        await ctx.send(f"Added invite `{invite_entry.key}`")
+            # Add descriptive entries if they exist
+            if all_descriptive_entries:
+                entries_gen = (
+                    f"• {self._format_invite(e)}" for e in all_descriptive_entries
+                )
+                lines.extend((*entries_gen, ""))
 
-    async def remove_invite(self, ctx: GuildContext, invite_key: str):
-        # Get the corresponding invite entry.
-        invite_entry = await self.store.require_invite_entry(self.guild, invite_key)
-        # Then ask for confirmation to actually remove it.
-        conf = await confirm_with_reaction(
-            self.bot,
-            ctx,
-            f"Are you sure you want to remove invite `{invite_entry.key}`?",
+            # Add regular entries if they exist
+            if all_entries:
+                lines.extend(
+                    (", ".join((self._format_invite(e) for e in all_entries)), "")
+                )
+
+            # Add tags if they exist
+            if all_tags:
+                lines.append(f"📦 **Tags**\n{self._format_tags(all_tags)}")
+
+        # Create invite list embed
+        embed = Embed(
+            title="Available Invites and Tags",
+            description="\n".join(lines) or "**None!**",
+            color=0x00ACED,
         )
-        # If the answer was yes, attempt to remove the invite and send a response.
-        if conf == ConfirmationResult.YES:
-            removed_entry = await self.store.remove_invite(self.guild, invite_key)
-            await ctx.send(f"Removed invite `{removed_entry.key}`")
-        # If the answer was no, send a response.
-        elif conf == ConfirmationResult.NO:
-            await ctx.send(f"Did not remove invite `{invite_key}`")
-        # If no answer was provided, don't do anything.
+        embed.set_footer(text=f"Invites: {total_invites} | Tags: {len(all_tags)}")
 
-    async def modify_invite_link(self, ctx: GuildContext, invite_key: str, link: str):
-        invite_entry = await self.store.modify_invite_link(self.guild, invite_key, link)
-        await ctx.send(
-            f"Set link for invite `{invite_entry.key}` to: `{invite_entry.link}`"
+        await interaction.response.send_message(embed=embed)
+
+    async def get_guild_invite(self, interaction: Interaction):
+        entry: InviteEntry = await self.store.require_guild_invite(self.guild)
+        await self.store.increment_invite_hits(entry)
+        await interaction.response.send_message(self._format_invite_line(entry))
+
+    async def add_invite(self, interaction: Interaction):
+        await interaction.response.send_modal(AddInviteModal(interaction, self))
+
+    async def modify_invite(self, interaction: Interaction, invite: str):
+        entry: InviteEntry = await self.store.require_invite(self.guild, invite)
+        await interaction.response.send_modal(
+            ModifyInviteModal(interaction, self, entry)
         )
 
-    async def modify_invite_tags(
-        self, ctx: GuildContext, invite_key: str, tags: Tuple[str, ...]
+    async def remove_invite(self, interaction: Interaction, invite: str):
+        # Try to get the invite
+        entry: InviteEntry = await self.store.require_invite(self.guild, invite)
+
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove invite `{entry.key}`?",
+            timeout=10.0,
+        )
+
+        match result:
+            case ConfirmationResult.YES:
+                # If the answer was yes, attempt to remove the invite and send a response
+                try:
+                    await self.store.remove_invite(self.guild, entry.key)
+                    await interaction.followup.send(
+                        content=f"Removed invite: `{entry.key}`"
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ex
+            case _:
+                # If the answer was no, send a response
+                await interaction.followup.send(f"Did not remove invite: `{entry.key}`")
+
+    async def show_invite_details(self, interaction: Interaction, invite: str):
+        # Try to get the invite
+        entry: InviteEntry = await self.store.require_invite(self.guild, invite)
+
+        # Format the tags so each tag is in an inline code block
+        formatted_tags: str = self._format_tags(entry.sorted_tags) or "**None!**"
+
+        # Create invite details embed
+        embed = Embed(
+            title=f"Details For Invite `{entry.key}`",
+            description=f"**Preview**\n> {self._format_invite_line(entry)}",
+            color=0x00ACED,
+        )
+        embed.add_field(name="Key", value=f"`{entry.key}`", inline=False)
+        embed.add_field(name="Tags", value=formatted_tags, inline=False)
+        embed.add_field(name="Hits", value=f"`{entry.hits}`")
+        embed.add_field(
+            name="Added By",
+            value=f"<@{entry.added_by_id}> ({format_dt(entry.added_on, 'R')})",
+        )
+        embed.add_field(
+            name="Modified By",
+            value=f"<@{entry.modified_by_id}> ({format_dt(entry.modified_on, 'R')})",
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    async def set_guild_invite(self, interaction: Interaction, invite: str):
+        entry: InviteEntry = await self.store.set_guild_invite(self.guild, invite)
+        await interaction.response.send_message(
+            f"Set invite `{entry.key}` as the invite for this guild"
+        )
+
+    async def clear_guild_invite(self, interaction: Interaction):
+        await self.store.clear_guild_invite(self.guild)
+        await interaction.response.send_message(f"Cleared the invite for this guild")
+
+    async def show_guild_invite(self, interaction: Interaction):
+        entry: InviteEntry = await self.store.require_guild_invite(self.guild)
+        await interaction.response.send_message(
+            f"Using invite `{entry.key}` as the invite for this guild"
+        )
+
+
+class InviteModal(CogStateModal[InviteGuildState, InviteStore]):
+    """
+    Base class for all invite modals
+    """
+
+    # Delimiter used between tag items
+    delim: str = ","
+
+    @classmethod
+    def tags_from_str(cls, tags_str: str) -> list[str]:
+        tag_gen = (tag.strip() for tag in tags_str.split(cls.delim))
+        return [tag for tag in tag_gen if tag]
+
+    @classmethod
+    def tags_to_str(cls, tags: Iterable[str]) -> str:
+        return f"{cls.delim} ".join(tags)
+
+
+class AddInviteModal(InviteModal):
+    def __init__(self, interaction: Interaction, state: InviteGuildState):
+        super().__init__(
+            interaction,
+            state,
+            title="Add a New Invite",
+            custom_id="commanderbot_ext:invite.add",
+        )
+
+        self.key_field = TextInput(
+            label="Key",
+            style=TextStyle.short,
+            placeholder="Ex: sample-text",
+            required=True,
+        )
+        self.tags_field = TextInput(
+            label="Tags",
+            style=TextStyle.short,
+            placeholder="A comma separated list of tags. Ex: foo, bar, baz",
+            required=False,
+        )
+        self.link_field = TextInput(
+            label="Link",
+            style=TextStyle.short,
+            placeholder="Ex: https://discord.gg/...",
+            required=True,
+        )
+        self.description_field = TextInput(
+            label="Description (64 characters max)",
+            style=TextStyle.short,
+            placeholder="A short description about this invite.",
+            max_length=64,
+            required=False,
+        )
+
+        self.add_item(self.key_field)
+        self.add_item(self.tags_field)
+        self.add_item(self.link_field)
+        self.add_item(self.description_field)
+
+    async def on_submit(self, interaction: Interaction):
+        entry: InviteEntry = await self.store.add_invite(
+            guild=self.state.guild,
+            key=self.key_field.value.strip(),
+            tags=self.tags_from_str(self.tags_field.value),
+            link=self.link_field.value.strip(),
+            description=self.description_field.value.strip() or None,
+            user_id=interaction.user.id,
+        )
+        await interaction.response.send_message(f"Added invite: `{entry.key}`")
+
+
+class ModifyInviteModal(InviteModal):
+    def __init__(
+        self, interaction: Interaction, state: InviteGuildState, entry: InviteEntry
     ):
-        invite_entry = await self.store.modify_invite_tags(self.guild, invite_key, tags)
-        if tags:
-            tags_str = "`" + "` `".join(invite_entry.sorted_tags) + "`"
-            await ctx.send(f"Set tags for invite `{invite_entry.key}` to: {tags_str}")
-        else:
-            await ctx.send(f"Removed tags for invite `{invite_entry.key}`")
-
-    async def modify_invite_description(
-        self, ctx: GuildContext, invite_key: str, description: Optional[str]
-    ):
-        invite_entry = await self.store.modify_invite_description(
-            self.guild, invite_key, description
+        self.invite_key: str = entry.key
+        super().__init__(
+            interaction,
+            state,
+            title=f"Modifying Invite: {entry.key}",
+            custom_id="commanderbot_ext:invite.modify",
         )
-        if description:
-            await ctx.send(
-                f"Set description for invite `{invite_entry.key}` to: `{description}`"
-            )
-        else:
-            await ctx.send(f"Removed description for invite `{invite_entry.key}`")
 
-    async def configure_guild_key(self, ctx: GuildContext, invite_key: Optional[str]):
-        if invite_entry := await self.store.configure_guild_key(self.guild, invite_key):
-            await ctx.send(
-                f"Set the invite key for this guild to: `{invite_entry.key}` {invite_entry.link}"
-            )
-        else:
-            await ctx.send(f"Removed the invite key for this guild")
+        self.tags_field = TextInput(
+            label="Tags",
+            style=TextStyle.short,
+            placeholder="A comma separated list of tags. Ex: foo, bar, baz",
+            default=self.tags_to_str(entry.sorted_tags),
+            required=False,
+        )
+        self.link_field = TextInput(
+            label="Link",
+            style=TextStyle.short,
+            placeholder="Ex: https://discord.gg/...",
+            default=entry.link,
+            required=True,
+        )
+        self.description_field = TextInput(
+            label="Description (64 characters max)",
+            style=TextStyle.short,
+            placeholder="A short description about this invite.",
+            default=entry.description,
+            max_length=64,
+            required=False,
+        )
+
+        self.add_item(self.tags_field)
+        self.add_item(self.link_field)
+        self.add_item(self.description_field)
+
+    async def on_submit(self, interaction: Interaction):
+        entry: InviteEntry = await self.store.modify_invite(
+            guild=self.state.guild,
+            key=self.invite_key,
+            tags=self.tags_from_str(self.tags_field.value),
+            link=self.link_field.value.strip(),
+            description=self.description_field.value.strip() or None,
+            user_id=interaction.user.id,
+        )
+        await interaction.response.send_message(f"Modified invite: `{entry.key}`")

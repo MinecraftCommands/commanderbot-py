@@ -1,29 +1,34 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any, Optional, Type, TypeVar
 
+from commanderbot.lib import FromDataMixin
 from commanderbot.lib.cogs.database import (
     DatabaseOptions,
     InMemoryDatabaseOptions,
     make_database_options,
 )
 
+ST = TypeVar("ST")
+
 
 @dataclass
-class FaqOptions:
+class FaqOptions(FromDataMixin):
     database: DatabaseOptions = field(default_factory=InMemoryDatabaseOptions)
 
     allow_prefix: bool = True
     allow_match: bool = True
+    term_cap: int = 10
     match_cap: int = 3
-    query_cap: int = 10
 
-    @staticmethod
-    def from_dict(options: Dict[str, Any]) -> "FaqOptions":
-        database_options = make_database_options(options.get("database"))
-        return FaqOptions(
-            database=database_options,
-            allow_prefix=options.get("allow_prefix", True),
-            allow_match=options.get("allow_match", True),
-            match_cap=options.get("match_cap", 3),
-            query_cap=options.get("query_cap", 10),
-        )
+    # @overrides FromDataMixin
+    @classmethod
+    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+        if isinstance(data, dict):
+            database_options = make_database_options(data.get("database"))
+            return cls(
+                database=database_options,
+                allow_prefix=data.get("allow_prefix", True),
+                allow_match=data.get("allow_match", True),
+                term_cap=data.get("term_cap", 10),
+                match_cap=data.get("match_cap", 3),
+            )

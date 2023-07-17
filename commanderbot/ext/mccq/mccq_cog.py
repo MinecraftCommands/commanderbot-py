@@ -250,7 +250,7 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
             command_text += "\n# ... trimmed {} results".format(num_trimmed_results)
 
         # render the full code section
-        code_section = "```python\n{}\n```".format(command_text)
+        code_section = "```hs\n{}\n```".format(command_text)
 
         help_section = None
 

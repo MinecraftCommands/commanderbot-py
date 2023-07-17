@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - The error handler now supports slash command errors
+- Added custom slash command transformers:
+  - `EmojiTransformer`
+  - `MessageTransformer`
+  - `ColorTransformer`
+- Added custom slash command checks:
+  - `is_owner`
+  - `is_administrator`
+  - `is_guild_admin_or_bot_owner`
+- Added base classes for views and modals that need access to a cog with a database
+- Added a confirmation dialog that uses buttons
 - `sudo`:
   - Added a way to sync slash commands globally or to a specific guild
   - Added a way to export a cog's database
@@ -23,19 +33,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
-- Adjusted the format of the presence status set by `mccq`
+- `invite`: Ported to slash commands
+- `faq`: Ported to slash commands
 - `jira`:
+  - Ported to slash commands
   - Querying `jira` issues using a URL as the argument will now ignore the base URL stored in the `jira` cog and instead get it from the argument
   - Fixed an issue where the embed's status colors weren't being applied
-- `quote`: Added descriptions to the commands
-- `kick`: Ported to slash commands
-- `status`: Ported to slash commands
-- `ping`: Ported to slash commands
+- `quote`:
+  - Ported to slash commands
+  - The commands now have descriptions
+- `kick`:
+  - Ported to slash commands
+  - The command is now unable to kick members with elevated permissions
 - `manifest`: Ported to slash commands
 - `stacktracer`:
   - Ported to slash commands
   - Errors now use an embed
 - `automod`: Errors now use an embed
+- `mccq`:
+  - Adjusted the format of the presence status set by `mccq`
+  - Changed syntax highlighting to `hs`
+- `status`: Ported to slash commands
+- `ping`: Ported to slash commands
+- Reworked how cogs with a database are created
 
 ## [0.19.0] - 2022-08-27
 

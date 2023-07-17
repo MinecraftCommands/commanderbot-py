@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import AsyncIterable, List, Optional, Tuple
+from typing import AsyncIterable, Optional, Union
 
 from discord import Guild
 
 from commanderbot.ext.invite.invite_data import InviteData
 from commanderbot.ext.invite.invite_store import InviteEntry
+from commanderbot.lib import UserID
 from commanderbot.lib.cogs import CogStore
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
@@ -19,81 +20,136 @@ class InviteJsonStore(CogStore):
     db: JsonFileDatabaseAdapter[InviteData]
 
     # @implements InviteStore
-    async def get_invite_entries(self, guild: Guild) -> List[InviteEntry]:
+    async def require_invite(self, guild: Guild, key: str) -> InviteEntry:
         cache = await self.db.get_cache()
-        return await cache.get_invite_entries(guild)
+        return await cache.require_invite(guild, key)
 
     # @implements InviteStore
-    async def require_invite_entry(self, guild: Guild, invite_key: str) -> InviteEntry:
+    async def require_guild_invite(self, guild: Guild) -> InviteEntry:
         cache = await self.db.get_cache()
-        return await cache.require_invite_entry(guild, invite_key)
+        return await cache.require_guild_invite(guild)
 
     # @implements InviteStore
-    async def query_invite_entries(
-        self, guild: Guild, invite_query: str
+    async def add_invite(
+        self,
+        guild: Guild,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
+    ) -> InviteEntry:
+        cache = await self.db.get_cache()
+        entry = await cache.add_invite(guild, key, tags, link, description, user_id)
+        await self.db.dirty()
+        return entry
+
+    # @implements InviteStore
+    async def modify_invite(
+        self,
+        guild: Guild,
+        key: str,
+        tags: list[str],
+        link: str,
+        description: Optional[str],
+        user_id: UserID,
+    ) -> InviteEntry:
+        cache = await self.db.get_cache()
+        entry = await cache.modify_invite(guild, key, tags, link, description, user_id)
+        await self.db.dirty()
+        return entry
+
+    # @implements InviteStore
+    async def increment_invite_hits(self, entry: InviteEntry):
+        cache = await self.db.get_cache()
+        await cache.increment_invite_hits(entry)
+        await self.db.dirty()
+
+    # @implements InviteStore
+    async def remove_invite(self, guild: Guild, key: str) -> InviteEntry:
+        cache = await self.db.get_cache()
+        entry = await cache.remove_invite(guild, key)
+        await self.db.dirty()
+        return entry
+
+    # @implements InviteStore
+    async def query_invites(
+        self, guild: Guild, query: str
     ) -> AsyncIterable[InviteEntry]:
         cache = await self.db.get_cache()
-        async for invite_entry in cache.query_invite_entries(guild, invite_query):
-            yield invite_entry
+        async for entry in cache.query_invites(guild, query):
+            yield entry
 
     # @implements InviteStore
-    async def get_guild_invite_entry(self, guild: Guild) -> Optional[InviteEntry]:
+    async def get_invites(
+        self,
+        guild: Guild,
+        *,
+        invite_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None
+    ) -> AsyncIterable[InviteEntry]:
         cache = await self.db.get_cache()
-        return await cache.get_guild_invite_entry(guild)
+        async for entry in cache.get_invites(
+            guild,
+            invite_filter=invite_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
+        ):
+            yield entry
 
     # @implements InviteStore
-    async def increment_invite_hits(self, invite_entry: InviteEntry):
+    async def get_tags(
+        self,
+        guild: Guild,
+        *,
+        tag_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None
+    ) -> AsyncIterable[str]:
         cache = await self.db.get_cache()
-        await cache.increment_invite_hits(invite_entry)
-        await self.db.dirty()
+        async for tag in cache.get_tags(
+            guild,
+            tag_filter=tag_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
+        ):
+            yield tag
 
     # @implements InviteStore
-    async def add_invite(self, guild: Guild, invite_key: str, link: str) -> InviteEntry:
+    async def get_invites_and_tags(
+        self,
+        guild: Guild,
+        *,
+        item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None
+    ) -> AsyncIterable[Union[InviteEntry, str]]:
         cache = await self.db.get_cache()
-        invite_entry = await cache.add_invite(guild, invite_key, link=link)
-        await self.db.dirty()
-        return invite_entry
+        async for item in cache.get_invites_and_tags(
+            guild,
+            item_filter=item_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
+        ):
+            yield item
 
     # @implements InviteStore
-    async def remove_invite(self, guild: Guild, invite_key: str) -> InviteEntry:
+    async def set_guild_invite(self, guild: Guild, key: str) -> InviteEntry:
         cache = await self.db.get_cache()
-        invite_entry = await cache.remove_invite(guild, invite_key)
+        entry = await cache.set_guild_invite(guild, key)
         await self.db.dirty()
-        return invite_entry
+        return entry
 
     # @implements InviteStore
-    async def modify_invite_link(
-        self, guild: Guild, invite_key: str, link: str
-    ) -> InviteEntry:
+    async def clear_guild_invite(self, guild: Guild) -> InviteEntry:
         cache = await self.db.get_cache()
-        invite_entry = await cache.modify_invite_link(guild, invite_key, link)
+        entry = await cache.clear_guild_invite(guild)
         await self.db.dirty()
-        return invite_entry
-
-    # @implements InviteStore
-    async def modify_invite_tags(
-        self, guild: Guild, invite_key: str, tags: Tuple[str, ...]
-    ) -> InviteEntry:
-        cache = await self.db.get_cache()
-        invite_entry = await cache.modify_invite_tags(guild, invite_key, tags)
-        await self.db.dirty()
-        return invite_entry
-
-    async def modify_invite_description(
-        self, guild: Guild, invite_key: str, description: Optional[str]
-    ) -> InviteEntry:
-        cache = await self.db.get_cache()
-        invite_entry = await cache.modify_invite_description(
-            guild, invite_key, description
-        )
-        await self.db.dirty()
-        return invite_entry
-
-    # @implements InviteStore
-    async def configure_guild_key(
-        self, guild: Guild, invite_key: Optional[str]
-    ) -> Optional[InviteEntry]:
-        cache = await self.db.get_cache()
-        invite_entry = await cache.configure_guild_key(guild, invite_key)
-        await self.db.dirty()
-        return invite_entry
+        return entry

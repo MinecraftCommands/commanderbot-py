@@ -1,10 +1,35 @@
+import re
 from logging import Logger, getLogger
+from typing import Optional
 
-from discord import ui, Embed
-from discord.ext.commands import Bot, Cog, Context, command
+from discord import Embed, Interaction, ui
+from discord.app_commands import Transform, Transformer, command, describe
+from discord.ext.commands import Bot, Cog
 
-from commanderbot.ext.jira.jira_client import JiraClient
+from commanderbot.ext.jira.jira_client import JiraClient, JiraQuery
+from commanderbot.ext.jira.jira_exceptions import InvalidIssueFormat
 from commanderbot.ext.jira.jira_issue import JiraIssue
+
+JIRA_URL_PATTERN = re.compile(r"^(https?://[^/]+).*?(\w+)-(\d+)")
+JIRA_ISSUE_ID_PATTERN = re.compile(r"^(\w+)-(\d+)")
+
+
+class JiraQueryTransformer(Transformer):
+    """
+    A transformer that creates a `JiraQuery` from an issue ID or URL
+    """
+
+    async def transform(self, interaction: Interaction, value: str) -> JiraQuery:
+        # Throw away any request parameters
+        raw_query: str = value.split("?")[0]
+        if matches := JIRA_URL_PATTERN.match(raw_query):
+            base_url, project, id = matches.groups()
+            return JiraQuery(base_url, f"{project.upper()}-{int(id)}")
+        elif matches := JIRA_ISSUE_ID_PATTERN.match(raw_query):
+            project, id = matches.groups()
+            return JiraQuery(None, f"{project.upper()}-{int(id)}")
+        else:
+            raise InvalidIssueFormat
 
 
 class JiraCog(Cog, name="commanderbot.ext.jira"):
@@ -13,18 +38,32 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
         self.log: Logger = getLogger(self.qualified_name)
 
         # Get the URL from the config
-        url = options.get("url", "")
+        url: Optional[str] = options.get("url")
         if not url:
-            # Log an error if the URL doesn't exist
-            self.log.error("No Jira URL was given in the bot config")
+            self.log.warn(
+                "No Jira URL was given in the bot config. "
+                "You can still request Jira issues, but you'll need to use the full URL."
+            )
 
         # Create the Jira client
-        self.jira_client: JiraClient = JiraClient(url)
+        self.jira_client = JiraClient(url)
 
-    @command(name="jira", aliases=["bug"])
-    async def cmd_jira(self, ctx: Context, issue_or_url: str):
+    @command(name="jira", description="Query a Jira issue")
+    @describe(query="The issue ID or URL to query")
+    async def cmd_jira(
+        self,
+        interaction: Interaction,
+        query: Transform[JiraQuery, JiraQueryTransformer],
+    ):
+        # Repond to the interaction with a defer since the web request may take a while
+        await interaction.response.defer()
+
         # Try to get the issue
-        issue: JiraIssue = await self.jira_client.get_issue(issue_or_url)
+        try:
+            issue: JiraIssue = await self.jira_client.get_issue(query)
+        except Exception as ex:
+            await interaction.delete_original_response()
+            raise ex
 
         # Create embed title and limit it to 256 characters
         title: str = f"[{issue.issue_id}] {issue.summary}"
@@ -44,7 +83,8 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
             issue_embed.add_field(name=k, value=v)
 
         # Create view with link button
-        view: ui.View = ui.View()
-        view.add_item(ui.Button(label="View on Jira", url=issue.url))
+        jira_link_button: ui.View = ui.View()
+        jira_link_button.add_item(ui.Button(label="View on Jira", url=issue.url))
 
-        await ctx.send(embed=issue_embed, view=view)
+        # Send the followup message with the issue embed and link button
+        await interaction.followup.send(embed=issue_embed, view=jira_link_button)
