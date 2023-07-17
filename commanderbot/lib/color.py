@@ -35,25 +35,31 @@ class Color(discord.Color, FromDataMixin):
             return cls.from_field_optional(data, "color")
 
     @classmethod
-    def presets(cls, *, color_filter: Optional[str] = None) -> Dict[str, Self]:
+    def presets(
+        cls, *, color_filter: Optional[str] = None, case_sensitive: bool = False
+    ) -> Dict[str, Self]:
         """
         Returns a dictionary containing all color presets.
         The `color_filter` parameter can be used to filter the color presets that are returned
         """
 
+        color_filter = color_filter and (
+            color_filter if case_sensitive else color_filter.lower()
+        )
         colors: dict[str, Color] = {}
-        for func_name, func in inspect.getmembers(Color, inspect.ismethod):
+        for name, func in inspect.getmembers(Color, inspect.ismethod):
             # If we're seaching for specific functions, skip the current
             # function if it doesn't have the string we're searching for.
+            func_name: str = name if case_sensitive else name.lower()
             if color_filter and color_filter not in func_name:
                 continue
 
             # Check if the current function is one of the `@classmethod`s that
             # take no arguments and return this class/`discord.Color``
             signature = inspect.signature(func)
-            doc_str = doc if (doc := inspect.getdoc(func)) else ""
+            doc_str = inspect.getdoc(func) or ""
             if len(signature.parameters) == 0 and "value of ``0" in doc_str:
-                colors[func_name] = func()
+                colors[name] = func()
 
         return colors
 
