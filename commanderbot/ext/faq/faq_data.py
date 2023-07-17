@@ -200,7 +200,7 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
         # Check if the faq key already exists
         if not self._is_faq_key_available(key):
             raise FaqKeyAlreadyExists(key)
-        
+
         # Check if the faq key matches an existing faq alias
         if not self._is_faq_alias_available(key):
             raise FaqKeyMatchesExistingAlias(key)
@@ -447,20 +447,29 @@ class FaqData(JsonSerializable, FromDataMixin):
             yield entry
 
     def _all_faqs_matching(
-        self, guild: Guild, faq_filter: Optional[str]
+        self, guild: Guild, faq_filter: Optional[str], case_sensitive: bool
     ) -> Iterable[FaqEntry]:
-        for entry in self.guilds[guild.id].faq_entries.values():
-            if faq_filter and (faq_filter not in entry.key):
-                continue
-            yield entry
+        if not faq_filter:
+            yield from self.guilds[guild.id].faq_entries.values()
+        else:
+            faq_filter = faq_filter if case_sensitive else faq_filter.lower()
+            for entry in self.guilds[guild.id].faq_entries.values():
+                faq_key: str = entry.key if case_sensitive else entry.key.lower()
+                if faq_filter in faq_key:
+                    yield entry
 
     def _all_faq_aliases_matching(
-        self, guild: Guild, alias_filter: Optional[str]
+        self, guild: Guild, alias_filter: Optional[str], case_sensitive: bool
     ) -> Iterable[tuple[str, FaqEntry]]:
-        for alias, entry in self.guilds[guild.id].faq_entries_by_alias.items():
-            if alias_filter and (alias_filter not in alias):
-                continue
-            yield (alias, entry)
+        if not alias_filter:
+            for alias, entry in self.guilds[guild.id].faq_entries_by_alias.items():
+                yield (alias, entry)
+        else:
+            alias_filter = alias_filter if case_sensitive else alias_filter.lower()
+            for alias, entry in self.guilds[guild.id].faq_entries_by_alias.items():
+                faq_alias: str = alias if case_sensitive else alias.lower()
+                if alias_filter in faq_alias:
+                    yield (alias, entry)
 
     # @implements FaqStore
     async def get_faqs(
@@ -468,10 +477,11 @@ class FaqData(JsonSerializable, FromDataMixin):
         guild: Guild,
         *,
         faq_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None,
     ) -> AsyncIterable[FaqEntry]:
-        entries = self._all_faqs_matching(guild, faq_filter)
+        entries = self._all_faqs_matching(guild, faq_filter, case_sensitive)
         maybe_sorted_entries = (
             sorted(entries, key=lambda entry: entry.key) if sort else entries
         )
@@ -484,12 +494,13 @@ class FaqData(JsonSerializable, FromDataMixin):
         guild: Guild,
         *,
         item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None,
     ) -> AsyncIterable[Union[FaqEntry, tuple[str, FaqEntry]]]:
         items = chain(
-            self._all_faqs_matching(guild, item_filter),
-            self._all_faq_aliases_matching(guild, item_filter),
+            self._all_faqs_matching(guild, item_filter, case_sensitive),
+            self._all_faq_aliases_matching(guild, item_filter, case_sensitive),
         )
 
         def item_cmp(item: Union[FaqEntry, tuple[str, FaqEntry]]):

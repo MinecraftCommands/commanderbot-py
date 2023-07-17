@@ -122,12 +122,17 @@ class FaqJsonStore(CogStore):
         guild: Guild,
         *,
         faq_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[FaqEntry]:
         cache = await self.db.get_cache()
         async for entry in cache.get_faqs(
-            guild, faq_filter=faq_filter, sort=sort, cap=cap
+            guild,
+            faq_filter=faq_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
         ):
             yield entry
 
@@ -137,12 +142,17 @@ class FaqJsonStore(CogStore):
         guild: Guild,
         *,
         item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[Union[FaqEntry, tuple[str, FaqEntry]]]:
         cache = await self.db.get_cache()
         async for item in cache.get_faqs_and_aliases(
-            guild, item_filter=item_filter, sort=sort, cap=cap
+            guild,
+            item_filter=item_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
         ):
             yield item
 

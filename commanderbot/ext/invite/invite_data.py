@@ -345,20 +345,28 @@ class InviteData(JsonSerializable, FromDataMixin):
             yield entry
 
     def _all_invites_matching(
-        self, guild: Guild, invite_filter: Optional[str]
+        self, guild: Guild, invite_filter: Optional[str], case_sensitive: bool
     ) -> Iterable[InviteEntry]:
-        for entry in self.guilds[guild.id].invite_entries.values():
-            if invite_filter and (invite_filter not in entry.key):
-                continue
-            yield entry
+        if not invite_filter:
+            yield from self.guilds[guild.id].invite_entries.values()
+        else:
+            invite_filter = invite_filter if case_sensitive else invite_filter.lower()
+            for entry in self.guilds[guild.id].invite_entries.values():
+                invite_key: str = entry.key if case_sensitive else entry.key.lower()
+                if invite_filter in invite_key:
+                    yield entry
 
     def _all_tags_matching(
-        self, guild: Guild, tag_filter: Optional[str]
+        self, guild: Guild, tag_filter: Optional[str], case_sensitive: bool
     ) -> Iterable[str]:
-        for tag in self.guilds[guild.id].invite_entries_by_tag.keys():
-            if tag_filter and (tag_filter not in tag):
-                continue
-            yield tag
+        if not tag_filter:
+            yield from self.guilds[guild.id].invite_entries_by_tag.keys()
+        else:
+            tag_filter = tag_filter if case_sensitive else tag_filter.lower()
+            for tag in self.guilds[guild.id].invite_entries_by_tag.keys():
+                invite_tag: str = tag if case_sensitive else tag.lower()
+                if tag_filter in invite_tag:
+                    yield tag
 
     # @implements InviteStore
     async def get_invites(
@@ -366,10 +374,11 @@ class InviteData(JsonSerializable, FromDataMixin):
         guild: Guild,
         *,
         invite_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None,
     ) -> AsyncIterable[InviteEntry]:
-        entries = self._all_invites_matching(guild, invite_filter)
+        entries = self._all_invites_matching(guild, invite_filter, case_sensitive)
         maybe_sorted_entries = (
             sorted(entries, key=lambda entry: entry.key) if sort else entries
         )
@@ -382,10 +391,11 @@ class InviteData(JsonSerializable, FromDataMixin):
         guild: Guild,
         *,
         tag_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None,
     ) -> AsyncIterable[str]:
-        tags = self._all_tags_matching(guild, tag_filter)
+        tags = self._all_tags_matching(guild, tag_filter, case_sensitive)
         maybe_sorted_tags = sorted(tags) if sort else tags
         for tag in islice(maybe_sorted_tags, cap):
             yield tag
@@ -396,12 +406,13 @@ class InviteData(JsonSerializable, FromDataMixin):
         guild: Guild,
         *,
         item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None,
     ) -> AsyncIterable[Union[InviteEntry, str]]:
         items = chain(
-            self._all_invites_matching(guild, item_filter),
-            self._all_tags_matching(guild, item_filter),
+            self._all_invites_matching(guild, item_filter, case_sensitive),
+            self._all_tags_matching(guild, item_filter, case_sensitive),
         )
 
         def item_cmp(item: Union[InviteEntry, str]) -> str:

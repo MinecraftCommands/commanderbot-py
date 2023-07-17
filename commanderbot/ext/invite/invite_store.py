@@ -74,6 +74,7 @@ class InviteStore(Protocol):
         guild: Guild,
         *,
         invite_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[InviteEntry]:
@@ -84,6 +85,7 @@ class InviteStore(Protocol):
         guild: Guild,
         *,
         tag_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[str]:
@@ -94,6 +96,7 @@ class InviteStore(Protocol):
         guild: Guild,
         *,
         item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[Union[InviteEntry, str]]:

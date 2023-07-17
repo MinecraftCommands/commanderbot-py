@@ -106,6 +106,7 @@ class FaqStore(Protocol):
         guild: Guild,
         *,
         faq_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[FaqEntry]:
@@ -116,6 +117,7 @@ class FaqStore(Protocol):
         guild: Guild,
         *,
         item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[Union[FaqEntry, tuple[str, FaqEntry]]]:

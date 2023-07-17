@@ -86,12 +86,17 @@ class InviteJsonStore(CogStore):
         guild: Guild,
         *,
         invite_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[InviteEntry]:
         cache = await self.db.get_cache()
         async for entry in cache.get_invites(
-            guild, invite_filter=invite_filter, sort=sort, cap=cap
+            guild,
+            invite_filter=invite_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
         ):
             yield entry
 
@@ -101,12 +106,17 @@ class InviteJsonStore(CogStore):
         guild: Guild,
         *,
         tag_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[str]:
         cache = await self.db.get_cache()
         async for tag in cache.get_tags(
-            guild, tag_filter=tag_filter, sort=sort, cap=cap
+            guild,
+            tag_filter=tag_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
         ):
             yield tag
 
@@ -116,12 +126,17 @@ class InviteJsonStore(CogStore):
         guild: Guild,
         *,
         item_filter: Optional[str] = None,
+        case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[Union[InviteEntry, str]]:
         cache = await self.db.get_cache()
         async for item in cache.get_invites_and_tags(
-            guild, item_filter=item_filter, sort=sort, cap=cap
+            guild,
+            item_filter=item_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
         ):
             yield item
 
