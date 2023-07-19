@@ -87,7 +87,7 @@ class InviteGuildState(CogGuildState):
 
         # Create invite list embed
         embed = Embed(
-            title="Available Invites and Tags",
+            title="Available invites and tags",
             description="\n".join(lines) or "**None!**",
             color=0x00ACED,
         )
@@ -144,7 +144,7 @@ class InviteGuildState(CogGuildState):
 
         # Create invite details embed
         embed = Embed(
-            title=f"Details For Invite `{entry.key}`",
+            title=f"Details for invite: `{entry.key}`",
             description=f"**Preview**\n> {self._format_invite_line(entry)}",
             color=0x00ACED,
         )
@@ -202,7 +202,7 @@ class AddInviteModal(InviteModal):
         super().__init__(
             interaction,
             state,
-            title="Add a New Invite",
+            title="Add a new invite",
             custom_id="commanderbot_ext:invite.add",
         )
 
@@ -257,7 +257,7 @@ class ModifyInviteModal(InviteModal):
         super().__init__(
             interaction,
             state,
-            title=f"Modifying Invite: {entry.key}",
+            title=f"Modifying invite: {entry.key}",
             custom_id="commanderbot_ext:invite.modify",
         )
 
