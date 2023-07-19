@@ -144,7 +144,7 @@ class InviteGuildState(CogGuildState):
 
         # Create invite details embed
         embed = Embed(
-            title=f"Details for invite: `{entry.key}`",
+            title=f"Details for invite `{entry.key}`",
             description=f"**Preview**\n> {self._format_invite_line(entry)}",
             color=0x00ACED,
         )

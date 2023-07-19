@@ -155,7 +155,7 @@ class FaqGuildState(CogGuildState):
 
         # Create faq details embed
         embed = Embed(
-            title=f"Details for FAQ: `{entry.key}`",
+            title=f"Details for FAQ `{entry.key}`",
             description=f"**Preview**\n{formatted_content}",
             color=0x00ACED,
         )
