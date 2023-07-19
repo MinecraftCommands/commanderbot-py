@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Iterable, Optional
 
 from discord import AllowedMentions, Embed, Interaction, Message, TextStyle
@@ -30,19 +30,6 @@ class FaqGuildState(CogGuildState):
     store: FaqStore
     options: FaqOptions
 
-    _prefix_pattern_cache: Optional[re.Pattern] = field(init=False, default=None)
-    _match_pattern_cache: Optional[re.Pattern] = field(init=False, default=None)
-
-    async def _get_prefix_pattern(self) -> Optional[re.Pattern]:
-        if not self._prefix_pattern_cache:
-            self._prefix_pattern_cache = await self.store.get_prefix_pattern(self.guild)
-        return self._prefix_pattern_cache
-
-    async def _get_match_pattern(self) -> Optional[re.Pattern]:
-        if not self._match_pattern_cache:
-            self._match_pattern_cache = await self.store.get_match_pattern(self.guild)
-        return self._match_pattern_cache
-
     async def _query_faq(self, query: str) -> FaqEntry:
         # Try to get the faq by its key or alias
         if entry := await self.store.query_faq(self.guild, query):
@@ -59,8 +46,12 @@ class FaqGuildState(CogGuildState):
 
     async def on_message(self, message: Message):
         content: str = message.content
-        prefix_pattern: Optional[re.Pattern] = await self._get_prefix_pattern()
-        match_pattern: Optional[re.Pattern] = await self._get_match_pattern()
+        prefix_pattern: Optional[re.Pattern] = await self.store.get_prefix_pattern(
+            self.guild
+        )
+        match_pattern: Optional[re.Pattern] = await self.store.get_match_pattern(
+            self.guild
+        )
 
         # Check if the prefix pattern is being used and get faqs using it
         if (
@@ -164,7 +155,7 @@ class FaqGuildState(CogGuildState):
 
         # Create faq details embed
         embed = Embed(
-            title=f"Details For FAQ `{entry.key}`",
+            title=f"Details for FAQ: `{entry.key}`",
             description=f"**Preview**\n{formatted_content}",
             color=0x00ACED,
         )
@@ -185,38 +176,34 @@ class FaqGuildState(CogGuildState):
 
     async def set_prefix_pattern(self, interaction: Interaction, prefix: str):
         pattern: re.Pattern = await self.store.set_prefix_pattern(self.guild, prefix)
-        self._prefix_pattern_cache = pattern
         await interaction.response.send_message(
-            f"Set the FAQ prefix pattern to: `{pattern.pattern}`"
+            f"Set the FAQ prefix pattern to: ```\n{pattern.pattern}\n```"
         )
 
     async def clear_prefix_pattern(self, interaction: Interaction):
         await self.store.clear_prefix_pattern(self.guild)
-        self._prefix_pattern_cache = None
         await interaction.response.send_message("Cleared the FAQ prefix pattern")
 
     async def show_prefix_pattern(self, interaction: Interaction):
         pattern: re.Pattern = await self.store.require_prefix_pattern(self.guild)
         await interaction.response.send_message(
-            f"The FAQ prefix pattern is set to: `{pattern.pattern}`"
+            f"The FAQ prefix pattern is set to: ```\n{pattern.pattern}\n```"
         )
 
     async def set_match_pattern(self, interaction: Interaction, match: str):
         pattern: re.Pattern = await self.store.set_match_pattern(self.guild, match)
-        self._match_pattern_cache = pattern
         await interaction.response.send_message(
-            f"Set the FAQ match pattern to: `{pattern.pattern}`"
+            f"Set the FAQ match pattern to: ```\n{pattern.pattern}\n```"
         )
 
     async def clear_match_pattern(self, interaction: Interaction):
         await self.store.clear_match_pattern(self.guild)
-        self._match_pattern_cache = None
         await interaction.response.send_message("Cleared the FAQ match pattern")
 
     async def show_match_pattern(self, interaction: Interaction):
         pattern: re.Pattern = await self.store.require_match_pattern(self.guild)
         await interaction.response.send_message(
-            f"The FAQ match pattern is set to: `{pattern.pattern}`"
+            f"The FAQ match pattern is set to: ```\n{pattern.pattern}\n```"
         )
 
 
@@ -252,7 +239,7 @@ class AddFaqModal(FaqModal):
         super().__init__(
             interaction,
             state,
-            title="Add a New FAQ",
+            title="Add a new FAQ",
             custom_id="commanderbot_ext:faq.add",
         )
 
