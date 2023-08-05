@@ -33,7 +33,7 @@ class DeleteMessageHistoryTransformer(Transformer):
     """
     A transformer for validating that a number representing seconds is between `0` and `604800`
 
-    Also provides autocomplete options that matchs the ban UI
+    Also provides autocomplete options that matches the ban UI
     """
 
     @property
