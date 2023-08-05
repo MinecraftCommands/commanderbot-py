@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - A cog that acts as a wrapper around a forum channel
   - Forum threads can have two states: unresolved and resolved
   - Threads can be resolved using `/resolve` or with a configurable emoji
+- Added a command for banning users
 - Added a config option for `mccq` to allow certain users to run the reload command
 - Added a link button under `jira` issue embeds
 
