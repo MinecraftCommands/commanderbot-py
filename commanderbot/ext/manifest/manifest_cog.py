@@ -1,7 +1,7 @@
 import json
 from enum import Enum
 from logging import Logger, getLogger
-from typing import List, Optional
+from typing import Optional
 
 from discord import Embed, Interaction, Permissions
 from discord.app_commands import (
@@ -78,7 +78,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
 
     async def min_engine_version_autocomplete(
         self, interaction: Interaction, value: str
-    ) -> List[Choice[str]]:
+    ) -> list[Choice[str]]:
         """
         An autocomplete callback that alawys returns the latest version
         from the manifest version manager

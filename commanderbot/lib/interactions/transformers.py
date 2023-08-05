@@ -1,9 +1,9 @@
 from itertools import islice
-from typing import List
 
 from discord import Interaction, Message
 from discord.app_commands import AppCommandError, Choice, Transformer
 from discord.ext.commands import BadArgument, CommandError, Context, MessageConverter
+from discord.interactions import Interaction
 from emoji import is_emoji
 
 from commanderbot.lib.color import Color
@@ -86,6 +86,12 @@ class MessageTransformer(Transformer):
 
 
 class ColorTransformer(Transformer):
+    """
+    Transforms a string into a `commanderbot.lib.Color` (Subclass of `discord.Color`)
+
+    Also provides autocomplete suggestions
+    """
+
     async def transform(self, interaction: Interaction, value: str) -> Color:
         try:
             return Color.from_str(value)
@@ -94,7 +100,7 @@ class ColorTransformer(Transformer):
 
     async def autocomplete(
         self, interaction: Interaction, value: str
-    ) -> List[Choice[str]]:
+    ) -> list[Choice[str]]:
         colors: list[Choice] = []
         for name, color in islice(
             Color.presets(color_filter=value).items(), MAX_AUTOCOMPLETE_CHOICES
