@@ -245,6 +245,30 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
         elif entries := self.invite_entries_by_tag.get(query):
             yield from entries
 
+    def all_invites_matching(
+        self, invite_filter: Optional[str], case_sensitive: bool
+    ) -> Iterable[InviteEntryData]:
+        if not invite_filter:
+            yield from self.invite_entries.values()
+        else:
+            invite_filter = invite_filter if case_sensitive else invite_filter.lower()
+            for entry in self.invite_entries.values():
+                invite_key: str = entry.key if case_sensitive else entry.key.lower()
+                if invite_filter in invite_key:
+                    yield entry
+
+    def all_tags_matching(
+        self, tag_filter: Optional[str], case_sensitive: bool
+    ) -> Iterable[str]:
+        if not tag_filter:
+            yield from self.invite_entries_by_tag.keys()
+        else:
+            tag_filter = tag_filter if case_sensitive else tag_filter.lower()
+            for tag in self.invite_entries_by_tag.keys():
+                invite_tag: str = tag if case_sensitive else tag.lower()
+                if tag_filter in invite_tag:
+                    yield tag
+
     def set_guild_invite(self, key: str) -> InviteEntryData:
         entry = self.require_invite(key)
         self.guild_key = entry.key
@@ -344,30 +368,6 @@ class InviteData(JsonSerializable, FromDataMixin):
         for entry in self.guilds[guild.id].query_invites(query):
             yield entry
 
-    def _all_invites_matching(
-        self, guild: Guild, invite_filter: Optional[str], case_sensitive: bool
-    ) -> Iterable[InviteEntry]:
-        if not invite_filter:
-            yield from self.guilds[guild.id].invite_entries.values()
-        else:
-            invite_filter = invite_filter if case_sensitive else invite_filter.lower()
-            for entry in self.guilds[guild.id].invite_entries.values():
-                invite_key: str = entry.key if case_sensitive else entry.key.lower()
-                if invite_filter in invite_key:
-                    yield entry
-
-    def _all_tags_matching(
-        self, guild: Guild, tag_filter: Optional[str], case_sensitive: bool
-    ) -> Iterable[str]:
-        if not tag_filter:
-            yield from self.guilds[guild.id].invite_entries_by_tag.keys()
-        else:
-            tag_filter = tag_filter if case_sensitive else tag_filter.lower()
-            for tag in self.guilds[guild.id].invite_entries_by_tag.keys():
-                invite_tag: str = tag if case_sensitive else tag.lower()
-                if tag_filter in invite_tag:
-                    yield tag
-
     # @implements InviteStore
     async def get_invites(
         self,
@@ -378,7 +378,9 @@ class InviteData(JsonSerializable, FromDataMixin):
         sort: bool = False,
         cap: Optional[int] = None,
     ) -> AsyncIterable[InviteEntry]:
-        entries = self._all_invites_matching(guild, invite_filter, case_sensitive)
+        entries = self.guilds[guild.id].all_invites_matching(
+            invite_filter, case_sensitive
+        )
         maybe_sorted_entries = (
             sorted(entries, key=lambda entry: entry.key) if sort else entries
         )
@@ -395,7 +397,7 @@ class InviteData(JsonSerializable, FromDataMixin):
         sort: bool = False,
         cap: Optional[int] = None,
     ) -> AsyncIterable[str]:
-        tags = self._all_tags_matching(guild, tag_filter, case_sensitive)
+        tags = self.guilds[guild.id].all_tags_matching(tag_filter, case_sensitive)
         maybe_sorted_tags = sorted(tags) if sort else tags
         for tag in islice(maybe_sorted_tags, cap):
             yield tag
@@ -411,8 +413,8 @@ class InviteData(JsonSerializable, FromDataMixin):
         cap: Optional[int] = None,
     ) -> AsyncIterable[Union[InviteEntry, str]]:
         items = chain(
-            self._all_invites_matching(guild, item_filter, case_sensitive),
-            self._all_tags_matching(guild, item_filter, case_sensitive),
+            self.guilds[guild.id].all_invites_matching(item_filter, case_sensitive),
+            self.guilds[guild.id].all_tags_matching(item_filter, case_sensitive),
         )
 
         def item_cmp(item: Union[InviteEntry, str]) -> str:

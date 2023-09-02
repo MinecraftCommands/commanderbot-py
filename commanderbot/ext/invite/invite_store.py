@@ -32,6 +32,10 @@ class InviteEntry(Protocol):
 
 
 class InviteStore(Protocol):
+    """
+    Abstracts the data storage and persistence of the invite cog
+    """
+
     async def require_invite(self, guild: Guild, key: str) -> InviteEntry:
         ...
 
