@@ -40,6 +40,10 @@ class FaqEntry(Protocol):
 
 
 class FaqStore(Protocol):
+    """
+    Abstracts the data storage and persistence of the faq cog
+    """
+
     async def require_faq(self, guild: Guild, key: str) -> FaqEntry:
         ...
 
