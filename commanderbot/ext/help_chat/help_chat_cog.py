@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 
 from discord import CategoryChannel, TextChannel
 from discord.ext import commands
@@ -99,7 +99,7 @@ class HelpChatCog(Cog, name="commanderbot.ext.help_chat"):
 
     @cmd_helpchat_channels.command(name="add")
     async def cmd_helpchat_channels_add(
-        self, ctx: GuildContext, *channels: Union[TextChannel, CategoryChannel]
+        self, ctx: GuildContext, *channels: TextChannel | CategoryChannel
     ):
         if not channels:
             await ctx.send_help(self.cmd_helpchat_channels_add)
@@ -107,7 +107,7 @@ class HelpChatCog(Cog, name="commanderbot.ext.help_chat"):
 
     @cmd_helpchat_channels.command(name="remove")
     async def cmd_helpchat_channels_remove(
-        self, ctx: GuildContext, *channels: Union[TextChannel, CategoryChannel]
+        self, ctx: GuildContext, *channels: TextChannel | CategoryChannel
     ):
         if not channels:
             await ctx.send_help(self.cmd_helpchat_channels_remove)

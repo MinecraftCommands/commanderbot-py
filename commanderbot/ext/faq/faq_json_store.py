@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import AsyncIterable, Optional, Union
+from typing import AsyncIterable, Optional
 
 from discord import Guild
 
@@ -145,7 +145,7 @@ class FaqJsonStore(CogStore):
         case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
-    ) -> AsyncIterable[Union[FaqEntry, tuple[str, FaqEntry]]]:
+    ) -> AsyncIterable[FaqEntry | tuple[str, FaqEntry]]:
         cache = await self.db.get_cache()
         async for item in cache.get_faqs_and_aliases(
             guild,

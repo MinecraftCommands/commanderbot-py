@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
 from discord import Interaction, TextChannel, Thread
 
@@ -37,7 +37,7 @@ class StacktracerGuildState(CogGuildState):
     async def set_guild_log_options(
         self,
         interaction: Interaction,
-        channel: Union[TextChannel, Thread],
+        channel: TextChannel | Thread,
         stacktrace: Optional[bool],
         emoji: Optional[str],
         color: Optional[Color],

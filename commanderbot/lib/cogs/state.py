@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Callable, Dict, Generic, Iterable, TypeVar, Union
+from typing import Callable, Dict, Generic, Iterable, TypeVar
 
 from discord import Guild
 from discord.ext.commands import Bot, Cog
@@ -117,7 +117,7 @@ class CogGuildStateManager(Generic[GuildStateType]):
         )
         self._state_by_id = {}
 
-    def __getitem__(self, key: Union[Guild, GuildID]) -> GuildStateType:
+    def __getitem__(self, key: Guild | GuildID) -> GuildStateType:
         return self.get(key)
 
     @property
@@ -136,7 +136,7 @@ class CogGuildStateManager(Generic[GuildStateType]):
         self._set_state(guild, guild_state)
         return guild_state
 
-    def get(self, key: Union[Guild, GuildID]) -> GuildStateType:
+    def get(self, key: Guild | GuildID) -> GuildStateType:
         # Lazily-initialize guild states as they are accessed.
         guild = key if isinstance(key, Guild) else self.bot.get_guild(key)
         if not guild:
@@ -173,5 +173,5 @@ class GuildPartitionedCogState(CogState, Generic[GuildStateType]):
 
     guilds: CogGuildStateManager[GuildStateType]
 
-    def __getitem__(self, key: Union[Guild, GuildID]) -> GuildStateType:
+    def __getitem__(self, key: Guild | GuildID) -> GuildStateType:
         return self.guilds[key]

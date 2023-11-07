@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Type, TypeVar
-
+from typing import List, Self
 from discord import Member, Role
 
 from commanderbot.ext.roles.roles_store import RolesStore
-
-ST = TypeVar("ST")
 
 
 @dataclass
@@ -27,7 +24,7 @@ class RolesResult:
         return ""
 
     @classmethod
-    async def build(cls: Type[ST], store: RolesStore, *args, **kwargs) -> ST:
+    async def build(cls, store: RolesStore, *args, **kwargs) -> Self:
         raise NotImplementedError()
 
     async def apply(self) -> List[str]:

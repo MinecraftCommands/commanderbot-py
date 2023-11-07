@@ -1,7 +1,7 @@
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, DefaultDict, Dict, Optional, Tuple, Type, TypeVar
+from typing import Any, DefaultDict, Dict, Optional, Tuple, Self
 
 from discord import ForumChannel, ForumTag, Guild, PartialEmoji
 
@@ -21,8 +21,6 @@ from commanderbot.lib import (
 from commanderbot.lib.forums import require_tag
 from commanderbot.lib.utils.utils import dict_without_falsies
 
-ST = TypeVar("ST")
-
 
 @dataclass
 class HelpForumForumData(JsonSerializable, FromDataMixin):
@@ -35,7 +33,7 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
                 channel_id=data["channel_id"],
@@ -80,7 +78,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             help_forums = {}
             for raw_channel_id, raw_forum_data in data.get("help_forums", {}).items():
@@ -200,7 +198,7 @@ class HelpForumData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             # Construct guild data
             guilds = _guilds_defaultdict_factory()

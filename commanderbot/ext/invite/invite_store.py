@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import AsyncIterable, Optional, Protocol, Union
+from typing import AsyncIterable, Optional, Protocol
 
 from discord import Guild
 
@@ -103,7 +103,7 @@ class InviteStore(Protocol):
         case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None
-    ) -> AsyncIterable[Union[InviteEntry, str]]:
+    ) -> AsyncIterable[InviteEntry | str]:
         ...
 
     async def set_guild_invite(self, guild: Guild, key: str) -> InviteEntry:

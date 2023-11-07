@@ -1,5 +1,3 @@
-from typing import Union
-
 from discord import Guild, Interaction, Permissions
 from discord.app_commands import Choice, Group, autocomplete, describe
 from discord.ext.commands import Bot, Cog
@@ -91,7 +89,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
 
         # Get all invites and tags filtered by `value`
         assert isinstance(interaction.guild, Guild)
-        items: list[Union[InviteEntry, str]] = await async_expand(
+        items: list[InviteEntry | str] = await async_expand(
             self.store.get_invites_and_tags(
                 interaction.guild,
                 item_filter=value,

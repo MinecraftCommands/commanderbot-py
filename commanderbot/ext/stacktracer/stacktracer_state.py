@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
 from discord import Interaction, TextChannel, Thread
 from discord.ext.commands import Context
@@ -22,7 +22,7 @@ class StacktracerState(GuildPartitionedCogState[StacktracerGuildState]):
 
     store: StacktracerStore
 
-    def _format_command(self, command: Union[Context, Interaction]) -> str:
+    def _format_command(self, command: Context | Interaction) -> str:
         if isinstance(command, Context) and (cmd := command.command):
             return f"`{command.prefix}{cmd}`"
         elif isinstance(command, Interaction):
@@ -179,7 +179,7 @@ class StacktracerState(GuildPartitionedCogState[StacktracerGuildState]):
     async def set_global_log_options(
         self,
         interaction: Interaction,
-        channel: Union[TextChannel, Thread],
+        channel: TextChannel | Thread,
         stacktrace: Optional[bool],
         emoji: Optional[str],
         color: Optional[Color],

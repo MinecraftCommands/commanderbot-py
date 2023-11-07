@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Iterable, Optional, TypeAlias, Union
+from typing import Iterable, Optional, TypeAlias
 
 from discord import AppCommandType
 from discord.abc import Snowflake
@@ -12,7 +12,7 @@ from commanderbot.lib import AppCommandID, GuildID
 __all__ = ("CachingCommandTree",)
 
 Cache: TypeAlias = dict[str, AppCommand]
-GuildType: TypeAlias = Union[Snowflake, GuildID]
+GuildType: TypeAlias = Snowflake | GuildID
 
 
 @dataclass
@@ -23,7 +23,7 @@ class CommandCache:
 
     _cache: Cache = field(default_factory=dict)
 
-    def find(self, command: Union[str, AppCommandID]) -> Optional[AppCommand]:
+    def find(self, command: str | AppCommandID) -> Optional[AppCommand]:
         """
         Searches the cache for a command or group that matches `command`
         """
@@ -44,7 +44,7 @@ class CommandCache:
         """
 
         # Traverse the options tree and all groups it visits
-        def traverse_options(options: list[Union[AppCommandGroup, Argument]]):
+        def traverse_options(options: list[AppCommandGroup | Argument]):
             for option in options:
                 if isinstance(option, AppCommandGroup):
                     self._cache[option.qualified_name] = option  # type: ignore
@@ -96,7 +96,7 @@ class CachingCommandTree(CommandTree):
         return guild.id if isinstance(guild, Snowflake) else guild
 
     def get_app_command(
-        self, command: Union[str, AppCommandID], *, guild: Optional[GuildType] = None
+        self, command: str | AppCommandID, *, guild: Optional[GuildType] = None
     ) -> Optional[AppCommand]:
         # Return early if we're searching the global cache
         if not guild:

@@ -1,5 +1,3 @@
-from typing import Union
-
 from discord import Guild, Interaction, Message, Permissions
 from discord.abc import Messageable
 from discord.app_commands import Choice, Group, autocomplete, describe
@@ -95,7 +93,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
 
         # Get all faqs and aliases filtered by `value`
         assert isinstance(interaction.guild, Guild)
-        items: list[Union[FaqEntry, tuple[str, FaqEntry]]] = await async_expand(
+        items: list[FaqEntry | tuple[str, FaqEntry]] = await async_expand(
             self.store.get_faqs_and_aliases(
                 interaction.guild,
                 item_filter=value,

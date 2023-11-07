@@ -1,13 +1,11 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, DefaultDict, Optional, Type, TypeVar
+from typing import Any, DefaultDict, Optional, Self
 
 from discord import Guild
 
 from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, LogOptions
 from commanderbot.lib.utils import dict_without_ellipsis, dict_without_falsies
-
-ST = TypeVar("ST")
 
 
 @dataclass
@@ -16,7 +14,7 @@ class StacktracerGuildData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             log_options = LogOptions.from_field_optional(data, "log")
             return cls(log_options=log_options)
@@ -57,7 +55,7 @@ class StacktracerData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             # Construct global log options.
             log_options = LogOptions.from_field_optional(data, "log_options")

@@ -19,7 +19,6 @@ from typing import (
     Set,
     Tuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -56,7 +55,7 @@ def is_bot(bot: Bot, user: Any) -> bool:
     return user == bot.user or getattr(user, "bot")
 
 
-def is_owner(client: Client, user: Union[User, Member]) -> bool:
+def is_owner(client: Client, user: User | Member) -> bool:
     info: Optional[AppInfo] = client.application
     if not info:
         return False
@@ -114,7 +113,7 @@ async def async_expand(it: AsyncIterable[T]) -> List[T]:
 
 
 async def async_schedule(
-    *coroutines: Union[Coroutine[Any, Any, Any], Generator[Any, Any, Any]]
+    *coroutines: Coroutine[Any, Any, Any] | Generator[Any, Any, Any]
 ):
     """
     Schedules a variable number of `Coroutine`s to run.

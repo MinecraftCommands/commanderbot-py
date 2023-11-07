@@ -23,6 +23,7 @@ class AutomodEntity(Protocol):
     @classmethod
     def from_data(cls: Type[SelfType], data: JsonObject) -> SelfType:
         """Create an entity from data."""
+        ...
 
 
 # @implements AutomodEntity
