@@ -2,8 +2,7 @@ from typing import Optional
 
 from discord import Interaction, InteractionMessage, Member, Permissions
 from discord.app_commands import (
-    Transform,
-    Transformer,
+    choices,
     command,
     default_permissions,
     describe,
@@ -11,7 +10,6 @@ from discord.app_commands import (
 )
 from discord.app_commands.checks import bot_has_permissions
 from discord.app_commands.models import Choice
-from discord.enums import AppCommandOptionType
 from discord.ext.commands import Bot, Cog
 from discord.interactions import Interaction
 
@@ -27,42 +25,6 @@ KICK_EMOJI: str = "👢"
 BAN_EMOJI: str = "🔨"
 MESSAGE_SENT_EMOJI: str = "✉️"
 ERROR_EMOJI: str = "🔥"
-
-
-class DeleteMessageHistoryTransformer(Transformer):
-    """
-    A transformer for validating that a number representing seconds is between `0` and `604800`
-
-    Also provides autocomplete options that matchs the ban UI
-    """
-
-    @property
-    def type(self) -> AppCommandOptionType:
-        return AppCommandOptionType.integer
-
-    @property
-    def min_value(self) -> int:
-        return 0
-
-    @property
-    def max_value(self) -> int:
-        return 604800
-
-    async def transform(self, interaction: Interaction, value: int) -> int:
-        return value
-
-    async def autocomplete(
-        self, interaction: Interaction, value: int
-    ) -> list[Choice[int]]:
-        return [
-            Choice(name="Don't delete any", value=0),
-            Choice(name="Previous hour", value=3600),
-            Choice(name="Previous 6 hours", value=21600),
-            Choice(name="Previous 12 hours", value=43200),
-            Choice(name="Previous 24 hours", value=86400),
-            Choice(name="Previous 3 days", value=259200),
-            Choice(name="Previous 7 days", value=604800),
-        ]
 
 
 class ModerationCog(Cog, name="commanderbot.ext.moderation"):
@@ -129,6 +91,17 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         reason="The reason for the ban (This will also be sent as a DM to the user)",
         delete_message_history="The amount of message history to delete",
     )
+    @choices(
+        delete_message_history=[
+            Choice(name="Don't delete any", value=0),
+            Choice(name="Previous hour", value=3600),
+            Choice(name="Previous 6 hours", value=21600),
+            Choice(name="Previous 12 hours", value=43200),
+            Choice(name="Previous 24 hours", value=86400),
+            Choice(name="Previous 3 days", value=259200),
+            Choice(name="Previous 7 days", value=604800),
+        ]
+    )
     @guild_only
     @default_permissions(ban_members=True)
     @bot_has_permissions(ban_members=True)
@@ -137,9 +110,7 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         interaction: Interaction,
         user: Member,
         reason: Optional[str],
-        delete_message_history: Optional[
-            Transform[int, DeleteMessageHistoryTransformer]
-        ],
+        delete_message_history: Optional[int],
     ):
         # Make sure we aren't trying to ban the bot or the user running the command
         if self._user_is_bot_or_interaction_user(user, interaction):
