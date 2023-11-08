@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "commanderbot"
-version = "0.20.0a18"
+version = "0.20.0a20"
 description = "A collection of utilities and extensions for discord.py bots."
 authors = ["Arcensoth <arcensoth@gmail.com>"]
 license = "MIT"
@@ -46,8 +46,8 @@ nbtlib = "^1.12.1"
 psutil = "^5.9.2"
 
 [tool.poetry.group.dev.dependencies]
-black = "^22.10.0"
-isort = "^5.10.1"
+black = "^23.11.0"
+isort = "^5.12.0"
 
 [tool.isort]
 profile = "black"
