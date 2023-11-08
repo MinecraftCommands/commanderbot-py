@@ -44,7 +44,7 @@ INVITE_LINK_PATTERN = re.compile(
     r"(?:https?://)?discord(?:app)?\.(?:com/invite|gg)/[a-zA-Z0-9]+/?"
 )
 MESSAGE_LINK_PATTERN = re.compile(
-    r"https:\/\/discord(?:app)?\.com\/channels\/(\d+|@me)\/(\d+)\/(\d+)"
+    r"https?://(?:\w*\.)?discord(?:app)?\.com/channels/(\d+|@me)/(\d+)/(\d+)"
 )
 CUSTOM_EMOJI_PATTERN = re.compile(r"\<a?\:\w+\:\d+\>")
 
