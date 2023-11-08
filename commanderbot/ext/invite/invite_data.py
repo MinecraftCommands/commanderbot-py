@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import chain, islice
-from typing import Any, AsyncIterable, Iterable, Optional, Type, TypeVar, Union
+from typing import Any, AsyncIterable, Iterable, Optional, Self
 
 from discord import Guild
 
@@ -19,8 +19,6 @@ from commanderbot.ext.invite.invite_store import InviteEntry
 from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
 from commanderbot.lib.utils.utils import dict_without_falsies, is_invite_link
 
-ST = TypeVar("ST")
-
 
 @dataclass
 class InviteEntryData(JsonSerializable, FromDataMixin):
@@ -36,7 +34,7 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
                 key=data["key"],
@@ -94,7 +92,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         # Note that tags will be constructed from entries, during post-init
         if isinstance(data, dict):
             return cls(
@@ -297,7 +295,7 @@ class InviteData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             # Construct guild data
             guilds = _guilds_defaultdict_factory()
@@ -411,13 +409,13 @@ class InviteData(JsonSerializable, FromDataMixin):
         case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None,
-    ) -> AsyncIterable[Union[InviteEntry, str]]:
+    ) -> AsyncIterable[InviteEntry | str]:
         items = chain(
             self.guilds[guild.id].all_invites_matching(item_filter, case_sensitive),
             self.guilds[guild.id].all_tags_matching(item_filter, case_sensitive),
         )
 
-        def item_cmp(item: Union[InviteEntry, str]) -> str:
+        def item_cmp(item: InviteEntry | str) -> str:
             return item if isinstance(item, str) else item.key
 
         maybe_sorted_items = sorted(items, key=item_cmp) if sort else items

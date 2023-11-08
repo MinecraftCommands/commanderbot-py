@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional
 
 from discord import AllowedMentions, Interaction
 from discord.ext.commands import Context
@@ -21,7 +21,7 @@ class ResponsiveException(Exception):
 
     async def respond(
         self,
-        context: Union[Context, Interaction],
+        context: Context | Interaction,
         allowed_mentions: Optional[AllowedMentions] = None,
     ):
         allowed_mentions = (

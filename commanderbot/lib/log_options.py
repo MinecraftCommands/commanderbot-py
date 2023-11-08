@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple
 
 from discord import Client, Embed, Message, TextChannel, Thread
 
@@ -67,9 +67,9 @@ class LogOptions(FromDataMixin):
                 allowed_mentions=allowed_mentions,
             )
 
-    async def _require_channel(self, client: Client) -> Union[TextChannel, Thread]:
+    async def _require_channel(self, client: Client) -> TextChannel | Thread:
         if channel := client.get_channel(self.channel):
-            if isinstance(channel, Union[TextChannel, Thread]):
+            if isinstance(channel, TextChannel | Thread):
                 return channel
             raise ResponsiveException(f"Resolved invalid log channel: `{channel}`")
         raise ResponsiveException(
@@ -188,7 +188,7 @@ class LogOptions(FromDataMixin):
 
     def format_channel_name(self, client: Client) -> str:
         if channel := client.get_channel(self.channel):
-            if isinstance(channel, Union[TextChannel, Thread]):
+            if isinstance(channel, TextChannel | Thread):
                 return channel.mention
             return f"Invalid channel `{channel}`"
         return f"Unknown channel `{self.channel}`"

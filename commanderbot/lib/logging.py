@@ -1,5 +1,5 @@
 import logging
-from typing import Union
+from typing import Optional
 
 # Use colorlog as an optional dependency - which in turn uses colorama - for prettier logs.
 # NOTE Colours may not work on Git Bash. See: https://github.com/tartley/colorama/pull/226
@@ -36,9 +36,9 @@ LOG_COLORS = {
 
 
 def setup_logging(
-    level: Union[int, str] = logging.WARNING,
+    level: int | str = logging.WARNING,
     detailed: bool = False,
-    log_format: str = None,
+    log_format: Optional[str] = None,
     log_colors: dict = LOG_COLORS,
 ):
     log_format = log_format or (LOG_FORMAT_DETAILED if detailed else LOG_FORMAT_BASIC)
@@ -46,7 +46,7 @@ def setup_logging(
 
     try:
         log_handler.setFormatter(
-            colorlog.ColoredFormatter(fmt=log_format, log_colors=log_colors)
+            colorlog.ColoredFormatter(fmt=log_format, log_colors=log_colors)  # type: ignore
         )
     except:
         print(

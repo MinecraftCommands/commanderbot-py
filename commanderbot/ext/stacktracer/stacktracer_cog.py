@@ -1,4 +1,4 @@
-from typing import Optional, Union, cast
+from typing import Optional, cast
 
 from discord import Guild, Interaction, Message, TextChannel, Thread, User
 from discord.app_commands import (
@@ -179,7 +179,7 @@ class StacktracerCog(
     async def cmd_stacktracer_global_set(
         self,
         interaction: Interaction,
-        channel: Union[TextChannel, Thread],
+        channel: TextChannel | Thread,
         stacktrace: Optional[bool],
         emoji: Optional[Transform[str, EmojiTransformer]],
         color: Optional[Transform[Color, ColorTransformer]],
@@ -230,7 +230,7 @@ class StacktracerCog(
     async def cmd_stacktracer_guild_set(
         self,
         interaction: Interaction,
-        channel: Union[TextChannel, Thread],
+        channel: TextChannel | Thread,
         stacktrace: Optional[bool],
         emoji: Optional[Transform[str, EmojiTransformer]],
         color: Optional[Transform[Color, ColorTransformer]],

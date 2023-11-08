@@ -1,5 +1,3 @@
-from typing import Union
-
 from discord import Guild, Interaction, Permissions
 from discord.app_commands import Choice, Group, autocomplete, describe
 from discord.ext.commands import Bot, Cog
@@ -91,7 +89,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
 
         # Get all invites and tags filtered by `value`
         assert isinstance(interaction.guild, Guild)
-        items: list[Union[InviteEntry, str]] = await async_expand(
+        items: list[InviteEntry | str] = await async_expand(
             self.store.get_invites_and_tags(
                 interaction.guild,
                 item_filter=value,
@@ -130,7 +128,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         await self.state[interaction.guild].list_invites(interaction)
 
     # @@ invite here
-    @cmd_invite.command(name="here", description="Get the invite for this guild")
+    @cmd_invite.command(name="here", description="Get the invite for this server")
     async def cmd_invite_here(self, interaction: Interaction):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].get_guild_invite(interaction)
@@ -177,12 +175,12 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     # @@ invites here
 
     cmd_invites_here = Group(
-        name="here", description="Manage guild invite", parent=cmd_invites
+        name="here", description="Manage the invite for this server", parent=cmd_invites
     )
 
     # @@ invites here set
-    @cmd_invites_here.command(name="set", description="Set the invite for this guild")
-    @describe(invite="The invite to set as the invite for this guild")
+    @cmd_invites_here.command(name="set", description="Set the invite for this server")
+    @describe(invite="The invite to set as the invite for this server")
     @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_here_set(self, interaction: Interaction, invite: str):
         assert isinstance(interaction.guild, Guild)
@@ -190,14 +188,14 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
 
     # @@ invites here clear
     @cmd_invites_here.command(
-        name="clear", description="Clear the invite for this guild"
+        name="clear", description="Clear the invite for this server"
     )
     async def cmd_invites_here_clear(self, interaction: Interaction):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].clear_guild_invite(interaction)
 
     # @@ invites here show
-    @cmd_invites_here.command(name="show", description="Show the invite for this guild")
+    @cmd_invites_here.command(name="show", description="Show the invite for this server")
     async def cmd_invites_here_show(self, interaction: Interaction):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].show_guild_invite(interaction)

@@ -1,4 +1,4 @@
-from typing import Optional, Type, Union
+from typing import Optional, Type
 
 from discord import Interaction
 from discord.abc import Snowflake
@@ -32,9 +32,9 @@ async def add_configured_cog(bot: Bot, ext_name: str, cog_class: Type[Cog]):
 
 def get_app_command(
     bot: Bot,
-    command: Union[str, Interaction, AppCommandID],
+    command: str | Interaction | AppCommandID,
     *,
-    guild: Optional[Union[Snowflake, GuildID]] = None,
+    guild: Optional[Snowflake | GuildID] = None,
 ) -> Optional[AppCommand]:
     # Return early if we were passed an empty string
     if isinstance(command, str) and not command:

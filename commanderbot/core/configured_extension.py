@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Self
 
 from commanderbot.lib import FromDataMixin
-
-ST = TypeVar("ST")
 
 
 @dataclass
@@ -15,7 +13,7 @@ class ConfiguredExtension(FromDataMixin):
     options: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, str):
             # Extensions starting with a `!` are disabled.
             disabled = data.startswith("!")

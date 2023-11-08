@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Iterator, Optional, Set, Tuple, Union
+from typing import Any, Iterable, Iterator, Optional, Set, Tuple
 
 from discord import Guild, Member, Role
 
@@ -42,7 +42,7 @@ class RoleSet(JsonSerializable, FromDataMixin):
     def to_json(self) -> Any:
         return list(self._values)
 
-    def _get_role_id(self, role: Union[Role, RoleID]) -> RoleID:
+    def _get_role_id(self, role: Role | RoleID) -> RoleID:
         if isinstance(role, int):
             return role
         return role.id
@@ -67,11 +67,11 @@ class RoleSet(JsonSerializable, FromDataMixin):
             for role_id, role in self.iter_roles(guild)
         )
 
-    def add(self, role: Union[Role, RoleID]):
+    def add(self, role: Role | RoleID):
         role_id = self._get_role_id(role)
         self._values.add(role_id)
 
-    def remove(self, role: Union[Role, RoleID]):
+    def remove(self, role: Role | RoleID):
         role_id = self._get_role_id(role)
         self._values.remove(role_id)
 

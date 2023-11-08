@@ -93,31 +93,31 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
             await interaction.channel.send(url)
 
     @command(name="quote", description="Quote a message")
-    @describe(message="A message link to quote")
+    @describe(message_link="A message link to quote")
     @guild_only()
     async def cmd_quote(
         self,
         interaction: Interaction,
-        message: Transform[Message, MessageTransformer],
+        message_link: Transform[Message, MessageTransformer],
     ):
         await self._do_quote(
             interaction,
-            message,
+            message_link,
             phrasing="Quoted",
             allowed_mentions=AllowedMentions.none(),
         )
 
     @command(name="quotem", description="Quote a message and mention the author")
-    @describe(message="A message link to quote")
+    @describe(message_link="A message link to quote")
     @guild_only()
     async def cmd_quotem(
         self,
         interaction: Interaction,
-        message: Transform[Message, MessageTransformer],
+        message_link: Transform[Message, MessageTransformer],
     ):
         await self._do_quote(
             interaction,
-            message,
+            message_link,
             phrasing="Quote-mentioned",
             allowed_mentions=AllowedMentions.only_users(),
         )

@@ -1,4 +1,4 @@
-from typing import Any, Dict, TypeAlias, Union
+from typing import Any, Dict, TypeAlias
 
 from discord import (
     DMChannel,
@@ -50,27 +50,27 @@ RawOptions: TypeAlias = Any
 
 JsonObject: TypeAlias = Dict[str, Any]
 
-MemberOrUser: TypeAlias = Union[Member, User]
+MemberOrUser: TypeAlias = Member | User
 
-PartialMessageableChannel: TypeAlias = Union[
-    TextChannel, VoiceChannel, StageChannel, Thread, DMChannel, PartialMessageable
-]
+PartialMessageableChannel: TypeAlias = (
+    TextChannel | VoiceChannel | StageChannel | Thread | DMChannel | PartialMessageable
+)
 """
 Channel types that can be partial messageable.
 
 A redefinition of the type alias found in `discord.abc`.
 """
 
-MessageableChannel: TypeAlias = Union[PartialMessageableChannel, GroupChannel]
+MessageableChannel: TypeAlias = PartialMessageableChannel | GroupChannel
 """
 Channel types that messages can be sent in.
 
 A redefinition of the type alias found in `discord.abc`.
 """
 
-UnmentionableMessageableChannel: TypeAlias = Union[
-    DMChannel, GroupChannel, PartialMessageable
-]
+UnmentionableMessageableChannel: TypeAlias = (
+    DMChannel | GroupChannel | PartialMessageable
+)
 """
 Channel types that messages can be sent in, but have no way to be mentioned.
 """

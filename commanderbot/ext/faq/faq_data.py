@@ -3,7 +3,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import chain, islice
-from typing import Any, AsyncIterable, Iterable, Optional, Type, TypeVar, Union
+from token import OP
+from typing import Any, AsyncIterable, Iterable, Optional, Self
 
 from discord import Guild
 
@@ -23,7 +24,6 @@ from commanderbot.ext.faq.faq_store import FaqEntry
 from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
 from commanderbot.lib.utils import dict_without_falsies
 
-ST = TypeVar("ST")
 TERM_SPLIT_PATTERN = re.compile(r"\W+")
 
 
@@ -43,7 +43,7 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
                 key=data["key"],
@@ -127,7 +127,7 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         # Note that aliases will be constructed from entries, during post-init
         if isinstance(data, dict):
             raw_prefix = data.get("prefix")
@@ -370,7 +370,7 @@ class FaqData(JsonSerializable, FromDataMixin):
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> ST | None:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             # Construct guild data
             guilds = _guilds_defaultdict_factory()
@@ -497,13 +497,13 @@ class FaqData(JsonSerializable, FromDataMixin):
         case_sensitive: bool = False,
         sort: bool = False,
         cap: Optional[int] = None,
-    ) -> AsyncIterable[Union[FaqEntry, tuple[str, FaqEntry]]]:
+    ) -> AsyncIterable[FaqEntry | tuple[str, FaqEntry]]:
         items = chain(
             self.guilds[guild.id].all_faqs_matching(item_filter, case_sensitive),
             self.guilds[guild.id].all_faq_aliases_matching(item_filter, case_sensitive),
         )
 
-        def item_cmp(item: Union[FaqEntry, tuple[str, FaqEntry]]):
+        def item_cmp(item: FaqEntry | tuple[str, FaqEntry]):
             if isinstance(item, tuple):
                 return item[0]
             return item.key

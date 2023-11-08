@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, Self
 
 from commanderbot.lib.data import MalformedData
 from commanderbot.lib.json import JsonObject
@@ -6,17 +6,14 @@ from commanderbot.lib.json import JsonObject
 __all__ = ("FromDataMixin",)
 
 
-ST = TypeVar("ST", bound="FromDataMixin")
-
-
 class FromDataMixin:
     @classmethod
-    def try_from_data(cls: Type[ST], data: Any) -> Optional[ST]:
+    def try_from_data(cls, data: Any) -> Optional[Self]:
         """Override this to return an instance of the class given valid input."""
         raise NotImplementedError()
 
     @classmethod
-    def from_data(cls: Type[ST], data: Any) -> ST:
+    def from_data(cls, data: Any) -> Self:
         try:
             if (maybe_from_data := cls.try_from_data(data)) is not None:
                 return maybe_from_data
@@ -25,10 +22,10 @@ class FromDataMixin:
         raise MalformedData(cls, data)
 
     @classmethod
-    def from_field(cls: Type[ST], data: JsonObject, key: str) -> ST:
+    def from_field(cls, data: JsonObject, key: str) -> Self:
         return cls.from_data(data[key])
 
     @classmethod
-    def from_field_optional(cls: Type[ST], data: JsonObject, key: str) -> Optional[ST]:
+    def from_field_optional(cls, data: JsonObject, key: str) -> Optional[Self]:
         if raw_value := data.get(key):
             return cls.from_data(raw_value)

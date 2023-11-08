@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional
 
 from discord import (
     AllowedMentions,
@@ -178,7 +178,7 @@ class HelpForumGuildState(CogGuildState):
         self,
         forum: ForumChannel,
         thread: Thread,
-        message: Union[Message, PartialMessage],
+        message: Message | PartialMessage,
         emoji: PartialEmoji,
     ):
         """

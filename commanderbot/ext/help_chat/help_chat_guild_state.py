@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, List, Tuple, Union
+from typing import Iterable, List, Tuple
 
 from discord import CategoryChannel, TextChannel
 
@@ -25,7 +25,7 @@ class HelpChatGuildState(CogGuildState):
 
     @staticmethod
     def _flatten_text_channels(
-        channels: Tuple[Union[TextChannel, CategoryChannel], ...]
+        channels: Tuple[TextChannel | CategoryChannel, ...]
     ) -> Iterable[TextChannel]:
         for channel in channels:
             if isinstance(channel, TextChannel):
@@ -69,7 +69,7 @@ class HelpChatGuildState(CogGuildState):
     async def add_channels(
         self,
         ctx: GuildContext,
-        channels: Tuple[Union[TextChannel, CategoryChannel], ...],
+        channels: Tuple[TextChannel | CategoryChannel, ...],
     ):
         added_help_channels: List[HelpChannel] = []
         already_help_channels: List[HelpChannel] = []
@@ -112,7 +112,7 @@ class HelpChatGuildState(CogGuildState):
     async def remove_channels(
         self,
         ctx: GuildContext,
-        channels: Tuple[Union[TextChannel, CategoryChannel], ...],
+        channels: Tuple[TextChannel | CategoryChannel, ...],
     ):
         removed_help_channels: List[TextChannel] = []
         not_help_channels: List[TextChannel] = []
