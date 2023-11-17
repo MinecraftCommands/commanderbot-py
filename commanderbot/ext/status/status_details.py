@@ -1,30 +1,28 @@
 import re
-import sys
 from datetime import datetime, timedelta
-from importlib.metadata import version
 from typing import Dict, Optional
 
 from discord.ext.commands import Bot
 from discord.utils import format_dt
 
 from commanderbot.core.utils import check_commander_bot
+from commanderbot.lib.constants import (
+    COMMANDERBOT_VERSION,
+    DISCORD_PY_VERSION,
+    PYTHON_VERSION,
+)
 
 
 class StatusDetails:
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
 
-        # Get python version.
-        pyv = sys.version_info
-        self.python_version: str = f"{pyv[0]}.{pyv[1]}.{pyv[2]}"
+        # Store details about the bot
+        self.python_version: str = PYTHON_VERSION
+        self.discord_py_version: str = DISCORD_PY_VERSION
+        self.commanderbot_version: str = COMMANDERBOT_VERSION
 
-        # Get discord.py version.
-        self.discord_py_version: str = version("discord.py")
-
-        # Get commanderbot version.
-        self.commanderbot_version: str = version("commanderbot")
-
-        # Get additional bot details, if available.
+        # Store additional bot details, if available
         self.started_at: Optional[datetime] = None
         self.last_reconnect: Optional[datetime] = None
         self.uptime: Optional[timedelta] = None
