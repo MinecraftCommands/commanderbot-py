@@ -5,7 +5,8 @@ from discord import Thread
 
 from commanderbot.ext.automod.automod_event import AutomodEvent
 from commanderbot.ext.automod.automod_trigger import AutomodTriggerBase
-from commanderbot.lib import ChannelsGuard, JsonObject
+from commanderbot.lib import JsonObject
+from commanderbot.lib.guards import ChannelsGuard
 
 ST = TypeVar("ST")
 

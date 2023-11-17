@@ -4,10 +4,10 @@ from typing import Optional, Type, TypeVar
 from commanderbot.ext.automod import events
 from commanderbot.ext.automod.automod_event import AutomodEvent
 from commanderbot.ext.automod.automod_trigger import AutomodTrigger, AutomodTriggerBase
-from commanderbot.lib import (
+from commanderbot.lib import JsonObject
+from commanderbot.lib.guards import (
     ChannelsGuard,
     ChannelTypesGuard,
-    JsonObject,
     ReactionsGuard,
     RolesGuard,
 )

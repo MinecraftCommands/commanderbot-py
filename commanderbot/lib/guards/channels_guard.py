@@ -1,16 +1,17 @@
 from dataclasses import dataclass, field
-from typing import Optional, Set
+from typing import Any, Optional
 
-from discord import TextChannel, Thread
+from discord import Thread
 
-from commanderbot.lib.from_data_mixin import FromDataMixin
-from commanderbot.lib.types import ChannelID
+from commanderbot.lib import FromDataMixin, JsonSerializable
+from commanderbot.lib.types import ChannelID, MessageableChannel
+from commanderbot.lib.utils import dict_without_falsies
 
 __all__ = ("ChannelsGuard",)
 
 
 @dataclass
-class ChannelsGuard(FromDataMixin):
+class ChannelsGuard(FromDataMixin, JsonSerializable):
     """
     Check whether a channel matches a set of channels.
 
@@ -22,9 +23,10 @@ class ChannelsGuard(FromDataMixin):
         The channels to exclude. A channel will match if it is not in this set.
     """
 
-    include: Set[ChannelID] = field(default_factory=set)
-    exclude: Set[ChannelID] = field(default_factory=set)
+    include: set[ChannelID] = field(default_factory=set)
+    exclude: set[ChannelID] = field(default_factory=set)
 
+    # @overrides FromDataMixin
     @classmethod
     def try_from_data(cls, data):
         if isinstance(data, dict):
@@ -35,7 +37,13 @@ class ChannelsGuard(FromDataMixin):
         elif isinstance(data, list):
             return cls(include=set(data))
 
-    def ignore_by_includes(self, channel: TextChannel | Thread) -> bool:
+    # @implements JsonSerializable
+    def to_json(self) -> Any:
+        return dict_without_falsies(
+            include=list(self.include), exclude=list(self.exclude)
+        )
+
+    def ignore_by_includes(self, channel: MessageableChannel) -> bool:
         # If includes are not defined, nothing is ignored.
         if not self.include:
             return False
@@ -54,7 +62,7 @@ class ChannelsGuard(FromDataMixin):
         # Otherwise, ignore the channel if and only if it's not included.
         return channel.id not in self.include
 
-    def ignore_by_excludes(self, channel: TextChannel | Thread) -> bool:
+    def ignore_by_excludes(self, channel: MessageableChannel) -> bool:
         # Ignore channels that are excluded, if any.
         if not self.exclude:
             return False
@@ -72,7 +80,7 @@ class ChannelsGuard(FromDataMixin):
 
         return channel.id in self.exclude
 
-    def ignore(self, channel: Optional[TextChannel | Thread]) -> bool:
+    def ignore(self, channel: Optional[MessageableChannel]) -> bool:
         """Determine whether to ignore the channel."""
         # If there's no channel, there's nothing to ignore.
         if channel is None:

@@ -6,7 +6,8 @@ from commanderbot.ext.automod.automod_condition import (
     AutomodConditionBase,
 )
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject, RolesGuard
+from commanderbot.lib import JsonObject
+from commanderbot.lib.guards import RolesGuard
 
 ST = TypeVar("ST")
 

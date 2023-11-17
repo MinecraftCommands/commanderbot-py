@@ -7,7 +7,8 @@ from commanderbot.ext.automod.automod_trigger import (
     AutomodTrigger,
     AutomodTriggerBase,
 )
-from commanderbot.lib import JsonObject, RolesGuard
+from commanderbot.lib import JsonObject
+from commanderbot.lib.guards import RolesGuard
 
 ST = TypeVar("ST")
 
