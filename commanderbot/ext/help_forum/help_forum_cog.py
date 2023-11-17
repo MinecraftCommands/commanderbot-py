@@ -131,7 +131,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         # Make sure this reaction was not added by the bot
-        if not payload.member or is_bot(self.bot, payload.member):
+        if is_bot(self.bot, payload.user_id):
             return
 
         # Make sure this reaction was added to a message in a thread

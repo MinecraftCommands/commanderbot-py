@@ -37,7 +37,7 @@ from discord import (
 from discord.abc import Messageable
 from discord.ext.commands import Bot, Context
 
-from commanderbot.lib.types import RoleID
+from commanderbot.lib.types import RoleID, UserID
 
 CHARACTER_CAP = 1900
 INVITE_LINK_PATTERN = re.compile(
@@ -51,8 +51,15 @@ CUSTOM_EMOJI_PATTERN = re.compile(r"\<a?\:\w+\:\d+\>")
 T = TypeVar("T")
 
 
-def is_bot(bot: Bot, user: Any) -> bool:
-    return user == bot.user or getattr(user, "bot")
+def is_bot(bot: Bot, user: User | Member | UserID) -> bool:
+    if not bot.user:
+        return False
+
+    if isinstance(user, (User, Member)):
+        return user == bot.user
+    elif isinstance(user, UserID):
+        return user == bot.user.id
+    return False
 
 
 def is_owner(client: Client, user: User | Member) -> bool:
