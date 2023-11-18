@@ -39,11 +39,9 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         )
 
     def _format_name(self, user: User | Member) -> str:
-        print(user.display_name)
-        print(user.name)
-        if user.display_name != user.name:
-            return f"{user.display_name} ({user.name})"
-        return user.name
+        if user.display_name.lower() == user.name.lower():
+            return user.display_name
+        return f"{user.display_name} ({user.name})"
 
     async def _do_quote(
         self,
