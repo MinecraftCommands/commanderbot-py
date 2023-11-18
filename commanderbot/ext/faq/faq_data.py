@@ -3,7 +3,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import chain, islice
-from token import OP
 from typing import Any, AsyncIterable, Iterable, Optional, Self
 
 from discord import Guild
