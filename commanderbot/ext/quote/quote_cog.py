@@ -1,7 +1,7 @@
 import re
 from itertools import chain
 
-from discord import Embed, Interaction, Member, Message
+from discord import Embed, Interaction, Member, Message, User
 from discord.app_commands import Transform, command, describe, guild_only
 from discord.ext.commands import Bot, Cog
 from discord.utils import format_dt
@@ -37,6 +37,13 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         return (
             bool(AUTO_EMBED_PATTERN.match(message.content)) and len(message.embeds) == 1
         )
+
+    def _format_name(self, user: User | Member) -> str:
+        print(user.display_name)
+        print(user.name)
+        if user.display_name != user.name:
+            return f"{user.display_name} ({user.name})"
+        return user.name
 
     async def _do_quote(
         self,
@@ -75,7 +82,7 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
                 description=message.content,
             )
             quote_embed.set_author(
-                name=str(message.author),
+                name=self._format_name(message.author),
                 icon_url=message.author.display_avatar.url,
             )
             await interaction.response.send_message(
