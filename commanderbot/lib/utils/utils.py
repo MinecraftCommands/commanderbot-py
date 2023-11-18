@@ -54,8 +54,7 @@ T = TypeVar("T")
 def is_bot(bot: Bot, user: User | Member | UserID) -> bool:
     if not bot.user:
         return False
-
-    if isinstance(user, (User, Member)):
+    elif isinstance(user, (User, Member)):
         return user == bot.user
     elif isinstance(user, UserID):
         return user == bot.user.id
