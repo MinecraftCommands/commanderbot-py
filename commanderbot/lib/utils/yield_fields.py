@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, Tuple
 
 from discord import Member
+from discord.utils import utcnow
 
-from commanderbot.lib.utils import utcnow_aware
 from commanderbot.lib.value_formatter import ValueFormatter
 
 
@@ -19,7 +19,7 @@ def yield_member_date_fields(prefix: str, member: Member) -> Iterable[Tuple[str,
     yield f"{prefix}_joined_at", joined_at_value
 
     # member_for
-    now = utcnow_aware()
+    now = utcnow()
     if isinstance(joined_at, datetime):
         member_for = now - joined_at
         member_for_str = f"{member_for.days} days"

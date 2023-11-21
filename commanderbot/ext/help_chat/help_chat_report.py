@@ -8,6 +8,7 @@ from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple, cast
 
 from discord import AllowedMentions, Embed, File, Message, TextChannel, User
 from discord.ext.commands import Context
+from discord.utils import utcnow
 
 from commanderbot.ext.help_chat import constants
 from commanderbot.ext.help_chat.help_chat_store import HelpChannel
@@ -213,7 +214,7 @@ class HelpChatReportBuildContext:
 
         self._progress_message: Optional[Message] = field(init=False, default=None)
         self._built_at: datetime = field(
-            init=False, default_factory=lambda: datetime.utcnow()
+            init=False, default_factory=lambda: utcnow()
         )
         self._channel_states: List[ChannelState] = field(
             init=False, default_factory=lambda: []
@@ -225,7 +226,7 @@ class HelpChatReportBuildContext:
         return cast(TextChannel, self.ctx.channel)
 
     def reset(self):
-        self._built_at = datetime.utcnow()
+        self._built_at = utcnow()
         self._progress_message = None
         self._channel_states = [
             ChannelState(help_channel, help_channel.channel(self.ctx))

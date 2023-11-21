@@ -18,6 +18,7 @@ from discord import (
     ThreadMember,
     User,
 )
+from discord.utils import utcnow
 from yaml import YAMLError
 
 from commanderbot.ext.automod import events
@@ -234,7 +235,7 @@ class AutomodGuildState(CogGuildState):
             await self.reply(ctx, content)
         elif count_rules == 1:
             rule = rules[0]
-            now = datetime.utcnow()
+            now = utcnow()
             added_on_timestamp = rule.added_on.isoformat()
             added_on_delta = now - rule.added_on
             added_on_str = f"{added_on_timestamp} ({added_on_delta})"

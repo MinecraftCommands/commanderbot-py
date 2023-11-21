@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Set
 import discord
 
 from commanderbot.lib.json_serializable import JsonSerializable
-from commanderbot.lib.utils import datetime_to_str, timedelta_to_dict
+from commanderbot.lib.utils import timedelta_to_dict
 
 
 class ExtendedJsonEncoder(json.JSONEncoder):
@@ -41,7 +41,7 @@ class ExtendedJsonEncoder(json.JSONEncoder):
         return list(obj)
 
     def convert_datetime(self, obj: datetime) -> str:
-        return datetime_to_str(obj)
+        return obj.isoformat()
 
     def convert_timedelta(self, obj: timedelta) -> Dict[str, Any]:
         return timedelta_to_dict(obj)

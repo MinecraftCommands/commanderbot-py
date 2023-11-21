@@ -6,6 +6,7 @@ from itertools import chain, islice
 from typing import Any, AsyncIterable, Iterable, Optional, Self
 
 from discord import Guild
+from discord.utils import utcnow
 
 from commanderbot.ext.faq.faq_exceptions import (
     FaqAliasAlreadyExists,
@@ -103,7 +104,7 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
         self.tags = set(tags)
         self.content = content
         self.modified_by_id = user_id
-        self.modified_on = datetime.now()
+        self.modified_on = utcnow()
 
         self._rebuild_match_terms()
 
@@ -227,8 +228,8 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
             0,
             user_id,
             user_id,
-            datetime.now(),
-            datetime.now(),
+            utcnow(),
+            utcnow(),
         )
         self.faq_entries[key] = entry
         self._rebuild_alias_mappings()

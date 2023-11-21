@@ -3,10 +3,10 @@ from typing import Optional
 
 import aiohttp
 from discord.ext.tasks import loop
+from discord.utils import utcnow
 
 from commanderbot.ext.manifest.manifest_data import Version
 from commanderbot.lib.constants import USER_AGENT
-from commanderbot.lib.utils import datetime_to_int, utcnow_aware
 
 
 class ManifestVersionManager:
@@ -24,12 +24,12 @@ class ManifestVersionManager:
     @property
     def prev_request_ts(self) -> Optional[int]:
         if self.prev_request_date:
-            return datetime_to_int(self.prev_request_date)
+            return int(self.prev_request_date.timestamp())
 
     @property
     def next_request_ts(self) -> Optional[int]:
         if self.next_request_date:
-            return datetime_to_int(self.next_request_date)
+            return int(self.next_request_date.timestamp())
 
     @staticmethod
     def default_version() -> Version:
@@ -45,7 +45,7 @@ class ManifestVersionManager:
         headers: dict[str, str] = {"User-Agent": USER_AGENT}
         async with aiohttp.ClientSession() as session:
             async with session.get(self.url, headers=headers) as response:
-                self.prev_request_date = utcnow_aware()
+                self.prev_request_date = utcnow()
                 self.next_request_date = self._update.next_iteration
                 self.prev_status_code = response.status
 
