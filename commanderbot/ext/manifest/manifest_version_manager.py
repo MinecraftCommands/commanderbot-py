@@ -21,19 +21,9 @@ class ManifestVersionManager:
     def latest_version(self) -> Version:
         return self._latest_version or self.default_version()
 
-    @property
-    def prev_request_ts(self) -> Optional[int]:
-        if self.prev_request_date:
-            return int(self.prev_request_date.timestamp())
-
-    @property
-    def next_request_ts(self) -> Optional[int]:
-        if self.next_request_date:
-            return int(self.next_request_date.timestamp())
-
     @staticmethod
     def default_version() -> Version:
-        return Version(1, 19, 0)
+        return Version(1, 20, 0)
 
     @loop(hours=1)
     async def _update(self):
