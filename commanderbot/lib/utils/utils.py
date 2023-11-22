@@ -66,7 +66,7 @@ def is_owner(client: Client, user: User | Member) -> bool:
         return False
 
     if info.team:
-        return user.id in [i.id for i in info.team.members]
+        return user in info.team.members
     else:
         return user == info.owner
 
