@@ -50,10 +50,10 @@ class StatusDetails:
         }
 
         if dt := self.started_at:
-            all_fields["Started"] = format_dt(dt, "R")
+            all_fields["Started"] = format_dt(dt, style="R")
 
         if dt := self.last_reconnect:
-            all_fields["Last reconnect"] = format_dt(dt, "R")
+            all_fields["Last reconnect"] = format_dt(dt, style="R")
 
         if td := self.uptime:
             all_fields["Uptime"] = f"`{self._format_timedelta(td)}`"

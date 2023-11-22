@@ -153,11 +153,11 @@ class InviteGuildState(CogGuildState):
         embed.add_field(name="Hits", value=f"`{entry.hits}`")
         embed.add_field(
             name="Added By",
-            value=f"<@{entry.added_by_id}> ({format_dt(entry.added_on, 'R')})",
+            value=f"<@{entry.added_by_id}> ({format_dt(entry.added_on, style='R')})",
         )
         embed.add_field(
             name="Modified By",
-            value=f"<@{entry.modified_by_id}> ({format_dt(entry.modified_on, 'R')})",
+            value=f"<@{entry.modified_by_id}> ({format_dt(entry.modified_on, style='R')})",
         )
 
         await interaction.response.send_message(embed=embed)
