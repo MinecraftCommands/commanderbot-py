@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from logging import Logger, getLogger
+from logging import Logger
 from typing import Any, ClassVar, Dict, Iterable, Optional, Protocol, Tuple, Type, cast
 
 from discord import Member, TextChannel, Thread, User
 from discord.ext.commands import Bot
+from discord.utils import format_dt, utcnow
 
 from commanderbot.lib import ShallowFormatter, TextMessage, TextReaction, ValueFormatter
-from commanderbot.lib.utils import yield_member_date_fields
 
 
 class AutomodEvent(Protocol):
@@ -16,46 +16,58 @@ class AutomodEvent(Protocol):
     @property
     def channel(self) -> Optional[TextChannel | Thread]:
         """Return the relevant channel, if any."""
+        ...
 
     @property
     def thread(self) -> Optional[Thread]:
         """Return the relevant thread, if any."""
+        ...
 
     @property
     def message(self) -> Optional[TextMessage]:
         """Return the relevant message, if any."""
+        ...
 
     @property
     def reaction(self) -> Optional[TextReaction]:
         """Return the relevant reaction, if any."""
+        ...
 
     @property
     def author(self) -> Optional[Member]:
         """Return the relevant author, if any."""
+        ...
 
     @property
     def actor(self) -> Optional[Member]:
         """Return the acting user, if any."""
+        ...
 
     @property
     def member(self) -> Optional[Member]:
         """Return the member-in-question, if any."""
+        ...
 
     @property
     def user(self) -> Optional[User]:
         """Return the user-in-question, if any."""
+        ...
 
     def set_metadata(self, key: str, value: Any):
         """Attach metadata to the event."""
+        ...
 
     def remove_metadata(self, key: str):
         """Remove metadata from the event."""
+        ...
 
     def get_fields(self, unsafe: bool = False) -> Dict[str, Any]:
         """Get the full event data."""
+        ...
 
     def format_content(self, content: str, *, unsafe: bool = False) -> str:
         """Format a string with event data."""
+        ...
 
 
 # @implements AutomodEvent
@@ -197,7 +209,7 @@ class AutomodEventBase:
     ) -> Iterable[Tuple[str, Any]]:
         yield from self._yield_safe_user_fields(prefix, cast(User, member))
         yield f"{prefix}_nick", member.nick
-        yield from yield_member_date_fields(prefix, member)
+        yield from self._yield_member_date_fields(prefix, member)
 
     def _yield_safe_user_fields(
         self, prefix: str, user: User
@@ -208,6 +220,30 @@ class AutomodEventBase:
         yield f"{prefix}_discriminator", user.discriminator
         yield f"{prefix}_mention", user.mention
         yield f"{prefix}_display_name", user.display_name
+
+    def _yield_member_date_fields(
+        self, prefix: str, member: Member
+    ) -> Iterable[Tuple[str, Any]]:
+        # joined_at
+        joined_at_value = "Unknown"
+        if joined_at := member.joined_at:
+            joined_at_value = format_dt(joined_at, style="R")
+        yield f"{prefix}_joined_at", joined_at_value
+
+        # member_for
+        member_for_value = "Unknown"
+        if joined_at := member.joined_at:
+            member_for = utcnow() - joined_at
+            member_for_str = f"{member_for.days} days"
+            if member_for.days < 7:
+                hh = int(member_for.total_seconds() / 3600)
+                mm = int(member_for.total_seconds() / 60) % 60
+                member_for_str = f"{hh} hours, {mm} minutes"
+            member_for_value = member_for_str
+        yield f"{prefix}_member_for", member_for_value
+
+        # created_at
+        yield f"{prefix}_created_at", format_dt(member.created_at, style="R")
 
     def _yield_extra_fields(self) -> Iterable[Tuple[str, Any]]:
         """Override this to provide additional fields based on the event type."""

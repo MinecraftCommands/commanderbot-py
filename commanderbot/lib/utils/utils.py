@@ -5,7 +5,6 @@ import os
 import re
 import traceback
 from ctypes import c_void_p, sizeof
-from datetime import datetime, timezone
 from enum import Enum
 from typing import (
     Any,
@@ -67,7 +66,7 @@ def is_owner(client: Client, user: User | Member) -> bool:
         return False
 
     if info.team:
-        return user.id in [i.id for i in info.team.members]
+        return user in info.team.members
     else:
         return user == info.owner
 
@@ -166,10 +165,6 @@ def format_context_cause(ctx: Context | Interaction) -> str:
         parts.append(f"in guild `{guild}` (ID `{guild.id}`)")
 
     return " ".join(parts)
-
-
-def utcnow_aware() -> datetime:
-    return datetime.utcnow().replace(tzinfo=timezone.utc)
 
 
 def message_to_file(message: Message, filename: Optional[str] = None) -> File:

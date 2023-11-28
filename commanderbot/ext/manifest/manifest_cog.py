@@ -15,6 +15,7 @@ from discord.app_commands import (
     rename,
 )
 from discord.ext.commands import Bot, Cog
+from discord.utils import format_dt
 
 from commanderbot.ext.manifest.manifest_data import Manifest, ModuleType, Version
 from commanderbot.ext.manifest.manifest_exceptions import (
@@ -150,12 +151,12 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         url: str = self.version_manager.url or "**None set**"
 
         prev_request_ts: str = "`?`"
-        if ts := self.version_manager.prev_request_ts:
-            prev_request_ts = f"<t:{ts}:R>"
+        if dt := self.version_manager.prev_request_date:
+            prev_request_ts = format_dt(dt, style="R")
 
         next_request_ts: str = "`?`"
-        if ts := self.version_manager.next_request_ts:
-            next_request_ts = f"<t:{ts}:R>"
+        if dt := self.version_manager.next_request_date:
+            next_request_ts = format_dt(dt, style="R")
 
         prev_status_code: str = "`?`"
         if status := self.version_manager.prev_status_code:

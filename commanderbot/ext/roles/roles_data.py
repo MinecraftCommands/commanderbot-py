@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import DefaultDict, Dict, List, Optional
 
 from discord import Guild, Role
+from discord.utils import utcnow
 
 from commanderbot.ext.roles.roles_store import (
     RoleIDNotRegistered,
@@ -102,7 +103,7 @@ class RolesGuildData:
         # just replace it with the new information.
         added_role_entry = RoleEntryData(
             role_id=role.id,
-            added_on=datetime.utcnow(),
+            added_on=utcnow(),
             joinable=joinable,
             leavable=leavable,
             description=description,

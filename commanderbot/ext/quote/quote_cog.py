@@ -61,9 +61,9 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
             raise MissingQuotePermissions
 
         # Build the message content containing the quote metadata.
-        quote_ts: str = format_dt(message.created_at, "R")
+        quote_ts: str = format_dt(message.created_at, style="R")
         if message.edited_at:
-            quote_ts += f" (edited {format_dt(message.edited_at, 'R')})"
+            quote_ts += f" (edited {format_dt(message.edited_at, style='R')})"
 
         content: str = (
             f"{phrasing} {message.author.mention} from {quote_ts} → {message.jump_url}"

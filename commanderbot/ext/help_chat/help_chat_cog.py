@@ -4,6 +4,7 @@ from typing import Optional
 from discord import CategoryChannel, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog
+from discord.utils import utcnow
 
 from commanderbot.ext.help_chat import constants
 from commanderbot.ext.help_chat.help_chat_guild_state import HelpChatGuildState
@@ -135,14 +136,14 @@ class HelpChatCog(Cog, name="commanderbot.ext.help_chat"):
     ):
         after_date = datetime.strptime(after, constants.DATE_FMT_YYYY_MM_DD)
         before_date = (
-            datetime.utcnow()
+            utcnow()
             if before == "now"
             else datetime.strptime(before, constants.DATE_FMT_YYYY_MM_DD)
         )
         actual_label = (
             label
             if label is not None
-            else datetime.utcnow().strftime(constants.DATE_FMT_YYYY_MM_DD_HH_MM_SS)
+            else utcnow().strftime(constants.DATE_FMT_YYYY_MM_DD_HH_MM_SS)
         )
         await self.state[ctx.guild].build_report(
             ctx,

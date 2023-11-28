@@ -5,6 +5,7 @@ from itertools import chain, islice
 from typing import Any, AsyncIterable, Iterable, Optional, Self
 
 from discord import Guild
+from discord.utils import utcnow
 
 from commanderbot.ext.invite.invite_exceptions import (
     GuildInviteNotSet,
@@ -79,7 +80,7 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
         self.link = link
         self.description = description
         self.modified_by_id = user_id
-        self.modified_on = datetime.now()
+        self.modified_on = utcnow()
 
 
 @dataclass
@@ -184,8 +185,8 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
             0,
             user_id,
             user_id,
-            datetime.now(),
-            datetime.now(),
+            utcnow(),
+            utcnow(),
         )
         self.invite_entries[key] = entry
         self._rebuild_tag_mappings()

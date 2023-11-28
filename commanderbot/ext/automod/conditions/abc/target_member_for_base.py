@@ -3,11 +3,12 @@ from datetime import timedelta
 from typing import Optional, Type, TypeVar
 
 from discord import Member
+from discord.utils import utcnow
 
 from commanderbot.ext.automod.automod_condition import AutomodConditionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
 from commanderbot.lib import JsonObject
-from commanderbot.lib.utils import timedelta_from_field_optional, utcnow_aware
+from commanderbot.lib.utils import timedelta_from_field_optional
 
 ST = TypeVar("ST")
 
@@ -34,7 +35,7 @@ class TargetMemberForBase(AutomodConditionBase):
         member = self.get_target(event)
         if member is None:
             return False
-        now = utcnow_aware()
+        now = utcnow()
         joined_at = member.joined_at
         if not joined_at:
             return False

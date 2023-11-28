@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, cast
 
 from discord.ext.commands import Context
 from discord.interactions import Interaction
+from discord.utils import utcnow
 
 from commanderbot.core.command_tree import CachingCommandTree
 from commanderbot.core.commander_bot_base import CommanderBotBase
@@ -16,7 +17,6 @@ from commanderbot.core.error_handling import (
     EventErrorHandler,
 )
 from commanderbot.lib import AllowedMentions, EventData, Intents
-from commanderbot.lib.utils.utils import utcnow_aware
 
 
 class CommanderBot(CommanderBotBase):
@@ -42,7 +42,7 @@ class CommanderBot(CommanderBotBase):
         self.log: Logger = getLogger("CommanderBot")
 
         # Remember when we started and the last time we connected.
-        self._started_at: datetime = utcnow_aware()
+        self._started_at: datetime = utcnow()
         self._connected_since: Optional[datetime] = None
 
         # Create an error handling component.
@@ -103,7 +103,7 @@ class CommanderBot(CommanderBotBase):
     @property
     def uptime(self) -> Optional[timedelta]:
         if self.connected_since is not None:
-            return utcnow_aware() - self.connected_since
+            return utcnow() - self.connected_since
 
     # @implements CommanderBotBase
     @property
@@ -139,7 +139,7 @@ class CommanderBot(CommanderBotBase):
     # @overrides Bot
     async def on_connect(self):
         self.log.warning("Connected to Discord.")
-        self._connected_since = utcnow_aware()
+        self._connected_since = utcnow()
 
     # @overrides Bot
     async def on_disconnect(self):

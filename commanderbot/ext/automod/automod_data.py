@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, AsyncIterable, DefaultDict, Dict, Iterable, Optional, Set, Type
 
 from discord import Guild
+from discord.utils import utcnow
 
 from commanderbot.ext.automod.automod_event import AutomodEvent
 from commanderbot.ext.automod.automod_rule import AutomodRule
@@ -184,7 +184,7 @@ class AutomodGuildData:
         new_data = to_data(old_rule)
 
         # Update the modification timestamp. Note that it may still be overidden.
-        new_data["modified_on"] = datetime.utcnow().isoformat()
+        new_data["modified_on"] = utcnow().isoformat()
 
         # Update the new rule data using the given changes.
         update_json_with_path(new_data, path, op, data)

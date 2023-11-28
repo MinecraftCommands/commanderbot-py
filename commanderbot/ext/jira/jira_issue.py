@@ -55,8 +55,8 @@ class JiraIssue:
         return {
             "Reported by": self.reporter,
             "Assigned to": self.assignee,
-            "Created": format_dt(self.created, "R"),
-            "Updated": format_dt(self.updated, "R"),
+            "Created": format_dt(self.created, style="R"),
+            "Updated": format_dt(self.updated, style="R"),
             "Since version": self.since_version,
             "Fix version": self.fix_version,
             "Status": self.status,
