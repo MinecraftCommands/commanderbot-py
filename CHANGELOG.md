@@ -58,6 +58,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `ping`: Ported to slash commands
 - Reworked how cogs with a database are created
 
+### Removed
+
+- The `pack` cog has been removed since the official [Beet bot](https://github.com/mcbeet/beet-bot) does the same thing
+
 ## [0.19.0] - 2022-08-27
 
 ### Added
