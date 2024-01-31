@@ -154,7 +154,7 @@ class GuildPartitionedCogState(CogState, Generic[GuildStateType]):
 
     This is intended to be used just as `CogState` is, but in addition to maintaining
     several sub-states that each correspond to their own guild. A subclass of
-    `CogGuildState` should be defined to implement guild-specific funtionality.
+    `CogGuildState` should be defined to implement guild-specific functionality.
 
     Uses a `CogGuildStateManager` to manage the lazy-initialization of `CogGuildState`
     instances, and implements `__getitem__` as a shortcut to this.

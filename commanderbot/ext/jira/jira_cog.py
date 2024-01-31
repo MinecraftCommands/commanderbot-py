@@ -55,7 +55,7 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
         interaction: Interaction,
         query: Transform[JiraQuery, JiraQueryTransformer],
     ):
-        # Repond to the interaction with a defer since the web request may take a while
+        # Respond to the interaction with a defer since the web request may take a while
         await interaction.response.defer()
 
         # Try to get the issue

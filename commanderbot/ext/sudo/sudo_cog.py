@@ -185,7 +185,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
     @cmd_sudo_sync.group(name="guild", brief="Sync app commands to a guild")
     async def cmd_sudo_sync_guild(self, ctx: Context):
-        # If we didn't invote a subcommand, sync the current guild the normal way
+        # If we didn't invoke a subcommand, sync the current guild the normal way
         if not ctx.invoked_subcommand:
             if sync_to := self._get_current_guild(ctx):
                 await self._sync_guild_app_commands(ctx, sync_to)

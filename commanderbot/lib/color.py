@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, Optional, Self
+from typing import Optional, Self
 
 import discord
 
@@ -19,7 +19,7 @@ class Color(discord.Color, FromDataMixin):
     @classmethod
     def from_str(cls, value: str) -> Self:
         # The classmethod, `discord.Color.from_str()`, always returns a
-        # `discord.Color` reguardless of what `cls` is. So we need to
+        # `discord.Color` regardless of what `cls` is. So we need to
         # construct our `cls` using a temporary `discord.Color`.
         temp: discord.Color = super().from_str(value)
         return cls(temp.value)
@@ -37,7 +37,7 @@ class Color(discord.Color, FromDataMixin):
     @classmethod
     def presets(
         cls, *, color_filter: Optional[str] = None, case_sensitive: bool = False
-    ) -> Dict[str, Self]:
+    ) -> dict[str, "Color"]:
         """
         Returns a dictionary containing all color presets.
         The `color_filter` parameter can be used to filter the color presets that are returned
