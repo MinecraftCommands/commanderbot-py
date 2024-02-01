@@ -228,7 +228,7 @@ class AutomodEventBase:
         joined_at_value = "Unknown"
         if joined_at := member.joined_at:
             joined_at_value = format_dt(joined_at, style="R")
-        yield f"{prefix}_joined_at", joined_at_value
+        yield f"{prefix}_joined_at", ValueFormatter(joined_at_value)
 
         # member_for
         member_for_value = "Unknown"
@@ -243,7 +243,9 @@ class AutomodEventBase:
         yield f"{prefix}_member_for", member_for_value
 
         # created_at
-        yield f"{prefix}_created_at", format_dt(member.created_at, style="R")
+        yield f"{prefix}_created_at", ValueFormatter(
+            format_dt(member.created_at, style="R")
+        )
 
     def _yield_extra_fields(self) -> Iterable[Tuple[str, Any]]:
         """Override this to provide additional fields based on the event type."""
