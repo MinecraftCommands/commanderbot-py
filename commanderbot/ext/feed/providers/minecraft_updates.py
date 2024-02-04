@@ -108,7 +108,6 @@ class MinecraftBedrockUpdates:
         self._log: Logger = getLogger("FeedCog.MinecraftBedrockUpdates")
         self._etag: Optional[str] = None
         self._cache: deque[int] = deque(maxlen=cache_size)
-        self._cache_initialized: bool = False
 
     @classmethod
     def from_options(cls, options: MinecraftBedrockUpdatesOptions) -> Self:
@@ -133,13 +132,12 @@ class MinecraftBedrockUpdates:
     @loop(minutes=1)
     async def _poll_for_updates(self):
         # Populate the cache on the first time we poll and immediately return
-        if not self._cache_initialized:
+        if not self.prev_status_code:
             self._log.info("Building update cache...")
             await self._fetch_latest_updates()
             self._log.info(
                 f"Done building update cache (Initial size: {len(self._cache)})"
             )
-            self._cache_initialized = True
             return
 
         # Try to get the articles for the latest updates
