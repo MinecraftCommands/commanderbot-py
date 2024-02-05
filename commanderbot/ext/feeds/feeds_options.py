@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Optional, Self
 
-from commanderbot.ext.feed.providers import (
+from commanderbot.ext.feeds.providers import (
     MinecraftBedrockUpdatesOptions,
     MinecraftJavaUpdatesOptions,
 )
@@ -14,7 +14,7 @@ from commanderbot.lib.cogs.database import (
 
 
 @dataclass
-class FeedOptions(FromDataMixin):
+class FeedsOptions(FromDataMixin):
     minecraft_java_updates: MinecraftJavaUpdatesOptions
     minecraft_bedrock_updates: MinecraftBedrockUpdatesOptions
 
