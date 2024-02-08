@@ -31,6 +31,8 @@ __all__ = (
     "MinecraftBedrockUpdates",
 )
 
+CACHE_SIZE: int = 50
+
 JAVA_RELEASE_VERSION_PATTERN = re.compile(r"\d+\.\d+(?:\.\d+)?")
 JAVA_SNAPSHOT_VERSION_PATTERN = re.compile(r"\d\dw\d\d[a-z]")
 JAVA_PRE_RELEASE_VERSION_PATTERN = re.compile(
@@ -69,44 +71,64 @@ MinecraftUpdateHandler: TypeAlias = Callable[
 
 @dataclass
 class MinecraftJavaUpdatesOptions(FromDataMixin):
-    url: str
+    feed_url: str
+    feed_icon_url: str
     release_icon_url: str
     snapshot_icon_url: str
+
+    image_proxy: Optional[str] = None
+    cache_size: int = CACHE_SIZE
 
     # @overrides FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
-                url=data["url"],
+                feed_url=data["feed_url"],
+                feed_icon_url=data["feed_icon_url"],
                 release_icon_url=data["release_icon_url"],
                 snapshot_icon_url=data["snapshot_icon_url"],
+                image_proxy=data.get("image_proxy"),
+                cache_size=data.get("cache_size", CACHE_SIZE),
             )
 
 
 @dataclass
 class MinecraftBedrockUpdatesOptions(FromDataMixin):
-    url: str
+    feed_url: str
+    feed_icon_url: str
     release_section_id: int
     preview_section_id: int
     release_icon_url: str
     preview_icon_url: str
+
+    image_proxy: Optional[str] = None
+    cache_size: int = CACHE_SIZE
 
     # @overrides FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
-                url=data["url"],
+                feed_url=data["feed_url"],
+                feed_icon_url=data["feed_icon_url"],
                 release_section_id=data["release_section_id"],
                 preview_section_id=data["preview_section_id"],
                 release_icon_url=data["release_icon_url"],
                 preview_icon_url=data["preview_icon_url"],
+                image_proxy=data.get("image_proxy"),
+                cache_size=data.get("cache_size", CACHE_SIZE),
             )
 
 
 class MinecraftJavaUpdates:
-    def __init__(self, url: str, *, cache_size: int = 50):
+    def __init__(
+        self,
+        url: str,
+        *,
+        image_proxy: Optional[str] = None,
+        cache_size: int = CACHE_SIZE,
+    ):
         self.url: str = url
         self.prev_status_code: Optional[int] = None
         self.prev_request_date: Optional[datetime] = None
@@ -118,11 +140,16 @@ class MinecraftJavaUpdates:
         self._log: Logger = getLogger("FeedsCog.MinecraftJavaUpdates")
         self._etag: Optional[str] = None
         self._last_modified: Optional[str] = None
+        self._image_proxy: Optional[str] = image_proxy
         self._cache: deque[str] = deque(maxlen=cache_size)
 
     @classmethod
     def from_options(cls, options: MinecraftJavaUpdatesOptions) -> Self:
-        return cls(url=options.url)
+        return cls(
+            url=options.feed_url,
+            image_proxy=options.image_proxy,
+            cache_size=options.cache_size,
+        )
 
     def start(self):
         self._log.info("Started polling for updates...")
@@ -183,7 +210,7 @@ class MinecraftJavaUpdates:
         # Try to get the latest articles
         self._log.debug("Polling for new articles...")
         new_articles = await self._fetch_latest_articles()
-        self._log.debug(f"Found {len(new_articles)} new article")
+        self._log.debug(f"Found {len(new_articles)} new articles")
 
         self.prev_request_date = utcnow()
         self.next_request_date = self._poll_for_updates.next_iteration
@@ -249,7 +276,10 @@ class MinecraftJavaUpdates:
         if article.image_url:
             url_parts = urlparse(article.link)
             url_parts = url_parts._replace(path=article.image_url)
-            return urlunparse(url_parts)
+            thumbnail_url = urlunparse(url_parts).replace(" ", "%20")
+            if self._image_proxy:
+                return self._image_proxy.format(url=thumbnail_url)
+            return thumbnail_url
 
 
 class MinecraftBedrockUpdates:
@@ -259,7 +289,8 @@ class MinecraftBedrockUpdates:
         release_section_id: int,
         preview_section_id: int,
         *,
-        cache_size: int = 50,
+        image_proxy: Optional[str] = None,
+        cache_size: int = CACHE_SIZE,
     ):
         self.url: str = url
         self.release_section_id: int = release_section_id
@@ -273,14 +304,17 @@ class MinecraftBedrockUpdates:
 
         self._log: Logger = getLogger("FeedsCog.MinecraftBedrockUpdates")
         self._etag: Optional[str] = None
+        self._image_proxy: Optional[str] = image_proxy
         self._cache: deque[int] = deque(maxlen=cache_size)
 
     @classmethod
     def from_options(cls, options: MinecraftBedrockUpdatesOptions) -> Self:
         return cls(
-            url=options.url,
+            url=options.feed_url,
             release_section_id=options.release_section_id,
             preview_section_id=options.preview_section_id,
+            image_proxy=options.image_proxy,
+            cache_size=options.cache_size,
         )
 
     def start(self):
@@ -379,4 +413,7 @@ class MinecraftBedrockUpdates:
 
     def _get_thumbnail(self, article: ZendeskArticle) -> Optional[str]:
         if match := IMAGE_TAG_PATTERN.search(article.body):
-            return match.group(1)
+            thumbnail_url = match.group(1)
+            if self._image_proxy:
+                return self._image_proxy.format(url=thumbnail_url)
+            return thumbnail_url
