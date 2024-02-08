@@ -18,7 +18,7 @@ from commanderbot.ext.invite.invite_exceptions import (
 )
 from commanderbot.ext.invite.invite_store import InviteEntry
 from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
-from commanderbot.lib.utils.utils import dict_without_falsies, is_invite_link
+from commanderbot.lib.utils import dict_without_falsies, is_invite_link
 
 
 @dataclass
