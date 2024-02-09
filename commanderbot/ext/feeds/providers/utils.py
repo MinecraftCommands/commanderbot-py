@@ -1,13 +1,34 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Optional, Self
+from typing import Any, Optional, Protocol, Self
 
 from commanderbot.lib import FromDataMixin
+
+__all__ = ("FeedProvider", "FeedProviderOptions", "MissingFeedHandler")
 
 
 class MissingFeedHandler(Exception):
     def __init__(self):
         super().__init__("A valid feed handler couldn't be found or it wasn't assigned")
+
+
+class FeedProvider(Protocol):
+    url: str
+    prev_status_code: Optional[int]
+    prev_request_date: Optional[datetime]
+    next_request_date: Optional[datetime]
+
+    def start(self): ...
+    def stop(self): ...
+    def restart(self): ...
+
+
+class FeedProviderOptions(Protocol):
+    feed_url: str
+    feed_icon_url: str
+
+    image_proxy: Optional[str]
+    cache_size: int
 
 
 @dataclass
