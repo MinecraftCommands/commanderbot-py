@@ -208,6 +208,15 @@ class FeedsData(JsonSerializable, FromDataMixin):
         return subscription
 
     # @implements FeedsStore
+    async def get_subscriptions(
+        self, channel: ChannelID
+    ) -> AsyncIterable[tuple[FeedType, FeedsSubscription]]:
+        for feed in FeedType:
+            feed_data = self._get_feed(feed)
+            if subscription := feed_data.get_subscription(channel):
+                yield (feed, subscription)
+
+    # @implements FeedsStore
     async def subscribers(self, feed: FeedType) -> AsyncIterable[FeedsSubscription]:
         feed_data = self._get_feed(feed)
         for subscription in feed_data.subscribers.values():

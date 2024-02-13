@@ -1,4 +1,6 @@
-from discord import Guild, Interaction, Permissions
+from typing import Optional
+
+from discord import Guild, Interaction, Permissions, Role
 from discord.app_commands import Group, describe
 from discord.ext.commands import Bot, Cog
 
@@ -9,10 +11,12 @@ from commanderbot.ext.feeds.feeds_options import FeedsOptions
 from commanderbot.ext.feeds.feeds_state import FeedsState
 from commanderbot.ext.feeds.feeds_store import FeedsStore
 from commanderbot.ext.feeds.providers import (
+    FeedType,
     FeedProviderType,
     MinecraftBedrockUpdates,
     MinecraftJavaUpdates,
 )
+from commanderbot.lib import MessageableGuildChannel
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -20,6 +24,7 @@ from commanderbot.lib.cogs.database import (
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
+from commanderbot.lib.interactions import checks
 
 
 def _make_store(bot: Bot, cog: Cog, options: FeedsOptions) -> FeedsStore:
@@ -51,7 +56,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
                 self.bot,
                 self,
                 factory=lambda guild: FeedsGuildState(
-                    self.bot, self, guild, self.store
+                    self.bot, self, guild, self.store, self.options
                 ),
             ),
             store=self.store,
@@ -62,7 +67,6 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
             mcbe_updates=MinecraftBedrockUpdates.from_options(
                 self.options.minecraft_bedrock_updates
             ),
-            
         )
 
     async def cog_load(self):
@@ -84,6 +88,73 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         default_permissions=Permissions(administrator=True),
     )
 
+    # @@ feed subscribe
+    @cmd_feed.command(name="subscribe", description="Subscribe a channel to a feed")
+    @describe(
+        feed="The feed to subscribe to",
+        channel="The channel that will receive updates from the feed",
+        notification_role="The role to ping when the feed has a new update",
+    )
+    async def cmd_feed_subscribe(
+        self,
+        interaction: Interaction,
+        feed: FeedType,
+        channel: MessageableGuildChannel,
+        notification_role: Optional[Role],
+    ):
+        assert isinstance(interaction.guild, Guild)
+        await self.state[interaction.guild].subscribe_to_feed(
+            interaction, feed, channel, notification_role
+        )
+
+    # @@ feed modify
+    @cmd_feed.command(name="modify", description="Modify a channel's feed subscription")
+    @describe(
+        feed="The feed that was subscribed to",
+        channel="The channel that was subscribed to the feed",
+        notification_role="The role to ping when the feed has a new update",
+    )
+    async def cmd_feed_modify(
+        self,
+        interaction: Interaction,
+        feed: FeedType,
+        channel: MessageableGuildChannel,
+        notification_role: Optional[Role],
+    ):
+        assert isinstance(interaction.guild, Guild)
+        await self.state[interaction.guild].modify_subscription(
+            interaction, feed, channel, notification_role
+        )
+
+    # @@ feed unsubscribe
+    @cmd_feed.command(
+        name="unsubscribe", description="Unsubscribe a channel from a feed"
+    )
+    @describe(
+        feed="The feed to unsubscribe from",
+        channel="The channel to unsubscribe from the feed",
+    )
+    async def cmd_feed_unsubscribe(
+        self, interaction: Interaction, feed: FeedType, channel: MessageableGuildChannel
+    ):
+        assert isinstance(interaction.guild, Guild)
+        await self.state[interaction.guild].unsubscribe_from_feed(
+            interaction, feed, channel
+        )
+
+    # @@ feed details
+    @cmd_feed.command(
+        name="details", description="Show details about a channel's feed subscriptions"
+    )
+    @describe(channel="The channel to show subscription details about")
+    async def cmd_feed_details(
+        self, interaction: Interaction, channel: MessageableGuildChannel
+    ):
+        assert isinstance(interaction.guild, Guild)
+        await self.state[interaction.guild].show_subscription_details(
+            interaction, channel
+        )
+
     # @@ feeds
 
     cmd_feeds = Group(
@@ -94,6 +165,8 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
 
     # @@ feeds status
     @cmd_feeds.command(name="status", description="Shows the status of a feed provider")
+    @describe(feed_provider="The feed provider to show the status of")
+    @checks.is_owner()
     async def cmd_feeds_status(
         self, interaction: Interaction, feed_provider: FeedProviderType
     ):
@@ -101,6 +174,8 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
 
     # @@ feeds restart
     @cmd_feeds.command(name="restart", description="Restarts a feed provider")
+    @describe(feed_provider="The feed provider to restart")
+    @checks.is_owner()
     async def cmd_feeds_restart(
         self, interaction: Interaction, feed_provider: FeedProviderType
     ):

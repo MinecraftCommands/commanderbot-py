@@ -69,6 +69,14 @@ class FeedsJsonStore(CogStore):
         return await cache.get_subscription(feed, channel_id)
 
     # @implements FeedsStore
+    async def get_subscriptions(
+        self, channel: ChannelID
+    ) -> AsyncIterable[tuple[FeedType, FeedsSubscription]]:
+        cache = await self.db.get_cache()
+        async for subscription in cache.get_subscriptions(channel):
+            yield subscription
+
+    # @implements FeedsStore
     async def subscribers(self, feed: FeedType) -> AsyncIterable[FeedsSubscription]:
         cache = await self.db.get_cache()
         async for subscription in cache.subscribers(feed):
