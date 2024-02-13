@@ -72,7 +72,7 @@ class FeedsGuildState(CogGuildState):
         # Respond to this interaction with a confirmation dialog
         result: ConfirmationResult = await respond_with_confirmation(
             interaction,
-            f"Are you sure you want <#{subscription.channel_id}> to unsubscribe from the feed `{feed.value}`?",
+            f"Are you sure you want to unsubscribe <#{subscription.channel_id}> from the feed `{feed.value}`?",
             timeout=10.0,
         )
 
@@ -106,13 +106,15 @@ class FeedsGuildState(CogGuildState):
             if role_id := subscription.notification_role_id:
                 notification_role = f"<@&{role_id}>"
 
-            details = "\n".join(
-                (
-                    f"- Notification Role: {notification_role}",
-                    f"- Subscribed By: <@{subscription.subscriber_id}> ({format_dt(subscription.subscribed_on, 'R')})",
-                )
+            embed.add_field(
+                name=feed.value,
+                value="\n".join(
+                    (
+                        f"- Notification Role: {notification_role}",
+                        f"- Subscribed By: <@{subscription.subscriber_id}> ({format_dt(subscription.subscribed_on, 'R')})",
+                    )
+                ),
+                inline=False,
             )
-
-            embed.add_field(name=feed.value, value=details, inline=False)
 
         await interaction.response.send_message(embed=embed)
