@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional
 
 from discord import Guild, Interaction, Permissions, Role
@@ -25,6 +26,18 @@ from commanderbot.lib.cogs.database import (
     UnsupportedDatabaseOptions,
 )
 from commanderbot.lib.interactions import checks
+
+
+class FeedProviderChoices(Enum):
+    minecraft_java_updates = FeedProviderType.MINECRAFT_JAVA_UPDATES
+    minecraft_bedrock_updates = FeedProviderType.MINECRAFT_BEDROCK_UPDATES
+
+
+class FeedChoices(Enum):
+    minecraft_java_releases = FeedType.MINECRAFT_JAVA_RELEASES
+    minecraft_java_snapshots = FeedType.MINECRAFT_JAVA_SNAPSHOTS
+    minecraft_bedrock_releases = FeedType.MINECRAFT_BEDROCK_RELEASES
+    minecraft_bedrock_previews = FeedType.MINECRAFT_BEDROCK_PREVIEWS
 
 
 def _make_store(bot: Bot, cog: Cog, options: FeedsOptions) -> FeedsStore:
@@ -98,13 +111,13 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     async def cmd_feed_subscribe(
         self,
         interaction: Interaction,
-        feed: FeedType,
+        feed: FeedChoices,
         channel: MessageableGuildChannel,
         notification_role: Optional[Role],
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].subscribe_to_feed(
-            interaction, feed, channel, notification_role
+            interaction, feed.value, channel, notification_role
         )
 
     # @@ feed modify
@@ -117,13 +130,13 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     async def cmd_feed_modify(
         self,
         interaction: Interaction,
-        feed: FeedType,
+        feed: FeedChoices,
         channel: MessageableGuildChannel,
         notification_role: Optional[Role],
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].modify_subscription(
-            interaction, feed, channel, notification_role
+            interaction, feed.value, channel, notification_role
         )
 
     # @@ feed unsubscribe
@@ -135,11 +148,14 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         channel="The channel to unsubscribe from the feed",
     )
     async def cmd_feed_unsubscribe(
-        self, interaction: Interaction, feed: FeedType, channel: MessageableGuildChannel
+        self,
+        interaction: Interaction,
+        feed: FeedChoices,
+        channel: MessageableGuildChannel,
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].unsubscribe_from_feed(
-            interaction, feed, channel
+            interaction, feed.value, channel
         )
 
     # @@ feed details
@@ -168,15 +184,15 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     @describe(feed_provider="The feed provider to show the status of")
     @checks.is_owner()
     async def cmd_feeds_status(
-        self, interaction: Interaction, feed_provider: FeedProviderType
+        self, interaction: Interaction, feed_provider: FeedProviderChoices
     ):
-        await self.state.feed_provider_status(interaction, feed_provider)
+        await self.state.feed_provider_status(interaction, feed_provider.value)
 
     # @@ feeds restart
     @cmd_feeds.command(name="restart", description="Restarts a feed provider")
     @describe(feed_provider="The feed provider to restart")
     @checks.is_owner()
     async def cmd_feeds_restart(
-        self, interaction: Interaction, feed_provider: FeedProviderType
+        self, interaction: Interaction, feed_provider: FeedProviderChoices
     ):
-        await self.state.restart_feed_provider(interaction, feed_provider)
+        await self.state.restart_feed_provider(interaction, feed_provider.value)

@@ -149,13 +149,13 @@ class FeedsData(JsonSerializable, FromDataMixin):
 
     def _get_feed(self, feed: FeedType) -> FeedsFeedData:
         match feed:
-            case FeedType.minecraft_java_releases:
+            case FeedType.MINECRAFT_JAVA_RELEASES:
                 return self.mcje_releases
-            case FeedType.minecraft_java_snapshots:
+            case FeedType.MINECRAFT_JAVA_SNAPSHOTS:
                 return self.mcje_snapshots
-            case FeedType.minecraft_bedrock_releases:
+            case FeedType.MINECRAFT_BEDROCK_RELEASES:
                 return self.mcbe_releases
-            case FeedType.minecraft_bedrock_previews:
+            case FeedType.MINECRAFT_BEDROCK_PREVIEWS:
                 return self.mcbe_previews
             case _:
                 raise KeyError
