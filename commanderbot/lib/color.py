@@ -81,3 +81,43 @@ class Color(discord.Color, FromDataMixin):
         .. color:: #00ACED
         """
         return cls(0x00ACED)
+
+    @classmethod
+    def mojang_red(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0xF0313B``.
+
+        .. color:: #F0313B
+        """
+        return cls(0xF0313B)
+
+    @classmethod
+    def minecraft_green(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x00AA00``.
+
+        .. color:: #00AA00
+        """
+        return cls(0x00AA00)
+
+    @classmethod
+    def minecraft_gold(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0xFFAA00``.
+
+        .. color:: #FFAA00
+        """
+        return cls(0xFFAA00)
+
+    @classmethod
+    def minecraft_material_emerald(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x47A036``.
+
+        .. color:: #47A036
+        """
+        return cls(0x47A036)
+
+    @classmethod
+    def minecraft_material_gold(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0xDEB12D``.
+
+        .. color:: #DEB12D
+        """
+        return cls(0xDEB12D)
