@@ -25,12 +25,19 @@ class CommanderBot(CommanderBotBase):
         self._extensions_data = kwargs.pop("extensions", None)
 
         # Account for options that need further processing.
-        intents = Intents.from_field_optional(kwargs, "intents")
+        intents = Intents.default()
+        if i := Intents.from_field_optional(kwargs, "intents"):
+            intents = Intents.default() & i
+        if i := Intents.from_field_optional(kwargs, "privileged_intents"):
+            intents |= Intents.privileged() & i
+
         allowed_mentions = AllowedMentions.from_field_optional(
             kwargs, "allowed_mentions"
         )
+
+        # Update kwargs after options have been further processed.
         kwargs.update(
-            intents=intents or Intents.default(),
+            intents=intents,
             allowed_mentions=allowed_mentions or AllowedMentions.not_everyone(),
             tree_cls=CachingCommandTree,
         )
