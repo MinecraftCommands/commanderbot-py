@@ -3,6 +3,7 @@ from typing import Any, Optional, Self
 
 from commanderbot.ext.feeds.providers import (
     MinecraftBedrockUpdatesOptions,
+    MinecraftJavaJarUpdatesOptions,
     MinecraftJavaUpdatesOptions,
 )
 from commanderbot.lib import FromDataMixin
@@ -17,6 +18,7 @@ from commanderbot.lib.cogs.database import (
 class FeedsOptions(FromDataMixin):
     minecraft_java_updates: MinecraftJavaUpdatesOptions
     minecraft_bedrock_updates: MinecraftBedrockUpdatesOptions
+    minecraft_java_jar_updates: MinecraftJavaJarUpdatesOptions
 
     database: DatabaseOptions = field(default_factory=InMemoryDatabaseOptions)
 
@@ -30,9 +32,13 @@ class FeedsOptions(FromDataMixin):
             minecraft_bedrock_updates = MinecraftBedrockUpdatesOptions.from_data(
                 data["minecraft_bedrock_updates"]
             )
+            minecraft_java_jar_updates = MinecraftJavaJarUpdatesOptions.from_data(
+                data["minecraft_java_jar_updates"]
+            )
             database_options = make_database_options(data.get("database"))
             return cls(
                 minecraft_java_updates=minecraft_java_updates,
                 minecraft_bedrock_updates=minecraft_bedrock_updates,
+                minecraft_java_jar_updates=minecraft_java_jar_updates,
                 database=database_options,
             )

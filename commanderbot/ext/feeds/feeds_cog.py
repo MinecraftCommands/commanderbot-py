@@ -15,6 +15,7 @@ from commanderbot.ext.feeds.providers import (
     FeedType,
     FeedProviderType,
     MinecraftBedrockUpdates,
+    MinecraftJavaJarUpdates,
     MinecraftJavaUpdates,
 )
 from commanderbot.lib import MessageableGuildChannel
@@ -31,6 +32,7 @@ from commanderbot.lib.interactions import checks
 class FeedProviderChoices(Enum):
     minecraft_java_updates = FeedProviderType.MINECRAFT_JAVA_UPDATES
     minecraft_bedrock_updates = FeedProviderType.MINECRAFT_BEDROCK_UPDATES
+    minecraft_java_jar_updates = FeedProviderType.MINECRAFT_JAVA_JAR_UPDATES
 
 
 class FeedChoices(Enum):
@@ -38,6 +40,8 @@ class FeedChoices(Enum):
     minecraft_java_snapshots = FeedType.MINECRAFT_JAVA_SNAPSHOTS
     minecraft_bedrock_releases = FeedType.MINECRAFT_BEDROCK_RELEASES
     minecraft_bedrock_previews = FeedType.MINECRAFT_BEDROCK_PREVIEWS
+    minecraft_java_release_jars = FeedType.MINECRAFT_JAVA_RELEASE_JARS
+    minecraft_java_snapshot_jars = FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS
 
 
 def _make_store(bot: Bot, cog: Cog, options: FeedsOptions) -> FeedsStore:
@@ -80,15 +84,20 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
             mcbe_updates=MinecraftBedrockUpdates.from_options(
                 self.options.minecraft_bedrock_updates
             ),
+            mcje_jar_updates=MinecraftJavaJarUpdates.from_options(
+                self.options.minecraft_java_jar_updates
+            ),
         )
 
     async def cog_load(self):
         self.state.mcje_updates.start()
         self.state.mcbe_updates.start()
+        self.state.mcje_jar_updates.start()
 
     async def cog_unload(self):
-        self.state.mcje_updates.start()
-        self.state.mcbe_updates.start()
+        self.state.mcje_updates.stop()
+        self.state.mcbe_updates.stop()
+        self.state.mcje_jar_updates.stop()
 
     # @@ COMMANDS
 

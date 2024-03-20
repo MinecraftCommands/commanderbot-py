@@ -126,6 +126,8 @@ class FeedsData(JsonSerializable, FromDataMixin):
     mcje_snapshots: FeedsFeedData = field(default_factory=FeedsFeedData)
     mcbe_releases: FeedsFeedData = field(default_factory=FeedsFeedData)
     mcbe_previews: FeedsFeedData = field(default_factory=FeedsFeedData)
+    mcje_release_jars: FeedsFeedData = field(default_factory=FeedsFeedData)
+    mcje_snapshot_jars: FeedsFeedData = field(default_factory=FeedsFeedData)
 
     # @overrides FromDataMixin
     @classmethod
@@ -136,6 +138,12 @@ class FeedsData(JsonSerializable, FromDataMixin):
                 mcje_snapshots=FeedsFeedData.from_data(data.get("mcje_snapshots", {})),
                 mcbe_releases=FeedsFeedData.from_data(data.get("mcbe_releases", {})),
                 mcbe_previews=FeedsFeedData.from_data(data.get("mcbe_previews", {})),
+                mcje_release_jars=FeedsFeedData.from_data(
+                    data.get("mcje_release_jars", {})
+                ),
+                mcje_snapshot_jars=FeedsFeedData.from_data(
+                    data.get("mcje_snapshot_jars", {})
+                ),
             )
 
     # @implements JsonSerializable
@@ -145,6 +153,8 @@ class FeedsData(JsonSerializable, FromDataMixin):
             mcje_snapshots=self.mcje_snapshots.to_json(),
             mcbe_releases=self.mcbe_releases.to_json(),
             mcbe_previews=self.mcbe_previews.to_json(),
+            mcje_release_jars=self.mcje_release_jars.to_json(),
+            mcje_snapshot_jars=self.mcje_snapshot_jars.to_json(),
         )
 
     def _get_feed(self, feed: FeedType) -> FeedsFeedData:
@@ -157,6 +167,10 @@ class FeedsData(JsonSerializable, FromDataMixin):
                 return self.mcbe_releases
             case FeedType.MINECRAFT_BEDROCK_PREVIEWS:
                 return self.mcbe_previews
+            case FeedType.MINECRAFT_JAVA_RELEASE_JARS:
+                return self.mcje_release_jars
+            case FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS:
+                return self.mcje_snapshot_jars
             case _:
                 raise KeyError
 
