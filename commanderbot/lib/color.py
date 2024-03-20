@@ -107,6 +107,14 @@ class Color(discord.Color, FromDataMixin):
         return cls(0xFFAA00)
 
     @classmethod
+    def minecraft_material_copper(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x47A036``.
+
+        .. color:: #B4684D
+        """
+        return cls(0xB4684D)
+
+    @classmethod
     def minecraft_material_emerald(cls) -> Self:
         """A factory method that returns a :class:`Color` with a value of ``0x47A036``.
 
@@ -121,3 +129,11 @@ class Color(discord.Color, FromDataMixin):
         .. color:: #DEB12D
         """
         return cls(0xDEB12D)
+
+    @classmethod
+    def minecraft_material_netherite(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x47A036``.
+
+        .. color:: #443A3B
+        """
+        return cls(0x443A3B)
