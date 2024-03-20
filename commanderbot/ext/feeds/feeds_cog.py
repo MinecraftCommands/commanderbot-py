@@ -185,6 +185,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     cmd_feeds = Group(
         name="feeds",
         description="Manage feed providers",
+        guild_only=True,
         default_permissions=Permissions(administrator=True),
     )
 

@@ -89,15 +89,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
 
     # @@ COMMANDS
 
-    # Groups
-    cmd_manifests = Group(
-        name="manifests",
-        description="Manage the manifest generator",
-        default_permissions=Permissions(administrator=True),
-    )
-
-    # @@ User facing commands
-
+    # @@ manifest
     @command(name="manifest", description="Generate a Bedrock manifest")
     @describe(
         manifest_type="The type of manifest to generate",
@@ -140,8 +132,16 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
                 file=str_to_file(manifest_json, "manifest.json"),
             )
 
-    # @@ Bot manager commands
+    # @@ manifests
 
+    cmd_manifests = Group(
+        name="manifests",
+        description="Manage the manifest generator",
+        guild_only=True,
+        default_permissions=Permissions(administrator=True),
+    )
+
+    # @@ manifests status
     @cmd_manifests.command(
         name="status", description="Shows the status of the manifest generator"
     )
@@ -175,6 +175,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
 
         await interaction.response.send_message(embed=embed)
 
+    # @@ manifests update
     @cmd_manifests.command(
         name="update", description="Updates the latest min engine version"
     )
