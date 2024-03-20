@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Optional, Protocol, Self
+from typing import Any, Literal, Optional, Protocol, Self
 
 from commanderbot.lib import FromDataMixin
 
@@ -27,7 +27,6 @@ class FeedProviderOptions(Protocol):
     feed_url: str
     feed_icon_url: str
 
-    image_proxy: Optional[str]
     cache_size: int
 
 
@@ -97,4 +96,40 @@ class ZendeskArticle(FromDataMixin):
                 updated_at=datetime.strptime(data["updated_at"], "%Y-%m-%dT%H:%M:%SZ"),
                 edited_at=datetime.strptime(data["edited_at"], "%Y-%m-%dT%H:%M:%SZ"),
                 body=data["body"],
+            )
+
+
+@dataclass
+class MinecraftJavaVersion(FromDataMixin):
+    """
+    Represents a mostly complete version from the Minecraft: Java Edition
+    version manifest with some slight restructuring.
+    """
+
+    id: str
+    type: Literal["release", "snapshot", "old_alpha", "old_beta"]
+    time: datetime
+    release_time: datetime
+    java_version: int
+    client_jar_url: str
+    server_jar_url: str
+    client_mappings_url: str
+    server_mappings_url: str
+
+    url: Optional[str] = None
+
+    # @overrides FromDataMixin
+    @classmethod
+    def try_from_data(cls, data: Any) -> Optional[Self]:
+        if isinstance(data, dict):
+            return cls(
+                id=data["id"],
+                type=data["type"],
+                time=datetime.fromisoformat(data["time"]),
+                release_time=datetime.fromisoformat(data["releaseTime"]),
+                java_version=data["javaVersion"]["majorVersion"],
+                client_jar_url=data["downloads"]["client"]["url"],
+                server_jar_url=data["downloads"]["server"]["url"],
+                client_mappings_url=data["downloads"]["client_mappings"]["url"],
+                server_mappings_url=data["downloads"]["server_mappings"]["url"],
             )

@@ -14,6 +14,7 @@ from discord.ext.tasks import loop
 from discord.utils import utcnow
 
 from commanderbot.ext.feeds.providers.utils import (
+    MinecraftJavaVersion,
     MissingFeedHandler,
     RSSFeedItem,
     ZendeskArticle,
@@ -24,11 +25,15 @@ from commanderbot.lib.types import JsonObject
 
 __all__ = (
     "MinecraftUpdateInfo",
+    "MinecraftJarUpdateInfo",
     "MinecraftUpdateHandler",
+    "MinecraftJarUpdateHandler",
     "MinecraftJavaUpdatesOptions",
     "MinecraftBedrockUpdatesOptions",
+    "MinecraftJavaJarUpdatesOptions",
     "MinecraftJavaUpdates",
     "MinecraftBedrockUpdates",
+    "MinecraftJavaJarUpdates",
 )
 
 CACHE_SIZE: int = 50
@@ -64,8 +69,23 @@ class MinecraftUpdateInfo:
     thumbnail_url: Optional[str] = None
 
 
+@dataclass
+class MinecraftJarUpdateInfo:
+    version: str
+    released: datetime
+    url: str
+    java_version: int
+    client_jar_url: str
+    server_jar_url: str
+    client_mappings_url: str
+    server_mappings_url: str
+
+
 MinecraftUpdateHandler: TypeAlias = Callable[
     [MinecraftUpdateInfo], Coroutine[Any, Any, None]
+]
+MinecraftJarUpdateHandler: TypeAlias = Callable[
+    [MinecraftJarUpdateInfo], Coroutine[Any, Any, None]
 ]
 
 
@@ -121,6 +141,28 @@ class MinecraftBedrockUpdatesOptions(FromDataMixin):
             )
 
 
+@dataclass
+class MinecraftJavaJarUpdatesOptions(FromDataMixin):
+    feed_url: str
+    feed_icon_url: str
+    release_jar_icon_url: str
+    snapshot_jar_icon_url: str
+
+    cache_size: int = CACHE_SIZE
+
+    # @overrides FromDataMixin
+    @classmethod
+    def try_from_data(cls, data: Any) -> Optional[Self]:
+        if isinstance(data, dict):
+            return cls(
+                feed_url=data["feed_url"],
+                feed_icon_url=data["feed_icon_url"],
+                release_jar_icon_url=data["release_jar_icon_url"],
+                snapshot_jar_icon_url=data["snapshot_jar_icon_url"],
+                cache_size=data.get("cache_size", CACHE_SIZE),
+            )
+
+
 class MinecraftJavaUpdates:
     def __init__(
         self,
@@ -164,7 +206,6 @@ class MinecraftJavaUpdates:
         self._poll_for_updates.restart()
 
     async def _fetch_latest_articles(self) -> list[RSSFeedItem]:
-        # Try fetching the latest articles
         new_articles = []
         loop = asyncio.get_running_loop()
         rss_feed: dict = await loop.run_in_executor(
@@ -176,11 +217,12 @@ class MinecraftJavaUpdates:
             USER_AGENT,
         )
 
+        # Store the status code and other response header data
         self.prev_status_code = rss_feed["status"]
         self._etag = rss_feed.get("etag")
         self._last_modified = rss_feed.get("modified")
 
-        # Return early if we don't get an `OK` response
+        # Return early if we didn't get an `OK` response
         if self.prev_status_code != 200:
             return []
 
@@ -330,24 +372,25 @@ class MinecraftBedrockUpdates:
         self._poll_for_updates.restart()
 
     async def _fetch_latest_articles(self) -> list[ZendeskArticle]:
-        # Try fetching the latest articles
         new_articles = []
-        async with aiohttp.ClientSession() as session:
-            headers = {"User-Agent": USER_AGENT, "If-None-Match": self._etag or ""}
-            async with session.get(self.url, headers=headers) as response:
+        async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
+            async with session.get(
+                self.url, headers={"If-None-Match": self._etag or ""}
+            ) as response:
+                # Store the status code and other response header data
                 self.prev_status_code = response.status
-                self._etag = response.headers.get("etag")
+                self._etag = response.headers.get("ETag")
 
-                # Return early if we don't get an `OK` response
+                # Return early if we didn't get an `OK` response
                 if self.prev_status_code != 200:
                     return []
 
                 # Add any new articles to the cache and the returned array
-                # response_json: JsonObject = await response.json() # This is a hack for testing
-                response_json: JsonObject = json.loads(await response.text())
+                # articles: JsonObject = await response.json() # This is a hack for testing
+                articles: JsonObject = json.loads(await response.text())
                 article_gen = (
                     ZendeskArticle.from_data(raw_article)
-                    for raw_article in response_json.get("articles", [])
+                    for raw_article in articles.get("articles", [])
                 )
                 for article in article_gen:
                     if article.id not in self._cache:
@@ -417,3 +460,130 @@ class MinecraftBedrockUpdates:
             if self._image_proxy:
                 return self._image_proxy.format(url=thumbnail_url)
             return thumbnail_url
+
+
+@dataclass
+class MinecraftJavaJarUpdates:
+    def __init__(self, url: str, *, cache_size: int = CACHE_SIZE):
+        self.url: str = url
+        self.prev_status_code: Optional[int] = None
+        self.prev_request_date: Optional[datetime] = None
+        self.next_request_date: Optional[datetime] = None
+
+        self.release_handler: Optional[MinecraftJarUpdateHandler] = None
+        self.snapshot_handler: Optional[MinecraftJarUpdateHandler] = None
+
+        self._log: Logger = getLogger("FeedsCog.MinecraftJavaJarUpdates")
+        self._last_modified: Optional[str] = None
+        self._cache: deque[str] = deque(maxlen=cache_size)
+
+    @classmethod
+    def from_options(cls, options: MinecraftJavaJarUpdatesOptions) -> Self:
+        return cls(url=options.feed_url, cache_size=options.cache_size)
+
+    def start(self):
+        self._log.info("Started polling for updates...")
+        self._poll_for_updates.start()
+
+    def stop(self):
+        self._log.info("Stopped polling for updates")
+        self._poll_for_updates.stop()
+
+    def restart(self):
+        self._log.info("Restarting...")
+        self._poll_for_updates.restart()
+
+    async def _fetch_version(
+        self, session: aiohttp.ClientSession, url: str
+    ) -> Optional[MinecraftJavaVersion]:
+        async with session.get(url) as response:
+            # Return early if we didn't get an `OK` response
+            if response.status != 200:
+                return
+
+            # Turn the version Json into a version manifest version
+            raw_version: JsonObject = await response.json()
+            version = MinecraftJavaVersion.from_data(raw_version)
+            version.url = url
+            return version
+
+    async def _fetch_latest_versions(self) -> list[MinecraftJavaVersion]:
+        new_versions = []
+        async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
+            async with session.get(
+                self.url, headers={"If-Modified-Since": self._last_modified or ""}
+            ) as response:
+                # Store the status code and other response header data
+                self.prev_status_code = response.status
+                self._last_modified = response.headers.get("Last-Modified")
+
+                # Return early if we didn't get an `OK` response
+                if self.prev_status_code != 200:
+                    return []
+
+                # Add any new versions to the cache and the returned array
+                # manifest: JsonObject = await response.json() # This is a hack for testing
+                manifest: JsonObject = json.loads(await response.text())
+                latest_versions: tuple[str, str] = (
+                    manifest["latest"]["release"],
+                    manifest["latest"]["snapshot"],
+                )
+
+                # Iterate over all versions in the manifest
+                versions_gen = (
+                    (v["id"], v["url"]) for v in manifest.get("versions", [])
+                )
+                for id, url in versions_gen:
+                    # Skip iteration if the version isn't the latest version
+                    if id not in latest_versions:
+                        continue
+
+                    # Skip iteration if the version was already cached
+                    if id in self._cache:
+                        continue
+
+                    # This is a new version, so cache it and request the rest of its data
+                    self._cache.append(id)
+                    if version := await self._fetch_version(session, url):
+                        new_versions.append(version)
+
+        return new_versions
+
+    @loop(minutes=1)
+    async def _poll_for_updates(self):
+        # Populate the cache on the first time we poll and immediately return
+        if not self.prev_status_code:
+            self._log.info("Building version cache...")
+            await self._fetch_latest_versions()
+            self._log.info(
+                f"Done building version cache (Initial size: {len(self._cache)})"
+            )
+            return
+
+        # Try to get the latest versions
+        self._log.debug("Polling for new versions...")
+        new_versions = await self._fetch_latest_versions()
+        self._log.debug(f"Found {len(new_versions)} new versions")
+
+        self.prev_request_date = utcnow()
+        self.next_request_date = self._poll_for_updates.next_iteration
+
+        # Process latest versions
+        for version in new_versions:
+            # Create jar update info
+            jar_update_info = MinecraftJarUpdateInfo(
+                version=version.id,
+                released=version.release_time,
+                url=version.url or "",
+                java_version=version.java_version,
+                client_jar_url=version.client_jar_url,
+                server_jar_url=version.server_jar_url,
+                client_mappings_url=version.client_mappings_url,
+                server_mappings_url=version.server_mappings_url,
+            )
+
+            # Send jar update to the handlers
+            if version.type == "release" and self.release_handler:
+                await self.release_handler(jar_update_info)
+            elif version.type == "snapshot" and self.snapshot_handler:
+                await self.snapshot_handler(jar_update_info)
