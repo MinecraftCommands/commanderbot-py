@@ -8,8 +8,7 @@ from commanderbot.ext.feeds.feeds_guild_state import FeedsGuildState
 from commanderbot.ext.feeds.feeds_options import FeedsOptions
 from commanderbot.ext.feeds.feeds_store import FeedsStore
 from commanderbot.ext.feeds.providers import (
-    FeedProvider,
-    FeedProviderOptions,
+    FeedProviderBase,
     FeedProviderType,
     FeedType,
     MinecraftBedrockUpdates,
@@ -63,7 +62,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         assert isinstance(channel, MessageableGuildChannel)
         return channel
 
-    def _get_provider(self, feed_provider: FeedProviderType) -> FeedProvider:
+    def _get_provider(self, feed_provider: FeedProviderType) -> FeedProviderBase:
         """
         Returns a `Protocol` that only contains attributes that are common
         between feed providers
@@ -75,21 +74,6 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
                 return self.mcbe_updates
             case FeedProviderType.MINECRAFT_JAVA_JAR_UPDATES:
                 return self.mcje_jar_updates
-            case _:
-                raise KeyError
-
-    def _get_options(self, feed_provider: FeedProviderType) -> FeedProviderOptions:
-        """
-        Returns a `Protocol` that only contains attributes that are common
-        between feed provider options
-        """
-        match feed_provider:
-            case FeedProviderType.MINECRAFT_JAVA_UPDATES:
-                return self.options.minecraft_java_updates
-            case FeedProviderType.MINECRAFT_BEDROCK_UPDATES:
-                return self.options.minecraft_bedrock_updates
-            case FeedProviderType.MINECRAFT_JAVA_JAR_UPDATES:
-                return self.options.minecraft_java_jar_updates
             case _:
                 raise KeyError
 
@@ -129,126 +113,116 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         self, update_info: MinecraftJarUpdateInfo
     ) -> ui.View:
         view = ui.View()
-        view.add_item(ui.Button(label="Client JAR", url=update_info.client_jar_url))
-        view.add_item(ui.Button(label="Server JAR", url=update_info.server_jar_url))
+        view.add_item(ui.Button(label="Client Jar", url=update_info.client_jar_url))
+        view.add_item(ui.Button(label="Server Jar", url=update_info.server_jar_url))
         return view
 
     # @@ FEEDS
 
     # @@ Minecraft: Java Edition Releases
     async def _on_mcje_release(self, update_info: MinecraftUpdateInfo):
-        # Get feed type and options
-        feed = FeedType.MINECRAFT_JAVA_RELEASES
-        options = self.options.minecraft_java_updates
-
-        # Create embed
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
             color=Color.minecraft_green(),
             timestamp=update_info.published,
         )
-        embed.set_author(name=feed.value, icon_url=options.feed_icon_url)
-        embed.set_thumbnail(url=options.release_icon_url)
+        embed.set_author(
+            name=FeedType.MINECRAFT_JAVA_RELEASES.value,
+            icon_url=update_info.provider_icon_url,
+        )
+        embed.set_thumbnail(url=update_info.feed_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
         await self._send_to_subscribers(
-            feed,
+            FeedType.MINECRAFT_JAVA_RELEASES,
             embed,
             self._create_mc_update_buttons(update_info),
-            f"Minecraft: Java Edition {update_info.version} has been released!",
+            f"Minecraft: Java Edition {update_info.version} has been released! 🎉",
         )
 
     # @@ Minecraft: Java Edition Snapshots
     async def _on_mcje_snapshot(self, update_info: MinecraftUpdateInfo):
-        # Get feed type and options
-        feed = FeedType.MINECRAFT_JAVA_SNAPSHOTS
-        options = self.options.minecraft_java_updates
-
-        # Create embed
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
             color=Color.minecraft_gold(),
             timestamp=update_info.published,
         )
-        embed.set_author(name=feed.value, icon_url=options.feed_icon_url)
-        embed.set_thumbnail(url=options.snapshot_icon_url)
+        embed.set_author(
+            name=FeedType.MINECRAFT_JAVA_SNAPSHOTS.value,
+            icon_url=update_info.provider_icon_url,
+        )
+        embed.set_thumbnail(url=update_info.feed_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
         await self._send_to_subscribers(
-            feed,
+            FeedType.MINECRAFT_JAVA_SNAPSHOTS,
             embed,
             self._create_mc_update_buttons(update_info),
-            f"Minecraft: Java Edition {update_info.version} has been released!",
+            f"Minecraft: Java Edition {update_info.version} has been released! 📸",
         )
 
     # @@ Minecraft: Bedrock Edition Releases
     async def _on_mcbe_release(self, update_info: MinecraftUpdateInfo):
-        # Get feed type and options
-        feed = FeedType.MINECRAFT_BEDROCK_RELEASES
-        options = self.options.minecraft_bedrock_updates
-
-        # Create embed
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
             color=Color.minecraft_material_emerald(),
             timestamp=update_info.published,
         )
-        embed.set_author(name=feed.value, icon_url=options.feed_icon_url)
-        embed.set_thumbnail(url=options.release_icon_url)
+        embed.set_author(
+            name=FeedType.MINECRAFT_BEDROCK_RELEASES.value,
+            icon_url=update_info.provider_icon_url,
+        )
+        embed.set_thumbnail(url=update_info.feed_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
         await self._send_to_subscribers(
-            feed,
+            FeedType.MINECRAFT_BEDROCK_RELEASES,
             embed,
             self._create_mc_update_buttons(update_info),
-            f"Minecraft: Bedrock Edition {update_info.version} has been released!",
+            f"Minecraft: Bedrock Edition {update_info.version} has been released! 🎉",
         )
 
     # @@ Minecraft: Bedrock Edition Previews
     async def _on_mcbe_preview(self, update_info: MinecraftUpdateInfo):
-        # Get feed type and options
-        feed = FeedType.MINECRAFT_BEDROCK_PREVIEWS
-        options = self.options.minecraft_bedrock_updates
-
-        # Create embed
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
             color=Color.minecraft_material_gold(),
             timestamp=update_info.published,
         )
-        embed.set_author(name=feed.value, icon_url=options.feed_icon_url)
-        embed.set_thumbnail(url=options.preview_icon_url)
+        embed.set_author(
+            name=FeedType.MINECRAFT_BEDROCK_PREVIEWS.value,
+            icon_url=update_info.provider_icon_url,
+        )
+        embed.set_thumbnail(url=update_info.feed_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
         await self._send_to_subscribers(
-            feed,
+            FeedType.MINECRAFT_BEDROCK_PREVIEWS,
             embed,
             self._create_mc_update_buttons(update_info),
-            f"Minecraft: Bedrock Edition {update_info.version} has been released!",
+            f"Minecraft: Bedrock Edition {update_info.version} has been released! 🍌",
         )
 
     # @@ Minecraft: Java Edition Release JARs
     async def _on_mcje_release_jar(self, jar_update_info: MinecraftJarUpdateInfo):
-        # Get feed type and options
-        feed = FeedType.MINECRAFT_JAVA_RELEASE_JARS
-        options = self.options.minecraft_java_jar_updates
-
-        # Create embed
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
             url=jar_update_info.url,
             color=Color.minecraft_material_netherite(),
         )
-        embed.set_author(name=feed.value, icon_url=options.feed_icon_url)
-        embed.set_thumbnail(url=options.release_jar_icon_url)
+        embed.set_author(
+            name=FeedType.MINECRAFT_JAVA_RELEASE_JARS.value,
+            icon_url=jar_update_info.provider_icon_url,
+        )
+        embed.set_thumbnail(url=jar_update_info.feed_icon_url)
 
         embed.add_field(name="Java Version", value=f"`{jar_update_info.java_version}`")
         embed.add_field(
@@ -262,26 +236,24 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
 
         # Send update to subscribers
         await self._send_to_subscribers(
-            feed,
+            FeedType.MINECRAFT_JAVA_RELEASE_JARS,
             embed,
             self._create_mc_jar_update_buttons(jar_update_info),
-            f"A JAR has been released for Minecraft: Java Edition {jar_update_info.version}!",
+            f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 🎉",
         )
 
     # @@ Minecraft: Java Edition Snapshot JARs
     async def _on_mcje_snapshot_jar(self, jar_update_info: MinecraftJarUpdateInfo):
-        # Get feed type and options
-        feed = FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS
-        options = self.options.minecraft_java_jar_updates
-
-        # Create embed
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
             url=jar_update_info.url,
             color=Color.minecraft_material_copper(),
         )
-        embed.set_author(name=feed.value, icon_url=options.feed_icon_url)
-        embed.set_thumbnail(url=options.snapshot_jar_icon_url)
+        embed.set_author(
+            name=FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS.value,
+            icon_url=jar_update_info.provider_icon_url,
+        )
+        embed.set_thumbnail(url=jar_update_info.feed_icon_url)
 
         embed.add_field(name="Java Version", value=f"`{jar_update_info.java_version}`")
         embed.add_field(
@@ -295,10 +267,10 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
 
         # Send update to subscribers
         await self._send_to_subscribers(
-            feed,
+            FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS,
             embed,
             self._create_mc_jar_update_buttons(jar_update_info),
-            f"A JAR has been released for Minecraft: Java Edition {jar_update_info.version}!",
+            f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 📸",
         )
 
     # @@ COMMANDS
@@ -306,9 +278,8 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
     async def feed_provider_status(
         self, interaction: Interaction, feed_provider: FeedProviderType
     ):
-        # Get the feed provider and options
+        # Get the feed provider
         provider = self._get_provider(feed_provider)
-        options = self._get_options(feed_provider)
 
         # Format data from the feed provider
         formatted_prev_update = "**?**"
@@ -327,7 +298,8 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         embed.add_field(name="Previous Update", value=formatted_prev_update)
         embed.add_field(name="Next Update", value=formatted_next_update)
         embed.add_field(name="Previous Status Code", value=formatted_prev_status_code)
-        embed.set_thumbnail(url=options.feed_icon_url)
+        embed.add_field(name="Cached Items", value=f"`{provider.cached_items}/{provider.cache_size}`")
+        embed.set_thumbnail(url=provider.icon_url)
 
         await interaction.response.send_message(embed=embed)
 

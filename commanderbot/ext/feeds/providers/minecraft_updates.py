@@ -1,10 +1,8 @@
 import asyncio
 import json
 import re
-from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
-from logging import Logger, getLogger
 from typing import Any, Callable, Coroutine, Optional, Self, TypeAlias
 from urllib.parse import urlparse, urlunparse
 
@@ -13,15 +11,15 @@ import feedparser
 from discord.ext.tasks import loop
 from discord.utils import utcnow
 
-from commanderbot.ext.feeds.providers.utils import (
+from .utils import (
+    FeedProviderBase,
     MinecraftJavaVersion,
     MissingFeedHandler,
     RSSFeedItem,
     ZendeskArticle,
 )
-from commanderbot.lib import FromDataMixin
-from commanderbot.lib.constants import USER_AGENT
-from commanderbot.lib.types import JsonObject
+from commanderbot.lib import FromDataMixin, JsonObject, USER_AGENT
+
 
 __all__ = (
     "MinecraftUpdateInfo",
@@ -61,6 +59,9 @@ class UnknownMinecraftVersionFormat(Exception):
 
 @dataclass
 class MinecraftUpdateInfo:
+    provider_icon_url: str
+    feed_icon_url: str
+
     title: str
     description: str
     published: datetime
@@ -71,6 +72,9 @@ class MinecraftUpdateInfo:
 
 @dataclass
 class MinecraftJarUpdateInfo:
+    provider_icon_url: str
+    feed_icon_url: str
+
     version: str
     released: datetime
     url: str
@@ -91,8 +95,8 @@ MinecraftJarUpdateHandler: TypeAlias = Callable[
 
 @dataclass
 class MinecraftJavaUpdatesOptions(FromDataMixin):
-    feed_url: str
-    feed_icon_url: str
+    url: str
+    icon_url: str
     release_icon_url: str
     snapshot_icon_url: str
 
@@ -104,8 +108,8 @@ class MinecraftJavaUpdatesOptions(FromDataMixin):
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
-                feed_url=data["feed_url"],
-                feed_icon_url=data["feed_icon_url"],
+                url=data["url"],
+                icon_url=data["icon_url"],
                 release_icon_url=data["release_icon_url"],
                 snapshot_icon_url=data["snapshot_icon_url"],
                 image_proxy=data.get("image_proxy"),
@@ -115,8 +119,8 @@ class MinecraftJavaUpdatesOptions(FromDataMixin):
 
 @dataclass
 class MinecraftBedrockUpdatesOptions(FromDataMixin):
-    feed_url: str
-    feed_icon_url: str
+    url: str
+    icon_url: str
     release_section_id: int
     preview_section_id: int
     release_icon_url: str
@@ -130,8 +134,8 @@ class MinecraftBedrockUpdatesOptions(FromDataMixin):
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
-                feed_url=data["feed_url"],
-                feed_icon_url=data["feed_icon_url"],
+                url=data["url"],
+                icon_url=data["icon_url"],
                 release_section_id=data["release_section_id"],
                 preview_section_id=data["preview_section_id"],
                 release_icon_url=data["release_icon_url"],
@@ -143,8 +147,8 @@ class MinecraftBedrockUpdatesOptions(FromDataMixin):
 
 @dataclass
 class MinecraftJavaJarUpdatesOptions(FromDataMixin):
-    feed_url: str
-    feed_icon_url: str
+    url: str
+    icon_url: str
     release_jar_icon_url: str
     snapshot_jar_icon_url: str
 
@@ -155,40 +159,43 @@ class MinecraftJavaJarUpdatesOptions(FromDataMixin):
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             return cls(
-                feed_url=data["feed_url"],
-                feed_icon_url=data["feed_icon_url"],
+                url=data["url"],
+                icon_url=data["icon_url"],
                 release_jar_icon_url=data["release_jar_icon_url"],
                 snapshot_jar_icon_url=data["snapshot_jar_icon_url"],
                 cache_size=data.get("cache_size", CACHE_SIZE),
             )
 
 
-class MinecraftJavaUpdates:
+class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
     def __init__(
         self,
         url: str,
+        icon_url: str,
+        release_icon_url: str,
+        snapshot_icon_url: str,
         *,
         image_proxy: Optional[str] = None,
         cache_size: int = CACHE_SIZE,
     ):
-        self.url: str = url
-        self.prev_status_code: Optional[int] = None
-        self.prev_request_date: Optional[datetime] = None
-        self.next_request_date: Optional[datetime] = None
+        super().__init__(url, icon_url, "FeedsCog.MinecraftJavaUpdates", cache_size)
+        self.release_icon_url: str = release_icon_url
+        self.snapshot_icon_url: str = snapshot_icon_url
 
         self.release_handler: Optional[MinecraftUpdateHandler] = None
         self.snapshot_handler: Optional[MinecraftUpdateHandler] = None
 
-        self._log: Logger = getLogger("FeedsCog.MinecraftJavaUpdates")
         self._etag: Optional[str] = None
         self._last_modified: Optional[str] = None
         self._image_proxy: Optional[str] = image_proxy
-        self._cache: deque[str] = deque(maxlen=cache_size)
 
     @classmethod
     def from_options(cls, options: MinecraftJavaUpdatesOptions) -> Self:
         return cls(
-            url=options.feed_url,
+            url=options.url,
+            icon_url=options.icon_url,
+            release_icon_url=options.release_icon_url,
+            snapshot_icon_url=options.snapshot_icon_url,
             image_proxy=options.image_proxy,
             cache_size=options.cache_size,
         )
@@ -271,7 +278,12 @@ class MinecraftJavaUpdates:
 
             # Create update info
             version, is_snapshot = self._get_version(article)
+            feed_icon_url = (
+                self.snapshot_icon_url if is_snapshot else self.release_icon_url
+            )
             update_info = MinecraftUpdateInfo(
+                provider_icon_url=self.icon_url,
+                feed_icon_url=feed_icon_url,
                 title=article.title,
                 description=article.description,
                 published=article.published,
@@ -324,35 +336,38 @@ class MinecraftJavaUpdates:
             return thumbnail_url
 
 
-class MinecraftBedrockUpdates:
+class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, int]):
     def __init__(
         self,
         url: str,
+        icon_url: str,
+        release_icon_url: str,
+        preview_icon_url: str,
         release_section_id: int,
         preview_section_id: int,
         *,
         image_proxy: Optional[str] = None,
         cache_size: int = CACHE_SIZE,
     ):
-        self.url: str = url
+        super().__init__(url, icon_url, "FeedsCog.MinecraftBedrockUpdates", cache_size)
+        self.release_icon_url: str = release_icon_url
+        self.preview_icon_url: str = preview_icon_url
         self.release_section_id: int = release_section_id
         self.preview_section_id: int = preview_section_id
-        self.prev_status_code: Optional[int] = None
-        self.prev_request_date: Optional[datetime] = None
-        self.next_request_date: Optional[datetime] = None
 
         self.release_handler: Optional[MinecraftUpdateHandler] = None
         self.preview_handler: Optional[MinecraftUpdateHandler] = None
 
-        self._log: Logger = getLogger("FeedsCog.MinecraftBedrockUpdates")
         self._etag: Optional[str] = None
         self._image_proxy: Optional[str] = image_proxy
-        self._cache: deque[int] = deque(maxlen=cache_size)
 
     @classmethod
     def from_options(cls, options: MinecraftBedrockUpdatesOptions) -> Self:
         return cls(
-            url=options.feed_url,
+            url=options.url,
+            icon_url=options.icon_url,
+            release_icon_url=options.release_icon_url,
+            preview_icon_url=options.preview_icon_url,
             release_section_id=options.release_section_id,
             preview_section_id=options.preview_section_id,
             image_proxy=options.image_proxy,
@@ -426,7 +441,14 @@ class MinecraftBedrockUpdates:
                 continue
 
             # Create update info
+            is_release: bool = article.section_id == self.release_section_id
+            is_preview: bool = article.section_id == self.preview_section_id
+            feed_icon_url = (
+                self.preview_icon_url if is_preview else self.release_icon_url
+            )
             update_info = MinecraftUpdateInfo(
+                provider_icon_url=self.icon_url,
+                feed_icon_url=feed_icon_url,
                 title=article.title,
                 description="",
                 published=article.created_at,
@@ -436,9 +458,9 @@ class MinecraftBedrockUpdates:
             )
 
             # Send update to the handlers
-            if article.section_id == self.release_section_id and self.release_handler:
+            if is_release and self.release_handler:
                 await self.release_handler(update_info)
-            elif article.section_id == self.preview_section_id and self.preview_handler:
+            elif is_preview and self.preview_handler:
                 await self.preview_handler(update_info)
             else:
                 raise MissingFeedHandler
@@ -463,23 +485,34 @@ class MinecraftBedrockUpdates:
 
 
 @dataclass
-class MinecraftJavaJarUpdates:
-    def __init__(self, url: str, *, cache_size: int = CACHE_SIZE):
-        self.url: str = url
-        self.prev_status_code: Optional[int] = None
-        self.prev_request_date: Optional[datetime] = None
-        self.next_request_date: Optional[datetime] = None
+class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, str]):
+    def __init__(
+        self,
+        url: str,
+        icon_url: str,
+        release_jar_icon_url: str,
+        snapshot_jar_icon_url: str,
+        *,
+        cache_size: int = CACHE_SIZE,
+    ):
+        super().__init__(url, icon_url, "FeedsCog.MinecraftJavaJarUpdates", cache_size)
+        self.release_jar_icon_url: str = release_jar_icon_url
+        self.snapshot_jar_icon_url: str = snapshot_jar_icon_url
 
         self.release_handler: Optional[MinecraftJarUpdateHandler] = None
         self.snapshot_handler: Optional[MinecraftJarUpdateHandler] = None
 
-        self._log: Logger = getLogger("FeedsCog.MinecraftJavaJarUpdates")
         self._last_modified: Optional[str] = None
-        self._cache: deque[str] = deque(maxlen=cache_size)
 
     @classmethod
     def from_options(cls, options: MinecraftJavaJarUpdatesOptions) -> Self:
-        return cls(url=options.feed_url, cache_size=options.cache_size)
+        return cls(
+            url=options.url,
+            icon_url=options.icon_url,
+            release_jar_icon_url=options.release_jar_icon_url,
+            snapshot_jar_icon_url=options.snapshot_jar_icon_url,
+            cache_size=options.cache_size,
+        )
 
     def start(self):
         self._log.info("Started polling for updates...")
@@ -571,7 +604,14 @@ class MinecraftJavaJarUpdates:
         # Process latest versions
         for version in new_versions:
             # Create jar update info
+            is_release: bool = version.type == "release"
+            is_snapshot: bool = version.type == "snapshot"
+            feed_icon_url = (
+                self.snapshot_jar_icon_url if is_snapshot else self.release_jar_icon_url
+            )
             jar_update_info = MinecraftJarUpdateInfo(
+                provider_icon_url=self.icon_url,
+                feed_icon_url=feed_icon_url,
                 version=version.id,
                 released=version.release_time,
                 url=version.url or "",
@@ -583,7 +623,7 @@ class MinecraftJavaJarUpdates:
             )
 
             # Send jar update to the handlers
-            if version.type == "release" and self.release_handler:
+            if is_release and self.release_handler:
                 await self.release_handler(jar_update_info)
-            elif version.type == "snapshot" and self.snapshot_handler:
+            elif is_snapshot and self.snapshot_handler:
                 await self.snapshot_handler(jar_update_info)
