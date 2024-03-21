@@ -238,7 +238,7 @@ class MinecraftJavaUpdates:
 
         return new_articles
 
-    @loop(minutes=1)
+    @loop(minutes=5)
     async def _poll_for_updates(self):
         # Populate the cache on the first time we poll and immediately return
         if not self.prev_status_code:
@@ -399,7 +399,7 @@ class MinecraftBedrockUpdates:
 
         return new_articles
 
-    @loop(minutes=1)
+    @loop(minutes=5)
     async def _poll_for_updates(self):
         # Populate the cache on the first time we poll and immediately return
         if not self.prev_status_code:
@@ -549,7 +549,7 @@ class MinecraftJavaJarUpdates:
 
         return new_versions
 
-    @loop(minutes=1)
+    @loop(minutes=5)
     async def _poll_for_updates(self):
         # Populate the cache on the first time we poll and immediately return
         if not self.prev_status_code:
