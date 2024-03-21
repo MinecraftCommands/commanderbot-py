@@ -129,8 +129,8 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         self, update_info: MinecraftJarUpdateInfo
     ) -> ui.View:
         view = ui.View()
-        view.add_item(ui.Button(label="Client Jar", url=update_info.client_jar_url))
-        view.add_item(ui.Button(label="Server Jar", url=update_info.server_jar_url))
+        view.add_item(ui.Button(label="Client JAR", url=update_info.client_jar_url))
+        view.add_item(ui.Button(label="Server JAR", url=update_info.server_jar_url))
         return view
 
     # @@ FEEDS
@@ -235,7 +235,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             f"Minecraft: Bedrock Edition {update_info.version} has been released!",
         )
 
-    # @@ Minecraft: Java Edition Release Jars
+    # @@ Minecraft: Java Edition Release JARs
     async def _on_mcje_release_jar(self, jar_update_info: MinecraftJarUpdateInfo):
         # Get feed type and options
         feed = FeedType.MINECRAFT_JAVA_RELEASE_JARS
@@ -265,10 +265,10 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             feed,
             embed,
             self._create_mc_jar_update_buttons(jar_update_info),
-            f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}!",
+            f"A JAR has been released for Minecraft: Java Edition {jar_update_info.version}!",
         )
 
-    # @@ Minecraft: Java Edition Snapshot Jars
+    # @@ Minecraft: Java Edition Snapshot JARs
     async def _on_mcje_snapshot_jar(self, jar_update_info: MinecraftJarUpdateInfo):
         # Get feed type and options
         feed = FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS
@@ -298,7 +298,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             feed,
             embed,
             self._create_mc_jar_update_buttons(jar_update_info),
-            f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}!",
+            f"A JAR has been released for Minecraft: Java Edition {jar_update_info.version}!",
         )
 
     # @@ COMMANDS
