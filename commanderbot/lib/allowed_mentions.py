@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Self
 
 import discord
 from discord.mentions import default
@@ -9,19 +9,19 @@ from commanderbot.lib.json_serializable import JsonSerializable
 __all__ = ("AllowedMentions",)
 
 
-class AllowedMentions(JsonSerializable, discord.AllowedMentions, FromDataMixin):
+class AllowedMentions(discord.AllowedMentions, JsonSerializable, FromDataMixin):
     """Extends `discord.AllowedMentions` to simplify de/serialization."""
 
     @classmethod
-    def not_everyone(cls):
+    def not_everyone(cls) -> Self:
         return cls(everyone=False)
 
     @classmethod
-    def only_replies(cls):
+    def only_replies(cls) -> Self:
         return cls(everyone=False, users=False, roles=False)
 
     @classmethod
-    def only_users(cls):
+    def only_users(cls) -> Self:
         return cls(everyone=False, roles=False, replied_user=False)
 
     # @overrides FromDataMixin

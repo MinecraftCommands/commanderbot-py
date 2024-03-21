@@ -27,7 +27,7 @@ class ManifestVersionManager:
 
     @loop(hours=1)
     async def _update(self):
-        # Return eaarly if the URL wasn't set
+        # Return early if the URL wasn't set
         if not self.url:
             return
 

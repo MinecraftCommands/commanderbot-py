@@ -44,7 +44,7 @@ class JsonFileDatabaseAdapter(Generic[CacheType]):
     Attributes
     ----------
     options
-        Immutable, pre-defined settings that define core database behaviour.
+        Immutable, pre-defined settings that define core database behavior.
     serializer
         A callable that serializes Python objects into JSON objects.
     deserializer
@@ -125,7 +125,7 @@ class SQLiteDatabaseAdapter:
     Attributes
     ----------
     options
-        Immutable, pre-defined settings that define core database behaviour.
+        Immutable, pre-defined settings that define core database behavior.
     log
         A logger named in a uniquely identifiable way.
     engine

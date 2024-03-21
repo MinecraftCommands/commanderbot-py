@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, Optional, Self
+from typing import Optional, Self
 
 import discord
 
@@ -19,7 +19,7 @@ class Color(discord.Color, FromDataMixin):
     @classmethod
     def from_str(cls, value: str) -> Self:
         # The classmethod, `discord.Color.from_str()`, always returns a
-        # `discord.Color` reguardless of what `cls` is. So we need to
+        # `discord.Color` regardless of what `cls` is. So we need to
         # construct our `cls` using a temporary `discord.Color`.
         temp: discord.Color = super().from_str(value)
         return cls(temp.value)
@@ -37,7 +37,7 @@ class Color(discord.Color, FromDataMixin):
     @classmethod
     def presets(
         cls, *, color_filter: Optional[str] = None, case_sensitive: bool = False
-    ) -> Dict[str, Self]:
+    ) -> dict[str, "Color"]:
         """
         Returns a dictionary containing all color presets.
         The `color_filter` parameter can be used to filter the color presets that are returned
@@ -81,3 +81,59 @@ class Color(discord.Color, FromDataMixin):
         .. color:: #00ACED
         """
         return cls(0x00ACED)
+
+    @classmethod
+    def mojang_red(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0xF0313B``.
+
+        .. color:: #F0313B
+        """
+        return cls(0xF0313B)
+
+    @classmethod
+    def minecraft_green(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x00AA00``.
+
+        .. color:: #00AA00
+        """
+        return cls(0x00AA00)
+
+    @classmethod
+    def minecraft_gold(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0xFFAA00``.
+
+        .. color:: #FFAA00
+        """
+        return cls(0xFFAA00)
+
+    @classmethod
+    def minecraft_material_copper(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x47A036``.
+
+        .. color:: #B4684D
+        """
+        return cls(0xB4684D)
+
+    @classmethod
+    def minecraft_material_emerald(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x47A036``.
+
+        .. color:: #47A036
+        """
+        return cls(0x47A036)
+
+    @classmethod
+    def minecraft_material_gold(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0xDEB12D``.
+
+        .. color:: #DEB12D
+        """
+        return cls(0xDEB12D)
+
+    @classmethod
+    def minecraft_material_netherite(cls) -> Self:
+        """A factory method that returns a :class:`Color` with a value of ``0x47A036``.
+
+        .. color:: #443A3B
+        """
+        return cls(0x443A3B)

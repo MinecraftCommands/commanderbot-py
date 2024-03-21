@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional, Self
 
 import discord
 
@@ -8,12 +8,19 @@ from commanderbot.lib.json_serializable import JsonSerializable
 __all__ = ("Intents",)
 
 
-class Intents(JsonSerializable, discord.Intents, FromDataMixin):
+class Intents(discord.Intents, JsonSerializable, FromDataMixin):
     """Extends `discord.Intents` to simplify de/serialization."""
+
+    @classmethod
+    def privileged(cls) -> Self:
+        """A factory method that creates a :class:`Intents` with only :attr:`presences`,
+        :attr:`members`, and :attr:`message_content` enabled.
+        """
+        return cls(message_content=True, members=True, presences=True)
 
     # @overrides FromDataMixin
     @classmethod
-    def try_from_data(cls, data):
+    def try_from_data(cls, data) -> Optional[Self]:
         if isinstance(data, int):
             return cls._from_value(data)
         elif isinstance(data, str):
