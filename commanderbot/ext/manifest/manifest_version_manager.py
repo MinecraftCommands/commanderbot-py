@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 import aiohttp
-from discord.ext.tasks import loop
+from discord.ext import tasks
 from discord.utils import utcnow
 
 from commanderbot.ext.manifest.manifest_data import Version
@@ -25,7 +25,7 @@ class ManifestVersionManager:
     def default_version() -> Version:
         return Version(1, 20, 0)
 
-    @loop(hours=1)
+    @tasks.loop(hours=1)
     async def _update(self):
         # Return early if the URL wasn't set
         if not self.url:
