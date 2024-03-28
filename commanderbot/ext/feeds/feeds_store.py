@@ -15,29 +15,29 @@ class FeedsSubscription(Protocol):
 class FeedsStore(Protocol):
     async def subscribe(
         self,
-        feed: FeedType,
         channel_id: ChannelID,
+        feed: FeedType,
         notification_role_id: Optional[RoleID],
         user_id: UserID,
     ) -> FeedsSubscription: ...
 
     async def modify(
         self,
-        feed: FeedType,
         channel_id: ChannelID,
+        feed: FeedType,
         notification_role_id: Optional[RoleID],
     ) -> FeedsSubscription: ...
 
     async def unsubscribe(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> FeedsSubscription: ...
 
     async def require_subscription(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> FeedsSubscription: ...
 
     async def get_subscription(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> Optional[FeedsSubscription]: ...
 
     def get_subscriptions(

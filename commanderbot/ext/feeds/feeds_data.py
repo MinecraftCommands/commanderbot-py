@@ -177,8 +177,8 @@ class FeedsData(JsonSerializable, FromDataMixin):
     # @implements FeedsStore
     async def subscribe(
         self,
-        feed: FeedType,
         channel_id: ChannelID,
+        feed: FeedType,
         notification_role_id: Optional[RoleID],
         user_id: UserID,
     ) -> FeedsSubscription:
@@ -189,8 +189,8 @@ class FeedsData(JsonSerializable, FromDataMixin):
     # @implements FeedsStore
     async def modify(
         self,
-        feed: FeedType,
         channel_id: ChannelID,
+        feed: FeedType,
         notification_role_id: Optional[RoleID],
     ) -> FeedsSubscription:
         feed_data = self._get_feed(feed)
@@ -199,7 +199,7 @@ class FeedsData(JsonSerializable, FromDataMixin):
 
     # @implements FeedsStore
     async def unsubscribe(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> FeedsSubscription:
         feed_data = self._get_feed(feed)
         subscription = feed_data.unsubscribe(channel_id)
@@ -207,7 +207,7 @@ class FeedsData(JsonSerializable, FromDataMixin):
 
     # @implements FeedsStore
     async def require_subscription(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> FeedsSubscription:
         feed_data = self._get_feed(feed)
         subscription = feed_data.require_subscription(channel_id)
@@ -215,7 +215,7 @@ class FeedsData(JsonSerializable, FromDataMixin):
 
     # @implements FeedsStore
     async def get_subscription(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> Optional[FeedsSubscription]:
         feed_data = self._get_feed(feed)
         subscription = feed_data.get_subscription(channel_id)

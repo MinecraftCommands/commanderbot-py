@@ -21,14 +21,14 @@ class FeedsJsonStore(CogStore):
     # @implements FeedsStore
     async def subscribe(
         self,
-        feed: FeedType,
         channel_id: ChannelID,
+        feed: FeedType,
         notification_role_id: Optional[RoleID],
         user_id: UserID,
     ) -> FeedsSubscription:
         cache = await self.db.get_cache()
         subscription = await cache.subscribe(
-            feed, channel_id, notification_role_id, user_id
+            channel_id, feed, notification_role_id, user_id
         )
         await self.db.dirty()
         return subscription
@@ -36,37 +36,37 @@ class FeedsJsonStore(CogStore):
     # @implements FeedsStore
     async def modify(
         self,
-        feed: FeedType,
         channel_id: ChannelID,
+        feed: FeedType,
         notification_role_id: Optional[RoleID],
     ) -> FeedsSubscription:
         cache = await self.db.get_cache()
-        subscription = await cache.modify(feed, channel_id, notification_role_id)
+        subscription = await cache.modify(channel_id, feed, notification_role_id)
         await self.db.dirty()
         return subscription
 
     # @implements FeedsStore
     async def unsubscribe(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> FeedsSubscription:
         cache = await self.db.get_cache()
-        subscription = await cache.unsubscribe(feed, channel_id)
+        subscription = await cache.unsubscribe(channel_id, feed)
         await self.db.dirty()
         return subscription
 
     # @implements FeedsStore
     async def require_subscription(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> FeedsSubscription:
         cache = await self.db.get_cache()
-        return await cache.require_subscription(feed, channel_id)
+        return await cache.require_subscription(channel_id, feed)
 
     # @implements FeedsStore
     async def get_subscription(
-        self, feed: FeedType, channel_id: ChannelID
+        self, channel_id: ChannelID, feed: FeedType
     ) -> Optional[FeedsSubscription]:
         cache = await self.db.get_cache()
-        return await cache.get_subscription(feed, channel_id)
+        return await cache.get_subscription(channel_id, feed)
 
     # @implements FeedsStore
     async def get_subscriptions(

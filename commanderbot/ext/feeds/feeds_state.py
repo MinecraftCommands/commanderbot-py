@@ -9,6 +9,7 @@ from commanderbot.ext.feeds.feeds_options import FeedsOptions
 from commanderbot.ext.feeds.feeds_store import FeedsStore
 from commanderbot.ext.feeds.providers import (
     FeedProviderBase,
+    FeedProviderOptionsBase,
     FeedProviderType,
     FeedType,
     MinecraftJavaUpdates,
@@ -64,10 +65,6 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         return channel
 
     def _get_provider(self, feed_provider: FeedProviderType) -> FeedProviderBase:
-        """
-        Returns a `Protocol` that only contains attributes that are common
-        between feed providers
-        """
         match feed_provider:
             case FeedProviderType.MINECRAFT_JAVA_UPDATES:
                 return self.mcje_updates
@@ -75,6 +72,17 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
                 return self.mcbe_updates
             case FeedProviderType.MINECRAFT_JAVA_JAR_UPDATES:
                 return self.mcje_jar_updates
+            case _:
+                raise KeyError
+
+    def _get_options(self, feed_provider: FeedProviderType) -> FeedProviderOptionsBase:
+        match feed_provider:
+            case FeedProviderType.MINECRAFT_JAVA_UPDATES:
+                return self.options.minecraft_java_updates
+            case FeedProviderType.MINECRAFT_BEDROCK_UPDATES:
+                return self.options.minecraft_bedrock_updates
+            case FeedProviderType.MINECRAFT_JAVA_JAR_UPDATES:
+                return self.options.minecraft_java_jar_updates
             case _:
                 raise KeyError
 
@@ -132,9 +140,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
         embed.set_author(
             name=FeedType.MINECRAFT_JAVA_RELEASES.value,
-            icon_url=update_info.provider_icon_url,
+            icon_url=self.options.minecraft_java_updates.icon_url,
         )
-        embed.set_thumbnail(url=update_info.feed_icon_url)
+        embed.set_thumbnail(url=self.options.minecraft_java_updates.release_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
@@ -155,9 +163,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
         embed.set_author(
             name=FeedType.MINECRAFT_JAVA_SNAPSHOTS.value,
-            icon_url=update_info.provider_icon_url,
+            icon_url=self.options.minecraft_java_updates.icon_url,
         )
-        embed.set_thumbnail(url=update_info.feed_icon_url)
+        embed.set_thumbnail(url=self.options.minecraft_java_updates.snapshot_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
@@ -178,9 +186,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
         embed.set_author(
             name=FeedType.MINECRAFT_BEDROCK_RELEASES.value,
-            icon_url=update_info.provider_icon_url,
+            icon_url=self.options.minecraft_bedrock_updates.icon_url,
         )
-        embed.set_thumbnail(url=update_info.feed_icon_url)
+        embed.set_thumbnail(url=self.options.minecraft_bedrock_updates.release_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
@@ -201,9 +209,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
         embed.set_author(
             name=FeedType.MINECRAFT_BEDROCK_PREVIEWS.value,
-            icon_url=update_info.provider_icon_url,
+            icon_url=self.options.minecraft_bedrock_updates.icon_url,
         )
-        embed.set_thumbnail(url=update_info.feed_icon_url)
+        embed.set_thumbnail(url=self.options.minecraft_bedrock_updates.preview_icon_url)
         embed.set_image(url=update_info.thumbnail_url)
 
         # Send update to subscribers
@@ -223,9 +231,11 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
         embed.set_author(
             name=FeedType.MINECRAFT_JAVA_RELEASE_JARS.value,
-            icon_url=jar_update_info.provider_icon_url,
+            icon_url=self.options.minecraft_java_jar_updates.icon_url,
         )
-        embed.set_thumbnail(url=jar_update_info.feed_icon_url)
+        embed.set_thumbnail(
+            url=self.options.minecraft_java_jar_updates.release_jar_icon_url
+        )
 
         embed.add_field(name="Java Version", value=f"`{jar_update_info.java_version}`")
         embed.add_field(
@@ -254,9 +264,11 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
         embed.set_author(
             name=FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS.value,
-            icon_url=jar_update_info.provider_icon_url,
+            icon_url=self.options.minecraft_java_jar_updates.icon_url,
         )
-        embed.set_thumbnail(url=jar_update_info.feed_icon_url)
+        embed.set_thumbnail(
+            url=self.options.minecraft_java_jar_updates.snapshot_jar_icon_url
+        )
 
         embed.add_field(name="Java Version", value=f"`{jar_update_info.java_version}`")
         embed.add_field(
@@ -283,6 +295,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
     ):
         # Get the feed provider
         provider = self._get_provider(feed_provider)
+        options = self._get_options(feed_provider)
 
         # Format data from the feed provider
         formatted_prev_update = "**?**"
@@ -305,7 +318,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             name="Cached Items",
             value=f"`{provider.cached_items}/{provider.cache_size}`",
         )
-        embed.set_thumbnail(url=provider.icon_url)
+        embed.set_thumbnail(url=options.icon_url)
 
         await interaction.response.send_message(embed=embed)
 

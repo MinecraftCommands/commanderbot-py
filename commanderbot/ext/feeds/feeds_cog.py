@@ -113,39 +113,39 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     # @@ feed subscribe
     @cmd_feed.command(name="subscribe", description="Subscribe a channel to a feed")
     @describe(
+        channel="The channel to subscribe to a feed",
         feed="The feed to subscribe to",
-        channel="The channel that will receive updates from the feed",
-        notification_role="The role to ping when the feed has a new update",
+        notification_role="The role to ping when the feed is updated",
     )
     async def cmd_feed_subscribe(
         self,
         interaction: Interaction,
-        feed: FeedChoices,
         channel: MessageableGuildChannel,
+        feed: FeedChoices,
         notification_role: Optional[Role],
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].subscribe_to_feed(
-            interaction, feed.value, channel, notification_role
+            interaction, channel, feed.value, notification_role
         )
 
     # @@ feed modify
     @cmd_feed.command(name="modify", description="Modify a channel's feed subscription")
     @describe(
+        channel="The channel that was subscribed to a feed",
         feed="The feed that was subscribed to",
-        channel="The channel that was subscribed to the feed",
-        notification_role="The role to ping when the feed has a new update",
+        notification_role="The role to ping when the feed is updated",
     )
     async def cmd_feed_modify(
         self,
         interaction: Interaction,
-        feed: FeedChoices,
         channel: MessageableGuildChannel,
+        feed: FeedChoices,
         notification_role: Optional[Role],
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].modify_subscription(
-            interaction, feed.value, channel, notification_role
+            interaction, channel, feed.value, notification_role
         )
 
     # @@ feed unsubscribe
@@ -153,18 +153,18 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         name="unsubscribe", description="Unsubscribe a channel from a feed"
     )
     @describe(
+        channel="The channel to unsubscribe from a feed",
         feed="The feed to unsubscribe from",
-        channel="The channel to unsubscribe from the feed",
     )
     async def cmd_feed_unsubscribe(
         self,
         interaction: Interaction,
-        feed: FeedChoices,
         channel: MessageableGuildChannel,
+        feed: FeedChoices,
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].unsubscribe_from_feed(
-            interaction, feed.value, channel
+            interaction, channel, feed.value
         )
 
     # @@ feed details

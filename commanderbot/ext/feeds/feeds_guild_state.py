@@ -33,13 +33,13 @@ class FeedsGuildState(CogGuildState):
     async def subscribe_to_feed(
         self,
         interaction: Interaction,
-        feed: FeedType,
         channel: MessageableGuildChannel,
+        feed: FeedType,
         notification_role: Optional[Role],
     ):
         subscription = await self.store.subscribe(
-            feed=feed,
             channel_id=channel.id,
+            feed=feed,
             notification_role_id=notification_role.id if notification_role else None,
             user_id=interaction.user.id,
         )
@@ -50,13 +50,13 @@ class FeedsGuildState(CogGuildState):
     async def modify_subscription(
         self,
         interaction: Interaction,
-        feed: FeedType,
         channel: MessageableGuildChannel,
+        feed: FeedType,
         notification_role: Optional[Role],
     ):
         subscription = await self.store.modify(
-            feed=feed,
             channel_id=channel.id,
+            feed=feed,
             notification_role_id=notification_role.id if notification_role else None,
         )
         await interaction.response.send_message(
@@ -64,10 +64,10 @@ class FeedsGuildState(CogGuildState):
         )
 
     async def unsubscribe_from_feed(
-        self, interaction: Interaction, feed: FeedType, channel: MessageableGuildChannel
+        self, interaction: Interaction, channel: MessageableGuildChannel, feed: FeedType
     ):
         # Try to get the subscription
-        subscription = await self.store.require_subscription(feed, channel.id)
+        subscription = await self.store.require_subscription(channel.id, feed)
 
         # Respond to this interaction with a confirmation dialog
         result: ConfirmationResult = await respond_with_confirmation(
@@ -80,7 +80,7 @@ class FeedsGuildState(CogGuildState):
             case ConfirmationResult.YES:
                 # If the answer was yes, try to unsubscribe and send a response
                 try:
-                    await self.store.unsubscribe(feed, channel.id)
+                    await self.store.unsubscribe(channel.id, feed)
                     await interaction.followup.send(
                         f"<#{subscription.channel_id}> has unsubscribed from the feed `{feed.value}`"
                     )
@@ -110,8 +110,8 @@ class FeedsGuildState(CogGuildState):
                 name=feed.value,
                 value="\n".join(
                     (
-                        f"- Notification Role: {notification_role}",
-                        f"- Subscribed By: <@{subscription.subscriber_id}> ({format_dt(subscription.subscribed_on, 'R')})",
+                        f"- **Notification Role**: {notification_role}",
+                        f"- **Subscribed By**: <@{subscription.subscriber_id}> ({format_dt(subscription.subscribed_on, 'R')})",
                     )
                 ),
                 inline=False,
