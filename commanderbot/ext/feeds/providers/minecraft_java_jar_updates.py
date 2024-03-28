@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Coroutine, Optional, Self, TypeAlias
@@ -117,8 +116,7 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
                     return []
 
                 # Add any new versions to the cache and the returned array
-                # manifest: JsonObject = await response.json() # This is a hack for testing
-                manifest: JsonObject = json.loads(await response.text())
+                manifest: JsonObject = await response.json()
                 latest_versions: tuple[str, str] = (
                     manifest["latest"]["release"],
                     manifest["latest"]["snapshot"],

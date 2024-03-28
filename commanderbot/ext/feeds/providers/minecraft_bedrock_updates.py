@@ -1,4 +1,3 @@
-import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -125,8 +124,7 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
                     return []
 
                 # Add any new articles to the cache and the returned array
-                # articles: JsonObject = await response.json() # This is a hack for testing
-                articles: JsonObject = json.loads(await response.text())
+                articles: JsonObject = await response.json()
                 article_gen = (
                     ZendeskArticle.from_data(raw_article)
                     for raw_article in articles.get("articles", [])
