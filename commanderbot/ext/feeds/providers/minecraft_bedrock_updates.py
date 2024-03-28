@@ -8,10 +8,10 @@ import aiohttp
 from discord.ext import tasks
 from discord.utils import utcnow
 
-from .feed_provider_base import FeedProviderBase
+from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
 from .exceptions import MissingFeedHandler, UnknownMinecraftVersionFormat
 from .utils import ZendeskArticle
-from commanderbot.lib import FromDataMixin, JsonObject, USER_AGENT
+from commanderbot.lib import JsonObject, USER_AGENT
 
 __all__ = (
     "MinecraftBedrockUpdateInfo",
@@ -29,9 +29,6 @@ IMAGE_TAG_PATTERN = re.compile(r"<img\ssrc\s*=\s*['\"]([^'\"]*?)['\"][^>]*?>")
 
 @dataclass
 class MinecraftBedrockUpdateInfo:
-    provider_icon_url: str
-    feed_icon_url: str
-
     title: str
     description: str
     published: datetime
@@ -46,9 +43,7 @@ UpdateHandler: TypeAlias = Callable[
 
 
 @dataclass
-class MinecraftBedrockUpdatesOptions(FromDataMixin):
-    url: str
-    icon_url: str
+class MinecraftBedrockUpdatesOptions(FeedProviderOptionsBase):
     release_section_id: int
     preview_section_id: int
     release_icon_url: str
@@ -77,18 +72,13 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
     def __init__(
         self,
         url: str,
-        icon_url: str,
-        release_icon_url: str,
-        preview_icon_url: str,
         release_section_id: int,
         preview_section_id: int,
         *,
         image_proxy: Optional[str] = None,
         cache_size: int = CACHE_SIZE,
     ):
-        super().__init__(url, icon_url, "FeedsCog.MinecraftBedrockUpdates", cache_size)
-        self.release_icon_url: str = release_icon_url
-        self.preview_icon_url: str = preview_icon_url
+        super().__init__(url, "FeedsCog.MinecraftBedrockUpdates", cache_size)
         self.release_section_id: int = release_section_id
         self.preview_section_id: int = preview_section_id
 
@@ -102,9 +92,6 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
     def from_options(cls, options: MinecraftBedrockUpdatesOptions) -> Self:
         return cls(
             url=options.url,
-            icon_url=options.icon_url,
-            release_icon_url=options.release_icon_url,
-            preview_icon_url=options.preview_icon_url,
             release_section_id=options.release_section_id,
             preview_section_id=options.preview_section_id,
             image_proxy=options.image_proxy,
@@ -180,12 +167,7 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
             # Create update info
             is_release: bool = article.section_id == self.release_section_id
             is_preview: bool = article.section_id == self.preview_section_id
-            feed_icon_url = (
-                self.preview_icon_url if is_preview else self.release_icon_url
-            )
             update_info = MinecraftBedrockUpdateInfo(
-                provider_icon_url=self.icon_url,
-                feed_icon_url=feed_icon_url,
                 title=article.title,
                 description="",
                 published=article.created_at,

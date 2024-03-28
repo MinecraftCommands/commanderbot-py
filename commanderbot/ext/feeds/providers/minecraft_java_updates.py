@@ -9,10 +9,10 @@ import feedparser
 from discord.ext import tasks
 from discord.utils import utcnow
 
-from .feed_provider_base import FeedProviderBase
+from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
 from .exceptions import MissingFeedHandler, UnknownMinecraftVersionFormat
 from .utils import RSSFeedItem
-from commanderbot.lib import FromDataMixin, USER_AGENT
+from commanderbot.lib import USER_AGENT
 
 __all__ = (
     "MinecraftJavaUpdateInfo",
@@ -34,9 +34,6 @@ JAVA_RELEASE_CANDIDATE_VERSION_PATTERN = re.compile(
 
 @dataclass
 class MinecraftJavaUpdateInfo:
-    provider_icon_url: str
-    feed_icon_url: str
-
     title: str
     description: str
     published: datetime
@@ -51,9 +48,7 @@ UpdateHandler: TypeAlias = Callable[
 
 
 @dataclass
-class MinecraftJavaUpdatesOptions(FromDataMixin):
-    url: str
-    icon_url: str
+class MinecraftJavaUpdatesOptions(FeedProviderOptionsBase):
     release_icon_url: str
     snapshot_icon_url: str
 
@@ -78,16 +73,11 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
     def __init__(
         self,
         url: str,
-        icon_url: str,
-        release_icon_url: str,
-        snapshot_icon_url: str,
         *,
         image_proxy: Optional[str] = None,
         cache_size: int = CACHE_SIZE,
     ):
-        super().__init__(url, icon_url, "FeedsCog.MinecraftJavaUpdates", cache_size)
-        self.release_icon_url: str = release_icon_url
-        self.snapshot_icon_url: str = snapshot_icon_url
+        super().__init__(url, "FeedsCog.MinecraftJavaUpdates", cache_size)
 
         self.release_handler: Optional[UpdateHandler] = None
         self.snapshot_handler: Optional[UpdateHandler] = None
@@ -100,9 +90,6 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
     def from_options(cls, options: MinecraftJavaUpdatesOptions) -> Self:
         return cls(
             url=options.url,
-            icon_url=options.icon_url,
-            release_icon_url=options.release_icon_url,
-            snapshot_icon_url=options.snapshot_icon_url,
             image_proxy=options.image_proxy,
             cache_size=options.cache_size,
         )
@@ -185,12 +172,7 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
 
             # Create update info
             version, is_snapshot = self._get_version(article)
-            feed_icon_url = (
-                self.snapshot_icon_url if is_snapshot else self.release_icon_url
-            )
             update_info = MinecraftJavaUpdateInfo(
-                provider_icon_url=self.icon_url,
-                feed_icon_url=feed_icon_url,
                 title=article.title,
                 description=article.description,
                 published=article.published,

@@ -1,13 +1,25 @@
 from abc import ABC, abstractmethod
 from collections import deque
+from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger, getLogger
 from typing import Generic, Optional, Self, TypeVar
 
-__all__ = ("FeedProviderBase",)
+from commanderbot.lib import FromDataMixin
+
+__all__ = (
+    "FeedProviderOptionsBase",
+    "FeedProviderBase",
+)
 
 OptionsType = TypeVar("OptionsType")
 CacheType = TypeVar("CacheType")
+
+
+@dataclass
+class FeedProviderOptionsBase(FromDataMixin):
+    url: str
+    icon_url: str
 
 
 class FeedProviderBase(Generic[OptionsType, CacheType], ABC):
@@ -15,9 +27,8 @@ class FeedProviderBase(Generic[OptionsType, CacheType], ABC):
     Base class for all feed providers
     """
 
-    def __init__(self, url: str, icon_url: str, logger_name: str, cache_size: int):
+    def __init__(self, url: str, logger_name: str, cache_size: int):
         self.url: str = url
-        self.icon_url: str = icon_url
 
         self.prev_status_code: Optional[int] = None
         self.prev_request_date: Optional[datetime] = None

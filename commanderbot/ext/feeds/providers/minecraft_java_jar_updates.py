@@ -7,9 +7,9 @@ import aiohttp
 from discord.ext import tasks
 from discord.utils import utcnow
 
-from .feed_provider_base import FeedProviderBase
+from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
 from .utils import MinecraftJavaVersion
-from commanderbot.lib import FromDataMixin, JsonObject, USER_AGENT
+from commanderbot.lib import JsonObject, USER_AGENT
 
 __all__ = (
     "MinecraftJavaJarUpdateInfo",
@@ -22,9 +22,6 @@ CACHE_SIZE: int = 50
 
 @dataclass
 class MinecraftJavaJarUpdateInfo:
-    provider_icon_url: str
-    feed_icon_url: str
-
     version: str
     released: datetime
     url: str
@@ -41,9 +38,7 @@ UpdateHandler: TypeAlias = Callable[
 
 
 @dataclass
-class MinecraftJavaJarUpdatesOptions(FromDataMixin):
-    url: str
-    icon_url: str
+class MinecraftJavaJarUpdatesOptions(FeedProviderOptionsBase):
     release_jar_icon_url: str
     snapshot_jar_icon_url: str
 
@@ -67,15 +62,10 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
     def __init__(
         self,
         url: str,
-        icon_url: str,
-        release_jar_icon_url: str,
-        snapshot_jar_icon_url: str,
         *,
         cache_size: int = CACHE_SIZE,
     ):
-        super().__init__(url, icon_url, "FeedsCog.MinecraftJavaJarUpdates", cache_size)
-        self.release_jar_icon_url: str = release_jar_icon_url
-        self.snapshot_jar_icon_url: str = snapshot_jar_icon_url
+        super().__init__(url, "FeedsCog.MinecraftJavaJarUpdates", cache_size)
 
         self.release_handler: Optional[UpdateHandler] = None
         self.snapshot_handler: Optional[UpdateHandler] = None
@@ -84,13 +74,7 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
 
     @classmethod
     def from_options(cls, options: MinecraftJavaJarUpdatesOptions) -> Self:
-        return cls(
-            url=options.url,
-            icon_url=options.icon_url,
-            release_jar_icon_url=options.release_jar_icon_url,
-            snapshot_jar_icon_url=options.snapshot_jar_icon_url,
-            cache_size=options.cache_size,
-        )
+        return cls(url=options.url, cache_size=options.cache_size)
 
     def start(self):
         self._log.info("Started polling for updates...")
@@ -184,12 +168,7 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
             # Create jar update info
             is_release: bool = version.type == "release"
             is_snapshot: bool = version.type == "snapshot"
-            feed_icon_url = (
-                self.snapshot_jar_icon_url if is_snapshot else self.release_jar_icon_url
-            )
             jar_update_info = MinecraftJavaJarUpdateInfo(
-                provider_icon_url=self.icon_url,
-                feed_icon_url=feed_icon_url,
                 version=version.id,
                 released=version.release_time,
                 url=version.url or "",
