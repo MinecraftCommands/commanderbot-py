@@ -77,7 +77,11 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
         image_proxy: Optional[str] = None,
         cache_size: int = CACHE_SIZE,
     ):
-        super().__init__(url, "FeedsCog.MinecraftBedrockUpdates", cache_size)
+        super().__init__(
+            url=url,
+            logger_name="feeds.minecraft_bedrock_updates",
+            cache_size=cache_size,
+        )
         self.release_section_id: int = release_section_id
         self.preview_section_id: int = preview_section_id
 

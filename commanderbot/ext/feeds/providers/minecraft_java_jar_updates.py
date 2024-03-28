@@ -64,7 +64,11 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
         *,
         cache_size: int = CACHE_SIZE,
     ):
-        super().__init__(url, "FeedsCog.MinecraftJavaJarUpdates", cache_size)
+        super().__init__(
+            url=url,
+            logger_name="feeds.minecraft_java_jar_updates",
+            cache_size=cache_size,
+        )
 
         self.release_handler: Optional[UpdateHandler] = None
         self.snapshot_handler: Optional[UpdateHandler] = None
