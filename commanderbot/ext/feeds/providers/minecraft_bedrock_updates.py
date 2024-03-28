@@ -117,7 +117,9 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
         new_articles = []
         async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
             async with session.get(
-                self.url, headers={"If-None-Match": self._etag or ""}
+                self.url,
+                headers={"If-None-Match": self._etag or ""},
+                params={"page[size]": 25},
             ) as response:
                 # Store the status code and other response header data
                 self.prev_status_code = response.status
