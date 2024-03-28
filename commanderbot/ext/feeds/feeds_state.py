@@ -11,11 +11,12 @@ from commanderbot.ext.feeds.providers import (
     FeedProviderBase,
     FeedProviderType,
     FeedType,
-    MinecraftBedrockUpdates,
-    MinecraftJavaJarUpdates,
     MinecraftJavaUpdates,
-    MinecraftJarUpdateInfo,
-    MinecraftUpdateInfo,
+    MinecraftJavaUpdateInfo,
+    MinecraftBedrockUpdates,
+    MinecraftBedrockUpdateInfo,
+    MinecraftJavaJarUpdates,
+    MinecraftJavaJarUpdateInfo,
 )
 from commanderbot.lib import ChannelID, Color, MessageableGuildChannel
 from commanderbot.lib.cogs import GuildPartitionedCogState
@@ -100,7 +101,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             except:
                 pass
 
-    def _create_mc_update_buttons(self, update_info: MinecraftUpdateInfo) -> ui.View:
+    def _create_mc_update_buttons(
+        self, update_info: MinecraftJavaUpdateInfo | MinecraftBedrockUpdateInfo
+    ) -> ui.View:
         view = ui.View()
         view.add_item(ui.Button(label="Changelog", url=update_info.url))
         view.add_item(ui.Button(label="Jira", url="https://bugs.mojang.com/"))
@@ -110,7 +113,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         return view
 
     def _create_mc_jar_update_buttons(
-        self, update_info: MinecraftJarUpdateInfo
+        self, update_info: MinecraftJavaJarUpdateInfo
     ) -> ui.View:
         view = ui.View()
         view.add_item(ui.Button(label="Client Jar", url=update_info.client_jar_url))
@@ -120,7 +123,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
     # @@ FEEDS
 
     # @@ Minecraft: Java Edition Releases
-    async def _on_mcje_release(self, update_info: MinecraftUpdateInfo):
+    async def _on_mcje_release(self, update_info: MinecraftJavaUpdateInfo):
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
@@ -143,7 +146,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
 
     # @@ Minecraft: Java Edition Snapshots
-    async def _on_mcje_snapshot(self, update_info: MinecraftUpdateInfo):
+    async def _on_mcje_snapshot(self, update_info: MinecraftJavaUpdateInfo):
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
@@ -166,7 +169,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
 
     # @@ Minecraft: Bedrock Edition Releases
-    async def _on_mcbe_release(self, update_info: MinecraftUpdateInfo):
+    async def _on_mcbe_release(self, update_info: MinecraftBedrockUpdateInfo):
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
@@ -189,7 +192,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
 
     # @@ Minecraft: Bedrock Edition Previews
-    async def _on_mcbe_preview(self, update_info: MinecraftUpdateInfo):
+    async def _on_mcbe_preview(self, update_info: MinecraftBedrockUpdateInfo):
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
@@ -212,7 +215,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
 
     # @@ Minecraft: Java Edition Release JARs
-    async def _on_mcje_release_jar(self, jar_update_info: MinecraftJarUpdateInfo):
+    async def _on_mcje_release_jar(self, jar_update_info: MinecraftJavaJarUpdateInfo):
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
             url=jar_update_info.url,
@@ -243,7 +246,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
 
     # @@ Minecraft: Java Edition Snapshot JARs
-    async def _on_mcje_snapshot_jar(self, jar_update_info: MinecraftJarUpdateInfo):
+    async def _on_mcje_snapshot_jar(self, jar_update_info: MinecraftJavaJarUpdateInfo):
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
             url=jar_update_info.url,
@@ -298,7 +301,10 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         embed.add_field(name="Previous Update", value=formatted_prev_update)
         embed.add_field(name="Next Update", value=formatted_next_update)
         embed.add_field(name="Previous Status Code", value=formatted_prev_status_code)
-        embed.add_field(name="Cached Items", value=f"`{provider.cached_items}/{provider.cache_size}`")
+        embed.add_field(
+            name="Cached Items",
+            value=f"`{provider.cached_items}/{provider.cache_size}`",
+        )
         embed.set_thumbnail(url=provider.icon_url)
 
         await interaction.response.send_message(embed=embed)

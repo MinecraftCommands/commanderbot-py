@@ -1,7 +1,9 @@
 from enum import Enum
 
-from .minecraft_updates import *
-from .utils import *
+from .feed_provider_base import *
+from .minecraft_java_updates import *
+from .minecraft_bedrock_updates import *
+from .minecraft_java_jar_updates import *
 
 
 class FeedProviderType(Enum):
