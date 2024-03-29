@@ -69,7 +69,7 @@ class StacktracerCog(
     bot
         The bot/client instance this cog is attached to.
     options
-        Immutable, pre-defined settings that define core cog behaviour.
+        Immutable, pre-defined settings that define core cog behavior.
     store
         Abstracts the data storage and persistence of this cog.
     state

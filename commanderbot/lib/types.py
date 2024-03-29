@@ -30,6 +30,7 @@ __all__ = (
     "PartialMessageableChannel",
     "MessageableChannel",
     "UnmentionableMessageableChannel",
+    "MessageableGuildChannel",
     "TextMessage",
     "TextReaction",
     "GuildContext",
@@ -73,6 +74,11 @@ UnmentionableMessageableChannel: TypeAlias = (
 )
 """
 Channel types that messages can be sent in, but have no way to be mentioned.
+"""
+
+MessageableGuildChannel: TypeAlias = TextChannel | Thread | VoiceChannel | StageChannel
+"""
+Channel types that are messageable in a guild
 """
 
 
