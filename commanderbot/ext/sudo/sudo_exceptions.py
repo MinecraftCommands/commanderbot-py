@@ -13,14 +13,14 @@ class SudoException(ResponsiveException):
 class GlobalSyncError(SudoException):
     def __init__(self, reason: str):
         super().__init__(
-            f"**Unable to sync app commands globally:**\n> Reason: `{reason}`"
+            f"**Unable to sync app commands globally**\n> Reason: `{reason}`"
         )
 
 
 class GuildSyncError(SudoException):
     def __init__(self, guild: Object, reason: str):
         super().__init__(
-            f"**Unable to sync app commands to this guild:**\n"
+            f"**Unable to sync app commands to this guild**\n"
             f"> Guild ID: `{guild.id}`\n"
             f"> Reason: `{reason}`"
         )
@@ -29,7 +29,7 @@ class GuildSyncError(SudoException):
 class SyncUnknownGuild(SudoException):
     def __init__(self, guild: Optional[Object]):
         super().__init__(
-            f"**Unknown guild:**\n> Guild ID: `{guild.id if guild else '❓'}`"
+            f"**Unknown guild**\n> Guild ID: `{guild.id if guild else '❓'}`"
         )
 
 
