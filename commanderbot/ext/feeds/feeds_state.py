@@ -12,12 +12,12 @@ from commanderbot.ext.feeds.providers import (
     FeedProviderOptionsBase,
     FeedProviderType,
     FeedType,
-    MinecraftJavaUpdates,
-    MinecraftJavaUpdateInfo,
-    MinecraftBedrockUpdates,
     MinecraftBedrockUpdateInfo,
-    MinecraftJavaJarUpdates,
+    MinecraftBedrockUpdates,
     MinecraftJavaJarUpdateInfo,
+    MinecraftJavaJarUpdates,
+    MinecraftJavaUpdateInfo,
+    MinecraftJavaUpdates,
 )
 from commanderbot.lib import ChannelID, Color, MessageableGuildChannel
 from commanderbot.lib.cogs import GuildPartitionedCogState
