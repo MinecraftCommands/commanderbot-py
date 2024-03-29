@@ -28,6 +28,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - A cog that acts as a wrapper around a forum channel
   - Forum threads can have two states: unresolved and resolved
   - Threads can be resolved using `/resolve` or with a configurable emoji
+- `feeds`:
+  - A way for channels to subscribe to a feed
+  - Feed providers
+    - Minecraft: Java Edition Updates
+    - Minecraft: Bedrock Edition Updates
+    - Minecraft: Java Edition Jar Updates
+  - Feeds
+    - Minecraft: Java Edition Releases
+    - Minecraft: Java Edition Snapshots
+    - Minecraft: Bedrock Edition Releases
+    - Minecraft: Bedrock Edition Previews
+    - Minecraft: Java Edition Release Jars
+    - Minecraft: Java Edition Snapshot Jars
 - Added a command for banning users
 - Added a config option for `mccq` to allow certain users to run the reload command
 - Added a link button under `jira` issue embeds
@@ -57,6 +70,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `status`: Ported to slash commands
 - `ping`: Ported to slash commands
 - Reworked how cogs with a database are created
+- Separated privileged intents and regular intents in the bot config
+  - `Intents.default()` is fine most of the time and specifying privileged intents shouldn't require you to specify *every* intent you need.
 
 ### Removed
 
