@@ -128,11 +128,8 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
                 )
                 for id, url in versions_gen:
                     # Skip iteration if the version isn't the latest version
-                    if id not in latest_versions:
-                        continue
-
-                    # Skip iteration if the version was already cached
-                    if id in self._cache:
+                    # or if the version was already cached
+                    if (id not in latest_versions) or (id in self._cache):
                         continue
 
                     # This is a new version, so cache it and request the rest of its data
