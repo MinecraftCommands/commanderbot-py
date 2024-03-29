@@ -1,16 +1,17 @@
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Optional, Self, TypeAlias
+from typing import Any, Optional, Self
 
 import aiohttp
 from discord.ext import tasks
 from discord.utils import utcnow
 
-from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
+from commanderbot.lib import USER_AGENT, JsonObject
+
 from .exceptions import MissingFeedHandler, UnknownMinecraftVersionFormat
-from .utils import ZendeskArticle
-from commanderbot.lib import JsonObject, USER_AGENT
+from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
+from .utils import FeedHandler, ZendeskArticle
 
 __all__ = (
     "MinecraftBedrockUpdateInfo",
@@ -34,11 +35,6 @@ class MinecraftBedrockUpdateInfo:
     url: str
     version: str
     thumbnail_url: Optional[str] = None
-
-
-UpdateHandler: TypeAlias = Callable[
-    [MinecraftBedrockUpdateInfo], Coroutine[Any, Any, None]
-]
 
 
 @dataclass
@@ -85,8 +81,8 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
         self.release_section_id: int = release_section_id
         self.preview_section_id: int = preview_section_id
 
-        self.release_handler: Optional[UpdateHandler] = None
-        self.preview_handler: Optional[UpdateHandler] = None
+        self.release_handler: Optional[FeedHandler[MinecraftBedrockUpdateInfo]] = None
+        self.preview_handler: Optional[FeedHandler[MinecraftBedrockUpdateInfo]] = None
 
         self._etag: Optional[str] = None
         self._image_proxy: Optional[str] = image_proxy

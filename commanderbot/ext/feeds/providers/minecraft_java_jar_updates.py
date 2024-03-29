@@ -1,14 +1,15 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Optional, Self, TypeAlias
+from typing import Any, Optional, Self
 
 import aiohttp
 from discord.ext import tasks
 from discord.utils import utcnow
 
+from commanderbot.lib import USER_AGENT, JsonObject
+
 from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
-from .utils import MinecraftJavaVersion
-from commanderbot.lib import JsonObject, USER_AGENT
+from .utils import FeedHandler, MinecraftJavaVersion
 
 __all__ = (
     "MinecraftJavaJarUpdateInfo",
@@ -29,11 +30,6 @@ class MinecraftJavaJarUpdateInfo:
     server_jar_url: str
     client_mappings_url: str
     server_mappings_url: str
-
-
-UpdateHandler: TypeAlias = Callable[
-    [MinecraftJavaJarUpdateInfo], Coroutine[Any, Any, None]
-]
 
 
 @dataclass
@@ -70,8 +66,8 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
             cache_size=cache_size,
         )
 
-        self.release_handler: Optional[UpdateHandler] = None
-        self.snapshot_handler: Optional[UpdateHandler] = None
+        self.release_handler: Optional[FeedHandler[MinecraftJavaJarUpdateInfo]] = None
+        self.snapshot_handler: Optional[FeedHandler[MinecraftJavaJarUpdateInfo]] = None
 
         self._last_modified: Optional[str] = None
 

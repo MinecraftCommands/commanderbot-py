@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Literal, Optional, Self
+from typing import Any, Callable, Coroutine, Literal, Optional, Self, TypeAlias, TypeVar
 
 from commanderbot.lib import FromDataMixin
+
+T = TypeVar("T")
+FeedHandler: TypeAlias = Callable[[T], Coroutine[Any, Any, None]]
 
 
 @dataclass

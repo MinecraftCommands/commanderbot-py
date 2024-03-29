@@ -2,17 +2,18 @@ import asyncio
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Optional, Self, TypeAlias
+from typing import Any, Optional, Self
 from urllib.parse import urlparse, urlunparse
 
 import feedparser
 from discord.ext import tasks
 from discord.utils import utcnow
 
-from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
-from .exceptions import MissingFeedHandler, UnknownMinecraftVersionFormat
-from .utils import RSSFeedItem
 from commanderbot.lib import USER_AGENT
+
+from .exceptions import MissingFeedHandler, UnknownMinecraftVersionFormat
+from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
+from .utils import FeedHandler, RSSFeedItem
 
 __all__ = (
     "MinecraftJavaUpdateInfo",
@@ -40,11 +41,6 @@ class MinecraftJavaUpdateInfo:
     url: str
     version: str
     thumbnail_url: Optional[str] = None
-
-
-UpdateHandler: TypeAlias = Callable[
-    [MinecraftJavaUpdateInfo], Coroutine[Any, Any, None]
-]
 
 
 @dataclass
@@ -83,8 +79,8 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
             cache_size=cache_size,
         )
 
-        self.release_handler: Optional[UpdateHandler] = None
-        self.snapshot_handler: Optional[UpdateHandler] = None
+        self.release_handler: Optional[FeedHandler[MinecraftJavaUpdateInfo]] = None
+        self.snapshot_handler: Optional[FeedHandler[MinecraftJavaUpdateInfo]] = None
 
         self._etag: Optional[str] = None
         self._last_modified: Optional[str] = None
