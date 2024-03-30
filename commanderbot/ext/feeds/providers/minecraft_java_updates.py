@@ -1,10 +1,10 @@
-import asyncio
 import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Optional, Self
 from urllib.parse import urlparse, urlunparse
 
+import aiohttp
 import feedparser
 from discord.ext import tasks
 from discord.utils import utcnow
@@ -108,34 +108,39 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
 
     async def _fetch_latest_articles(self) -> list[RSSFeedItem]:
         new_articles = []
-        loop = asyncio.get_running_loop()
-        rss_feed: dict = await loop.run_in_executor(
-            None,
-            feedparser.parse,
-            self.url,
-            self._etag,
-            self._last_modified,
-            USER_AGENT,
-        )
+        async with aiohttp.ClientSession(
+            headers={"User-Agent": USER_AGENT}, cookies={"AKA_A2": "A"}
+        ) as session:
+            async with session.get(
+                self.url,
+                headers={
+                    "If-None-Match": self._etag or "",
+                    "If-Modified-Since": self._last_modified or "",
+                    "Accept-Language": "*",
+                },
+            ) as response:
+                # Store the status code and other response header data
+                self.prev_status_code = response.status
+                self._etag = response.headers.get("ETag")
+                self._last_modified = response.headers.get("Last-Modified")
 
-        # Store the status code and other response header data
-        self.prev_status_code = rss_feed["status"]
-        self._etag = rss_feed.get("etag")
-        self._last_modified = rss_feed.get("modified")
+                # Return early if we didn't get an `OK` response
+                if self.prev_status_code != 200:
+                    return []
 
-        # Return early if we didn't get an `OK` response
-        if self.prev_status_code != 200:
-            return []
+                # Parse the RSS feed
+                raw_rss_feed: str = await response.text()
+                rss_feed = feedparser.parse(raw_rss_feed)
 
-        # Add any new articles to the cache and the returned array
-        article_gen = (
-            RSSFeedItem.from_data(raw_article)
-            for raw_article in rss_feed.get("entries", [])
-        )
-        for article in article_gen:
-            if article.id and article.id not in self._cache:
-                self._cache.append(article.id)
-                new_articles.append(article)
+                # Add any new articles to the cache and the returned array
+                article_gen = (
+                    RSSFeedItem.from_data(raw_article)
+                    for raw_article in rss_feed.get("entries", [])
+                )
+                for article in article_gen:
+                    if article.id and article.id not in self._cache:
+                        self._cache.append(article.id)
+                        new_articles.append(article)
 
         return new_articles
 
