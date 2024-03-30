@@ -1,4 +1,3 @@
-import asyncio
 import re
 from dataclasses import dataclass
 from datetime import datetime
