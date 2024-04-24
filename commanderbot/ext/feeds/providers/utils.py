@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Callable, Coroutine, Literal, Optional, Self, TypeAlias, TypeVar
 
 from commanderbot.lib import FromDataMixin
@@ -9,55 +9,20 @@ FeedHandler: TypeAlias = Callable[[T], Coroutine[Any, Any, None]]
 
 
 @dataclass
-class RSSFeedItem(FromDataMixin):
+class MinecraftJavaChangelog(FromDataMixin):
     """
-    Represents a mostly complete RSS feed item.
-    A few nonstandard elements are supported.
+    Represents a complete changelog from the launcher for Minecraft: Java Edition
     """
 
-    id: Optional[str]
-    link: str
+    id: str
+    version: str
+    type: Literal["release", "snapshot"]
     title: str
-    description: str
-    published: datetime
-
-    # Nonstandard RSS feed item elements
-    primary_tag: Optional[str] = None
-    image_url: Optional[str] = None
-
-    # @overrides FromDataMixin
-    @classmethod
-    def try_from_data(cls, data: Any) -> Optional[Self]:
-        if isinstance(data, dict):
-            # `struct_time` 9 tuple
-            st = data["published_parsed"]
-            return cls(
-                id=data.get("id"),
-                link=data["link"],
-                title=data["title"],
-                description=data["summary"],
-                published=datetime(*(st[:6]), tzinfo=timezone.utc),
-                primary_tag=data.get("primarytag"),
-                image_url=data.get("imageurl"),
-            )
-
-
-@dataclass
-class ZendeskArticle(FromDataMixin):
-    """
-    Represents a mostly complete Zendesk article.
-    """
-
-    id: int
-    section_id: int
-    url: str
-    html_url: str
-    title: str
-    name: str
-    created_at: datetime
-    updated_at: datetime
-    edited_at: datetime
-    body: str
+    short_text: str
+    image_title: str
+    image_url: str
+    date: datetime
+    content_url: str
 
     # @overrides FromDataMixin
     @classmethod
@@ -65,16 +30,23 @@ class ZendeskArticle(FromDataMixin):
         if isinstance(data, dict):
             return cls(
                 id=data["id"],
-                section_id=data["section_id"],
-                url=data["url"],
-                html_url=data["html_url"],
+                version=data["version"],
+                type=data["type"],
                 title=data["title"],
-                name=data["name"],
-                created_at=datetime.strptime(data["created_at"], "%Y-%m-%dT%H:%M:%SZ"),
-                updated_at=datetime.strptime(data["updated_at"], "%Y-%m-%dT%H:%M:%SZ"),
-                edited_at=datetime.strptime(data["edited_at"], "%Y-%m-%dT%H:%M:%SZ"),
-                body=data["body"],
+                short_text=data["shortText"],
+                image_title=data["image"]["title"],
+                image_url=data["image"]["url"],
+                date=datetime.strptime(data["date"], "%Y-%m-%dT%H:%M:%S.%fZ"),
+                content_url=data["contentPath"],
             )
+
+    @property
+    def is_release(self) -> bool:
+        return self.type == "release"
+
+    @property
+    def is_snapshot(self) -> bool:
+        return self.type == "snapshot"
 
 
 @dataclass
@@ -110,4 +82,55 @@ class MinecraftJavaVersion(FromDataMixin):
                 server_jar_url=data["downloads"]["server"]["url"],
                 client_mappings_url=data["downloads"]["client_mappings"]["url"],
                 server_mappings_url=data["downloads"]["server_mappings"]["url"],
+            )
+
+    @property
+    def is_release(self) -> bool:
+        return self.type == "release"
+
+    @property
+    def is_snapshot(self) -> bool:
+        return self.type == "snapshot"
+
+    @property
+    def is_old_beta(self) -> bool:
+        return self.type == "old_beta"
+
+    @property
+    def is_old_alpha(self) -> bool:
+        return self.type == "old_alpha"
+
+
+@dataclass
+class ZendeskArticle(FromDataMixin):
+    """
+    Represents a mostly complete Zendesk article.
+    """
+
+    id: int
+    section_id: int
+    url: str
+    html_url: str
+    title: str
+    name: str
+    created_at: datetime
+    updated_at: datetime
+    edited_at: datetime
+    body: str
+
+    # @overrides FromDataMixin
+    @classmethod
+    def try_from_data(cls, data: Any) -> Optional[Self]:
+        if isinstance(data, dict):
+            return cls(
+                id=data["id"],
+                section_id=data["section_id"],
+                url=data["url"],
+                html_url=data["html_url"],
+                title=data["title"],
+                name=data["name"],
+                created_at=datetime.strptime(data["created_at"], "%Y-%m-%dT%H:%M:%SZ"),
+                updated_at=datetime.strptime(data["updated_at"], "%Y-%m-%dT%H:%M:%SZ"),
+                edited_at=datetime.strptime(data["edited_at"], "%Y-%m-%dT%H:%M:%SZ"),
+                body=data["body"],
             )

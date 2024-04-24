@@ -109,8 +109,23 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             except:
                 pass
 
-    def _create_mc_update_buttons(
-        self, update_info: MinecraftJavaUpdateInfo | MinecraftBedrockUpdateInfo
+    def _create_mcje_update_buttons(
+        self, update_info: MinecraftJavaUpdateInfo
+    ) -> ui.View:
+        view = ui.View()
+        view.add_item(ui.Button(label="Changelog", url=update_info.url))
+        if update_info.mirror_url:
+            view.add_item(
+                ui.Button(label="Changelog (Mirror)", url=update_info.mirror_url)
+            )
+        view.add_item(ui.Button(label="Jira", url="https://bugs.mojang.com/"))
+        view.add_item(
+            ui.Button(label="Feedback", url="https://feedback.minecraft.net/")
+        )
+        return view
+
+    def _create_mcbe_update_buttons(
+        self, update_info: MinecraftBedrockUpdateInfo
     ) -> ui.View:
         view = ui.View()
         view.add_item(ui.Button(label="Changelog", url=update_info.url))
@@ -120,7 +135,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         )
         return view
 
-    def _create_mc_jar_update_buttons(
+    def _create_mcje_jar_update_buttons(
         self, update_info: MinecraftJavaJarUpdateInfo
     ) -> ui.View:
         view = ui.View()
@@ -149,7 +164,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_RELEASES,
             embed,
-            self._create_mc_update_buttons(update_info),
+            self._create_mcje_update_buttons(update_info),
             f"Minecraft: Java Edition {update_info.version} has been released! 🎉",
         )
 
@@ -172,7 +187,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_SNAPSHOTS,
             embed,
-            self._create_mc_update_buttons(update_info),
+            self._create_mcje_update_buttons(update_info),
             f"Minecraft: Java Edition {update_info.version} has been released! 📸",
         )
 
@@ -195,8 +210,8 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_BEDROCK_RELEASES,
             embed,
-            self._create_mc_update_buttons(update_info),
-            f"Minecraft: Bedrock Edition {update_info.version} has been released! 🎉",
+            self._create_mcbe_update_buttons(update_info),
+            f"Minecraft: Bedrock Edition {update_info.version} has been released! 🍊",
         )
 
     # @@ Minecraft: Bedrock Edition Previews
@@ -218,11 +233,11 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_BEDROCK_PREVIEWS,
             embed,
-            self._create_mc_update_buttons(update_info),
+            self._create_mcbe_update_buttons(update_info),
             f"Minecraft: Bedrock Edition {update_info.version} has been released! 🍌",
         )
 
-    # @@ Minecraft: Java Edition Release JARs
+    # @@ Minecraft: Java Edition Release Jars
     async def _on_mcje_release_jar(self, jar_update_info: MinecraftJavaJarUpdateInfo):
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
@@ -251,11 +266,11 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_RELEASE_JARS,
             embed,
-            self._create_mc_jar_update_buttons(jar_update_info),
+            self._create_mcje_jar_update_buttons(jar_update_info),
             f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 🎉",
         )
 
-    # @@ Minecraft: Java Edition Snapshot JARs
+    # @@ Minecraft: Java Edition Snapshot Jars
     async def _on_mcje_snapshot_jar(self, jar_update_info: MinecraftJavaJarUpdateInfo):
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
@@ -284,7 +299,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS,
             embed,
-            self._create_mc_jar_update_buttons(jar_update_info),
+            self._create_mcje_jar_update_buttons(jar_update_info),
             f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 📸",
         )
 
@@ -316,7 +331,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         embed.add_field(name="Previous Status Code", value=formatted_prev_status_code)
         embed.add_field(
             name="Cached Items",
-            value=f"`{provider.cached_items}/{provider.cache_size}`",
+            value=f"`{provider.cached_items}`",
         )
         embed.set_thumbnail(url=options.icon_url)
 

@@ -19,8 +19,6 @@ __all__ = (
     "MinecraftBedrockUpdates",
 )
 
-CACHE_SIZE: int = 100
-
 RELEASE_VERSION_PATTERN = re.compile(r"\d+\.\d+(?:\.\d+)?")
 PREVIEW_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+\.\d+")
 
@@ -44,9 +42,6 @@ class MinecraftBedrockUpdatesOptions(FeedProviderOptionsBase):
     release_icon_url: str
     preview_icon_url: str
 
-    image_proxy: Optional[str] = None
-    cache_size: int = CACHE_SIZE
-
     # @overrides FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
@@ -58,26 +53,12 @@ class MinecraftBedrockUpdatesOptions(FeedProviderOptionsBase):
                 preview_section_id=data["preview_section_id"],
                 release_icon_url=data["release_icon_url"],
                 preview_icon_url=data["preview_icon_url"],
-                image_proxy=data.get("image_proxy"),
-                cache_size=data.get("cache_size", CACHE_SIZE),
             )
 
 
 class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, int]):
-    def __init__(
-        self,
-        url: str,
-        release_section_id: int,
-        preview_section_id: int,
-        *,
-        image_proxy: Optional[str] = None,
-        cache_size: int = CACHE_SIZE,
-    ):
-        super().__init__(
-            url=url,
-            logger_name="feeds.minecraft_bedrock_updates",
-            cache_size=cache_size,
-        )
+    def __init__(self, url: str, release_section_id: int, preview_section_id: int):
+        super().__init__(url=url, logger_name="feeds.minecraft_bedrock_updates")
         self.release_section_id: int = release_section_id
         self.preview_section_id: int = preview_section_id
 
@@ -85,7 +66,6 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
         self.preview_handler: Optional[FeedHandler[MinecraftBedrockUpdateInfo]] = None
 
         self._etag: Optional[str] = None
-        self._image_proxy: Optional[str] = image_proxy
 
     @classmethod
     def from_options(cls, options: MinecraftBedrockUpdatesOptions) -> Self:
@@ -93,21 +73,7 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
             url=options.url,
             release_section_id=options.release_section_id,
             preview_section_id=options.preview_section_id,
-            image_proxy=options.image_proxy,
-            cache_size=options.cache_size,
         )
-
-    def start(self):
-        self._log.info("Started polling for updates...")
-        self._poll_for_updates.start()
-
-    def stop(self):
-        self._log.info("Stopped polling for updates")
-        self._poll_for_updates.stop()
-
-    def restart(self):
-        self._log.info("Restarting...")
-        self._poll_for_updates.restart()
 
     async def _fetch_latest_articles(self) -> list[ZendeskArticle]:
         new_articles = []
@@ -133,13 +99,13 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
                 )
                 for article in article_gen:
                     if article.id not in self._cache:
-                        self._cache.append(article.id)
+                        self._cache.add(article.id)
                         new_articles.append(article)
 
         return new_articles
 
     @tasks.loop(minutes=5)
-    async def _poll_for_updates(self):
+    async def _on_poll(self):
         # Populate the cache on the first time we poll and immediately return
         if not self.prev_status_code:
             self._log.info("Building article cache...")
@@ -155,18 +121,20 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
         self._log.debug(f"Found {len(new_articles)} new articles")
 
         self.prev_request_date = utcnow()
-        self.next_request_date = self._poll_for_updates.next_iteration
+        self.next_request_date = self._on_poll.next_iteration
 
         # Process update articles
         for article in new_articles:
-            # Skip article if it's for Java
-            if self._is_java_update_article(article):
+            is_release: bool = article.section_id == self.release_section_id
+            is_preview: bool = article.section_id == self.preview_section_id
+            is_bedrock_article: bool = is_release or is_preview
+
+            # Skip article if it's not for Bedrock
+            if not is_bedrock_article:
                 self._log.debug(f"Skipping article: {article.title}")
                 continue
 
             # Create update info
-            is_release: bool = article.section_id == self.release_section_id
-            is_preview: bool = article.section_id == self.preview_section_id
             update_info = MinecraftBedrockUpdateInfo(
                 title=article.title,
                 description="",
@@ -184,9 +152,6 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
             else:
                 raise MissingFeedHandler
 
-    def _is_java_update_article(self, article: ZendeskArticle) -> bool:
-        return "java" in article.title.lower() or "java" in article.name.lower()
-
     def _get_version(self, article: ZendeskArticle) -> str:
         if match := PREVIEW_VERSION_PATTERN.search(article.title):
             return match.group(0)
@@ -197,7 +162,4 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
 
     def _get_thumbnail(self, article: ZendeskArticle) -> Optional[str]:
         if match := IMAGE_TAG_PATTERN.search(article.body):
-            thumbnail_url = match.group(1)
-            if self._image_proxy:
-                return self._image_proxy.format(url=thumbnail_url)
-            return thumbnail_url
+            return match.group(1)
