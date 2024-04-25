@@ -118,10 +118,6 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             view.add_item(
                 ui.Button(label="Changelog (Mirror)", url=update_info.mirror_url)
             )
-        view.add_item(ui.Button(label="Jira", url="https://bugs.mojang.com/"))
-        view.add_item(
-            ui.Button(label="Feedback", url="https://feedback.minecraft.net/")
-        )
         return view
 
     def _create_mcbe_update_buttons(
@@ -129,10 +125,6 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
     ) -> ui.View:
         view = ui.View()
         view.add_item(ui.Button(label="Changelog", url=update_info.url))
-        view.add_item(ui.Button(label="Jira", url="https://bugs.mojang.com/"))
-        view.add_item(
-            ui.Button(label="Feedback", url="https://feedback.minecraft.net/")
-        )
         return view
 
     def _create_mcje_jar_update_buttons(
