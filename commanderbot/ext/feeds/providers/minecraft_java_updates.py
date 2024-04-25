@@ -104,7 +104,7 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
 
         return new_changelogs
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=2)
     async def _on_poll(self):
         # Populate the cache on the first time we poll and immediately return
         if not self.prev_status_code:
@@ -130,14 +130,8 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
                 title=changelog.title,
                 description=changelog.short_text,
                 published=changelog.date,
-                url=self._primary_changelog_viewer_url.format(
-                    version=changelog.version
-                ),
-                mirror_url=(
-                    self._mirror_changelog_viewer_url.format(version=changelog.version)
-                    if self._mirror_changelog_viewer_url
-                    else None
-                ),
+                url=self._get_primary_url(changelog),
+                mirror_url=self._get_mirror_url(changelog),
                 version=changelog.version,
                 thumbnail_url=(self.base_url + changelog.image_url),
             )
@@ -149,3 +143,10 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
                 await self.snapshot_handler(update_info)
             else:
                 raise MissingFeedHandler
+
+    def _get_primary_url(self, changelog: MinecraftJavaChangelog) -> str:
+        return self._primary_changelog_viewer_url.format(version=changelog.version)
+
+    def _get_mirror_url(self, changelog: MinecraftJavaChangelog) -> Optional[str]:
+        if self._mirror_changelog_viewer_url:
+            return self._mirror_changelog_viewer_url.format(version=changelog.version)

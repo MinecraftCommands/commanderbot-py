@@ -113,7 +113,7 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
 
         return new_versions
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=2)
     async def _on_poll(self):
         # Populate the cache on the first time we poll and immediately return
         if not self.prev_status_code:
@@ -151,3 +151,4 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
                 await self.release_handler(jar_update_info)
             elif version.is_snapshot and self.snapshot_handler:
                 await self.snapshot_handler(jar_update_info)
+            break
