@@ -8,6 +8,7 @@ from discord.utils import utcnow
 
 from commanderbot.lib import USER_AGENT, JsonObject
 
+from .exceptions import MissingFeedHandler
 from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
 from .utils import FeedHandler, MinecraftJavaVersion
 
@@ -151,3 +152,5 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
                 await self.release_handler(jar_update_info)
             elif version.is_snapshot and self.snapshot_handler:
                 await self.snapshot_handler(jar_update_info)
+            else:
+                raise MissingFeedHandler
