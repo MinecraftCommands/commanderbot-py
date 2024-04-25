@@ -57,13 +57,6 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
 
     # @@ UTILITIES
 
-    async def _get_channel(self, channel_id: ChannelID) -> MessageableGuildChannel:
-        channel = self.bot.get_channel(channel_id)
-        if not channel:
-            channel = await self.bot.fetch_channel(channel_id)
-        assert isinstance(channel, MessageableGuildChannel)
-        return channel
-
     def _get_provider(self, feed_provider: FeedProviderType) -> FeedProviderBase:
         match feed_provider:
             case FeedProviderType.MINECRAFT_JAVA_UPDATES:
@@ -94,17 +87,17 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         notification_message: Optional[str] = None,
     ):
         async for subscriber in self.store.subscribers(feed):
+            # Format the notification message
+            content: Optional[str] = None
+            if notification_message and subscriber.notification_role_id:
+                role_mention = f"<@&{subscriber.notification_role_id}>"
+                content = f"{role_mention} {notification_message}"
+
+            # Get the channel
+            channel = self.bot.get_partial_messageable(subscriber.channel_id)
+
+            # Send the embed
             try:
-                # Get the channel
-                channel = await self._get_channel(subscriber.channel_id)
-
-                # Format the notification message
-                content: Optional[str] = None
-                if notification_message and subscriber.notification_role_id:
-                    role_mention = f"<@&{subscriber.notification_role_id}>"
-                    content = f"{role_mention} {notification_message}"
-
-                # Send the embed
                 await channel.send(content=content, embed=embed, view=view)  # type: ignore
             except:
                 pass
