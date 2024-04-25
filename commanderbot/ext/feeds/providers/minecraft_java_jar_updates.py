@@ -151,4 +151,3 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
                 await self.release_handler(jar_update_info)
             elif version.is_snapshot and self.snapshot_handler:
                 await self.snapshot_handler(jar_update_info)
-            break
