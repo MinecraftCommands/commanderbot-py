@@ -20,6 +20,7 @@ __all__ = (
     "IDType",
     "GuildID",
     "ChannelID",
+    "MessageID",
     "RoleID",
     "UserID",
     "ForumTagID",
@@ -42,6 +43,7 @@ IDType: TypeAlias = int
 
 GuildID: TypeAlias = IDType
 ChannelID: TypeAlias = IDType
+MessageID: TypeAlias = IDType
 RoleID: TypeAlias = IDType
 UserID: TypeAlias = IDType
 ForumTagID: TypeAlias = IDType
