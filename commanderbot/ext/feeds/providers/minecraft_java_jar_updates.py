@@ -8,6 +8,7 @@ from discord.utils import utcnow
 
 from commanderbot.lib import USER_AGENT, JsonObject
 
+from .exceptions import MissingFeedHandler
 from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
 from .utils import FeedHandler, MinecraftJavaVersion
 
@@ -16,8 +17,6 @@ __all__ = (
     "MinecraftJavaJarUpdatesOptions",
     "MinecraftJavaJarUpdates",
 )
-
-CACHE_SIZE: int = 50
 
 
 @dataclass
@@ -37,8 +36,6 @@ class MinecraftJavaJarUpdatesOptions(FeedProviderOptionsBase):
     release_jar_icon_url: str
     snapshot_jar_icon_url: str
 
-    cache_size: int = CACHE_SIZE
-
     # @overrides FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
@@ -48,23 +45,13 @@ class MinecraftJavaJarUpdatesOptions(FeedProviderOptionsBase):
                 icon_url=data["icon_url"],
                 release_jar_icon_url=data["release_jar_icon_url"],
                 snapshot_jar_icon_url=data["snapshot_jar_icon_url"],
-                cache_size=data.get("cache_size", CACHE_SIZE),
             )
 
 
 @dataclass
 class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, str]):
-    def __init__(
-        self,
-        url: str,
-        *,
-        cache_size: int = CACHE_SIZE,
-    ):
-        super().__init__(
-            url=url,
-            logger_name="feeds.minecraft_java_jar_updates",
-            cache_size=cache_size,
-        )
+    def __init__(self, url: str):
+        super().__init__(url=url, logger_name="feeds.minecraft_java_jar_updates")
 
         self.release_handler: Optional[FeedHandler[MinecraftJavaJarUpdateInfo]] = None
         self.snapshot_handler: Optional[FeedHandler[MinecraftJavaJarUpdateInfo]] = None
@@ -73,19 +60,7 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
 
     @classmethod
     def from_options(cls, options: MinecraftJavaJarUpdatesOptions) -> Self:
-        return cls(url=options.url, cache_size=options.cache_size)
-
-    def start(self):
-        self._log.info("Started polling for updates...")
-        self._poll_for_updates.start()
-
-    def stop(self):
-        self._log.info("Stopped polling for updates")
-        self._poll_for_updates.stop()
-
-    def restart(self):
-        self._log.info("Restarting...")
-        self._poll_for_updates.restart()
+        return cls(url=options.url)
 
     async def _fetch_version(
         self, session: aiohttp.ClientSession, url: str
@@ -133,14 +108,14 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
                         continue
 
                     # This is a new version, so cache it and request the rest of its data
-                    self._cache.append(id)
+                    self._cache.add(id)
                     if version := await self._fetch_version(session, url):
                         new_versions.append(version)
 
         return new_versions
 
-    @tasks.loop(minutes=5)
-    async def _poll_for_updates(self):
+    @tasks.loop(minutes=2)
+    async def _on_poll(self):
         # Populate the cache on the first time we poll and immediately return
         if not self.prev_status_code:
             self._log.info("Building version cache...")
@@ -156,13 +131,11 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
         self._log.debug(f"Found {len(new_versions)} new versions")
 
         self.prev_request_date = utcnow()
-        self.next_request_date = self._poll_for_updates.next_iteration
+        self.next_request_date = self._on_poll.next_iteration
 
         # Process latest versions
         for version in new_versions:
             # Create jar update info
-            is_release: bool = version.type == "release"
-            is_snapshot: bool = version.type == "snapshot"
             jar_update_info = MinecraftJavaJarUpdateInfo(
                 version=version.id,
                 released=version.release_time,
@@ -175,7 +148,9 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
             )
 
             # Send jar update to the handlers
-            if is_release and self.release_handler:
+            if version.is_release and self.release_handler:
                 await self.release_handler(jar_update_info)
-            elif is_snapshot and self.snapshot_handler:
+            elif version.is_snapshot and self.snapshot_handler:
                 await self.snapshot_handler(jar_update_info)
+            else:
+                raise MissingFeedHandler

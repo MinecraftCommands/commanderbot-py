@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger, getLogger
 from typing import Generic, Optional, Self, TypeVar
+from urllib.parse import urlparse, urlunparse
 
 from commanderbot.lib import FromDataMixin
 
@@ -27,16 +27,19 @@ class FeedProviderBase(Generic[OptionsType, CacheType], ABC):
     Base class for all feed providers
     """
 
-    def __init__(self, url: str, logger_name: str, cache_size: int):
+    def __init__(self, url: str, logger_name: str):
         self.url: str = url
+
+        parsed_url = urlparse(url)
+        parsed_url = parsed_url._replace(path="", params="", query="", fragment="")
+        self.base_url = urlunparse(parsed_url)
 
         self.prev_status_code: Optional[int] = None
         self.prev_request_date: Optional[datetime] = None
         self.next_request_date: Optional[datetime] = None
 
         self._log: Logger = getLogger(logger_name)
-        self._cache: deque[CacheType] = deque(maxlen=cache_size)
-        self.cache_size: int = cache_size
+        self._cache: set[CacheType] = set()
 
     @classmethod
     @abstractmethod
@@ -46,11 +49,26 @@ class FeedProviderBase(Generic[OptionsType, CacheType], ABC):
     def cached_items(self) -> int:
         return len(self._cache)
 
-    @abstractmethod
-    def start(self): ...
+    def start(self):
+        # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
+        self._log.info("Started polling!")
+        self._on_poll.start()
+
+    def stop(self):
+        # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
+        self._log.info("Stopped polling!")
+        self._on_poll.stop()
+
+    def restart(self):
+        # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
+        self._log.info("Restarting...")
+        self._on_poll.restart()
 
     @abstractmethod
-    def stop(self): ...
+    async def _on_poll(self):
+        """
+        Poll the feed for new updates
 
-    @abstractmethod
-    def restart(self): ...
+        A subclass should override this and make it a task from `discord.ext.tasks`
+        """
+        ...

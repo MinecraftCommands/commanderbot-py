@@ -10,7 +10,14 @@ from commanderbot.ext.feeds.feeds_exceptions import (
 )
 from commanderbot.ext.feeds.feeds_store import FeedsSubscription
 from commanderbot.ext.feeds.providers import FeedType
-from commanderbot.lib import ChannelID, FromDataMixin, JsonSerializable, RoleID, UserID
+from commanderbot.lib import (
+    ChannelID,
+    FromDataMixin,
+    JsonSerializable,
+    MessageID,
+    RoleID,
+    UserID,
+)
 from commanderbot.lib.utils import dict_without_falsies
 
 
@@ -18,6 +25,8 @@ from commanderbot.lib.utils import dict_without_falsies
 class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
     channel_id: ChannelID
     notification_role_id: Optional[RoleID]
+    auto_pin: bool
+    current_pin_id: Optional[MessageID]
     subscriber_id: UserID
     subscribed_on: datetime
 
@@ -28,6 +37,8 @@ class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
             return cls(
                 channel_id=data["channel_id"],
                 notification_role_id=data.get("notification_role_id"),
+                auto_pin=data["auto_pin"],
+                current_pin_id=data.get("current_pin_id"),
                 subscriber_id=data["subscriber_id"],
                 subscribed_on=datetime.fromisoformat(data["subscribed_on"]),
             )
@@ -37,6 +48,8 @@ class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
         return {
             "channel_id": self.channel_id,
             "notification_role_id": self.notification_role_id,
+            "auto_pin": self.auto_pin,
+            "current_pin_id": self.current_pin_id,
             "subscriber_id": self.subscriber_id,
             "subscribed_on": self.subscribed_on.isoformat(),
         }
@@ -83,6 +96,7 @@ class FeedsFeedData(JsonSerializable, FromDataMixin):
         self,
         channel_id: ChannelID,
         notification_role_id: Optional[RoleID],
+        auto_pin: bool,
         user_id: UserID,
     ) -> FeedsSubscriptionData:
         # Check if the subscription already exists
@@ -91,19 +105,26 @@ class FeedsFeedData(JsonSerializable, FromDataMixin):
 
         # Create and add a new subscription
         subscription = FeedsSubscriptionData(
-            channel_id, notification_role_id, user_id, utcnow()
+            channel_id, notification_role_id, auto_pin, None, user_id, utcnow()
         )
         self.subscribers[channel_id] = subscription
         return subscription
 
     def modify(
-        self, channel_id: ChannelID, notification_role_id: Optional[RoleID]
+        self,
+        channel_id: ChannelID,
+        notification_role_id: Optional[RoleID],
+        auto_pin: bool,
     ) -> FeedsSubscriptionData:
         # The subscription must exist
         subscription = self.require_subscription(channel_id)
 
         # Modify the subscription
         subscription.notification_role_id = notification_role_id
+        subscription.auto_pin = auto_pin
+        if not auto_pin:
+            subscription.current_pin_id = None
+
         return subscription
 
     def unsubscribe(self, channel_id: ChannelID) -> FeedsSubscriptionData:
@@ -180,10 +201,13 @@ class FeedsData(JsonSerializable, FromDataMixin):
         channel_id: ChannelID,
         feed: FeedType,
         notification_role_id: Optional[RoleID],
+        auto_pin: bool,
         user_id: UserID,
     ) -> FeedsSubscription:
         feed_data = self._get_feed(feed)
-        subscription = feed_data.subscribe(channel_id, notification_role_id, user_id)
+        subscription = feed_data.subscribe(
+            channel_id, notification_role_id, auto_pin, user_id
+        )
         return subscription
 
     # @implements FeedsStore
@@ -192,10 +216,17 @@ class FeedsData(JsonSerializable, FromDataMixin):
         channel_id: ChannelID,
         feed: FeedType,
         notification_role_id: Optional[RoleID],
+        auto_pin: bool,
     ) -> FeedsSubscription:
         feed_data = self._get_feed(feed)
-        subscription = feed_data.modify(channel_id, notification_role_id)
+        subscription = feed_data.modify(channel_id, notification_role_id, auto_pin)
         return subscription
+
+    # @implements FeedsStore
+    async def update_current_pin(
+        self, subscription: FeedsSubscription, pin_id: MessageID
+    ):
+        subscription.current_pin_id = pin_id
 
     # @implements FeedsStore
     async def unsubscribe(

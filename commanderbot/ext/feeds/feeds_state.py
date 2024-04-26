@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Embed, Interaction, ui
+from discord import Embed, Interaction, Message, ui
 from discord.utils import format_dt
 
 from commanderbot.ext.feeds.feeds_guild_state import FeedsGuildState
@@ -19,7 +19,7 @@ from commanderbot.ext.feeds.providers import (
     MinecraftJavaUpdateInfo,
     MinecraftJavaUpdates,
 )
-from commanderbot.lib import ChannelID, Color, MessageableGuildChannel
+from commanderbot.lib import ChannelID, Color, MessageableGuildChannel, MessageID
 from commanderbot.lib.cogs import GuildPartitionedCogState
 
 
@@ -57,13 +57,6 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
 
     # @@ UTILITIES
 
-    async def _get_channel(self, channel_id: ChannelID) -> MessageableGuildChannel:
-        channel = self.bot.get_channel(channel_id)
-        if not channel:
-            channel = await self.bot.fetch_channel(channel_id)
-        assert isinstance(channel, MessageableGuildChannel)
-        return channel
-
     def _get_provider(self, feed_provider: FeedProviderType) -> FeedProviderBase:
         match feed_provider:
             case FeedProviderType.MINECRAFT_JAVA_UPDATES:
@@ -94,33 +87,60 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         notification_message: Optional[str] = None,
     ):
         async for subscriber in self.store.subscribers(feed):
+            # Format the notification message
+            content: Optional[str] = None
+            if notification_message and subscriber.notification_role_id:
+                role_mention = f"<@&{subscriber.notification_role_id}>"
+                content = f"{role_mention} {notification_message}"
+
+            # Get the channel
+            channel = self.bot.get_partial_messageable(subscriber.channel_id)
+
+            # Send the embed
+            msg: Optional[Message] = None
             try:
-                # Get the channel
-                channel = await self._get_channel(subscriber.channel_id)
-
-                # Format the notification message
-                content: Optional[str] = None
-                if notification_message and subscriber.notification_role_id:
-                    role_mention = f"<@&{subscriber.notification_role_id}>"
-                    content = f"{role_mention} {notification_message}"
-
-                # Send the embed
-                await channel.send(content=content, embed=embed, view=view)  # type: ignore
+                msg = await channel.send(content=content, embed=embed, view=view)  # type: ignore
             except:
                 pass
 
-    def _create_mc_update_buttons(
-        self, update_info: MinecraftJavaUpdateInfo | MinecraftBedrockUpdateInfo
+            # Skip the rest of this iteration if auto pinning isn't enabled
+            if not subscriber.auto_pin:
+                continue
+
+            # Remove the old pin
+            if subscriber.current_pin_id:
+                try:
+                    await channel.get_partial_message(subscriber.current_pin_id).unpin()
+                except:
+                    pass
+
+            # Add the new pin
+            if msg:
+                try:
+                    await msg.pin()
+                    await self.store.update_current_pin(subscriber, msg.id)
+                except:
+                    pass
+
+    def _create_mcje_update_buttons(
+        self, update_info: MinecraftJavaUpdateInfo
     ) -> ui.View:
         view = ui.View()
         view.add_item(ui.Button(label="Changelog", url=update_info.url))
-        view.add_item(ui.Button(label="Jira", url="https://bugs.mojang.com/"))
-        view.add_item(
-            ui.Button(label="Feedback", url="https://feedback.minecraft.net/")
-        )
+        if update_info.mirror_url:
+            view.add_item(
+                ui.Button(label="Changelog (Mirror)", url=update_info.mirror_url)
+            )
         return view
 
-    def _create_mc_jar_update_buttons(
+    def _create_mcbe_update_buttons(
+        self, update_info: MinecraftBedrockUpdateInfo
+    ) -> ui.View:
+        view = ui.View()
+        view.add_item(ui.Button(label="Changelog", url=update_info.url))
+        return view
+
+    def _create_mcje_jar_update_buttons(
         self, update_info: MinecraftJavaJarUpdateInfo
     ) -> ui.View:
         view = ui.View()
@@ -149,7 +169,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_RELEASES,
             embed,
-            self._create_mc_update_buttons(update_info),
+            self._create_mcje_update_buttons(update_info),
             f"Minecraft: Java Edition {update_info.version} has been released! 🎉",
         )
 
@@ -172,7 +192,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_SNAPSHOTS,
             embed,
-            self._create_mc_update_buttons(update_info),
+            self._create_mcje_update_buttons(update_info),
             f"Minecraft: Java Edition {update_info.version} has been released! 📸",
         )
 
@@ -195,8 +215,8 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_BEDROCK_RELEASES,
             embed,
-            self._create_mc_update_buttons(update_info),
-            f"Minecraft: Bedrock Edition {update_info.version} has been released! 🎉",
+            self._create_mcbe_update_buttons(update_info),
+            f"Minecraft: Bedrock Edition {update_info.version} has been released! 🍊",
         )
 
     # @@ Minecraft: Bedrock Edition Previews
@@ -218,11 +238,11 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_BEDROCK_PREVIEWS,
             embed,
-            self._create_mc_update_buttons(update_info),
+            self._create_mcbe_update_buttons(update_info),
             f"Minecraft: Bedrock Edition {update_info.version} has been released! 🍌",
         )
 
-    # @@ Minecraft: Java Edition Release JARs
+    # @@ Minecraft: Java Edition Release Jars
     async def _on_mcje_release_jar(self, jar_update_info: MinecraftJavaJarUpdateInfo):
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
@@ -251,11 +271,11 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_RELEASE_JARS,
             embed,
-            self._create_mc_jar_update_buttons(jar_update_info),
+            self._create_mcje_jar_update_buttons(jar_update_info),
             f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 🎉",
         )
 
-    # @@ Minecraft: Java Edition Snapshot JARs
+    # @@ Minecraft: Java Edition Snapshot Jars
     async def _on_mcje_snapshot_jar(self, jar_update_info: MinecraftJavaJarUpdateInfo):
         embed = Embed(
             title=f"Minecraft: Java Edition {jar_update_info.version}",
@@ -284,7 +304,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS,
             embed,
-            self._create_mc_jar_update_buttons(jar_update_info),
+            self._create_mcje_jar_update_buttons(jar_update_info),
             f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 📸",
         )
 
@@ -316,7 +336,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         embed.add_field(name="Previous Status Code", value=formatted_prev_status_code)
         embed.add_field(
             name="Cached Items",
-            value=f"`{provider.cached_items}/{provider.cache_size}`",
+            value=f"`{provider.cached_items}`",
         )
         embed.set_thumbnail(url=options.icon_url)
 
