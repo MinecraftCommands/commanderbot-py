@@ -115,7 +115,8 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     @describe(
         channel="The channel to subscribe to a feed",
         feed="The feed to subscribe to",
-        notification_role="The role to ping when the feed is updated",
+        notification_role="The role to ping when the feed has new content",
+        auto_pin="Keep the latest message from this feed pinned",
     )
     async def cmd_feed_subscribe(
         self,
@@ -123,10 +124,11 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         channel: MessageableGuildChannel,
         feed: FeedChoices,
         notification_role: Optional[Role],
+        auto_pin: Optional[bool],
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].subscribe_to_feed(
-            interaction, channel, feed.value, notification_role
+            interaction, channel, feed.value, notification_role, auto_pin
         )
 
     # @@ feed modify
@@ -134,7 +136,8 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     @describe(
         channel="The channel that was subscribed to a feed",
         feed="The feed that was subscribed to",
-        notification_role="The role to ping when the feed is updated",
+        notification_role="The role to ping when the feed has new content",
+        auto_pin="Keep the latest message from this feed pinned",
     )
     async def cmd_feed_modify(
         self,
@@ -142,10 +145,11 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         channel: MessageableGuildChannel,
         feed: FeedChoices,
         notification_role: Optional[Role],
+        auto_pin: Optional[bool],
     ):
         assert isinstance(interaction.guild, Guild)
         await self.state[interaction.guild].modify_subscription(
-            interaction, channel, feed.value, notification_role
+            interaction, channel, feed.value, notification_role, auto_pin
         )
 
     # @@ feed unsubscribe

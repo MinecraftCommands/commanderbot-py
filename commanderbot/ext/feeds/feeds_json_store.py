@@ -4,7 +4,7 @@ from typing import AsyncIterable, Optional
 from commanderbot.ext.feeds.feeds_data import FeedsData
 from commanderbot.ext.feeds.feeds_store import FeedsSubscription
 from commanderbot.ext.feeds.providers import FeedType
-from commanderbot.lib import ChannelID, RoleID, UserID
+from commanderbot.lib import ChannelID, MessageID, RoleID, UserID
 from commanderbot.lib.cogs import CogStore
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
@@ -24,11 +24,12 @@ class FeedsJsonStore(CogStore):
         channel_id: ChannelID,
         feed: FeedType,
         notification_role_id: Optional[RoleID],
+        auto_pin: bool,
         user_id: UserID,
     ) -> FeedsSubscription:
         cache = await self.db.get_cache()
         subscription = await cache.subscribe(
-            channel_id, feed, notification_role_id, user_id
+            channel_id, feed, notification_role_id, auto_pin, user_id
         )
         await self.db.dirty()
         return subscription
@@ -39,11 +40,22 @@ class FeedsJsonStore(CogStore):
         channel_id: ChannelID,
         feed: FeedType,
         notification_role_id: Optional[RoleID],
+        auto_pin: bool,
     ) -> FeedsSubscription:
         cache = await self.db.get_cache()
-        subscription = await cache.modify(channel_id, feed, notification_role_id)
+        subscription = await cache.modify(
+            channel_id, feed, notification_role_id, auto_pin
+        )
         await self.db.dirty()
         return subscription
+
+    # @implements FeedsStore
+    async def update_current_pin(
+        self, subscription: FeedsSubscription, pin_id: MessageID
+    ):
+        cache = await self.db.get_cache()
+        await cache.update_current_pin(subscription, pin_id)
+        await self.db.dirty()
 
     # @implements FeedsStore
     async def unsubscribe(

@@ -36,11 +36,13 @@ class FeedsGuildState(CogGuildState):
         channel: MessageableGuildChannel,
         feed: FeedType,
         notification_role: Optional[Role],
+        auto_pin: Optional[bool],
     ):
         subscription = await self.store.subscribe(
             channel_id=channel.id,
             feed=feed,
             notification_role_id=notification_role.id if notification_role else None,
+            auto_pin=bool(auto_pin),
             user_id=interaction.user.id,
         )
         await interaction.response.send_message(
@@ -53,11 +55,13 @@ class FeedsGuildState(CogGuildState):
         channel: MessageableGuildChannel,
         feed: FeedType,
         notification_role: Optional[Role],
+        auto_pin: Optional[bool],
     ):
         subscription = await self.store.modify(
             channel_id=channel.id,
             feed=feed,
             notification_role_id=notification_role.id if notification_role else None,
+            auto_pin=bool(auto_pin),
         )
         await interaction.response.send_message(
             f"Modified <#{subscription.channel_id}>'s subscription to the feed `{feed.value}`"
@@ -102,19 +106,28 @@ class FeedsGuildState(CogGuildState):
 
         embed = Embed(title=f"Subscription details for <#{channel.id}>", color=0x00ACED)
         for feed, subscription in subscriptions:
-            notification_role = "**None!**"
-            if role_id := subscription.notification_role_id:
-                notification_role = f"<@&{role_id}>"
+            rows = []
 
-            embed.add_field(
-                name=feed.value,
-                value="\n".join(
-                    (
-                        f"- **Notification Role**: {notification_role}",
-                        f"- **Subscribed By**: <@{subscription.subscriber_id}> ({format_dt(subscription.subscribed_on, 'R')})",
+            # Add notification role
+            if role_id := subscription.notification_role_id:
+                rows.append(f"- **Notification Role**: <@&{role_id}>")
+
+            # Add auto pin
+            if subscription.auto_pin:
+                current_pin = "**None!**"
+                if subscription.current_pin_id:
+                    pinned_message = channel.get_partial_message(
+                        subscription.current_pin_id
                     )
-                ),
-                inline=False,
+                    current_pin = pinned_message.jump_url
+                rows.append(f"- **Current Pin**: {current_pin}")
+
+            # Add subscriber info
+            rows.append(
+                f"- **Subscribed By**: <@{subscription.subscriber_id}> ({format_dt(subscription.subscribed_on, 'R')})"
             )
+
+            # Finally, all the field to the embed
+            embed.add_field(name=feed.value, value="\n".join(rows), inline=False)
 
         await interaction.response.send_message(embed=embed)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Embed, Interaction, ui
+from discord import Embed, Interaction, Message, ui
 from discord.utils import format_dt
 
 from commanderbot.ext.feeds.feeds_guild_state import FeedsGuildState
@@ -19,7 +19,7 @@ from commanderbot.ext.feeds.providers import (
     MinecraftJavaUpdateInfo,
     MinecraftJavaUpdates,
 )
-from commanderbot.lib import ChannelID, Color, MessageableGuildChannel
+from commanderbot.lib import ChannelID, Color, MessageableGuildChannel, MessageID
 from commanderbot.lib.cogs import GuildPartitionedCogState
 
 
@@ -97,10 +97,30 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             channel = self.bot.get_partial_messageable(subscriber.channel_id)
 
             # Send the embed
+            msg: Optional[Message] = None
             try:
-                await channel.send(content=content, embed=embed, view=view)  # type: ignore
+                msg = await channel.send(content=content, embed=embed, view=view)  # type: ignore
             except:
                 pass
+
+            # Skip the rest of this iteration if auto pinning isn't enabled
+            if not subscriber.auto_pin:
+                continue
+
+            # Remove the old pin
+            if subscriber.current_pin_id:
+                try:
+                    await channel.get_partial_message(subscriber.current_pin_id).unpin()
+                except:
+                    pass
+
+            # Add the new pin
+            if msg:
+                try:
+                    await msg.pin()
+                    await self.store.update_current_pin(subscriber, msg.id)
+                except:
+                    pass
 
     def _create_mcje_update_buttons(
         self, update_info: MinecraftJavaUpdateInfo
