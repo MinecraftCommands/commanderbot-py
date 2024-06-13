@@ -1,344 +1,196 @@
 from logging import Logger, getLogger
-from sre_constants import error as RegexError
-from typing import Optional, cast
+from typing import Optional
 
-import mccq.errors
-from discord import Activity, ActivityType, AllowedMentions, Member, Message
-from discord.ext.commands import Bot, Cog, Context, check, command
-from mccq.query_manager import QueryManager
-from mccq.version_database import VersionDatabase
+import aiohttp
+from discord import Activity, ActivityType, Interaction
+from discord.app_commands import (
+    Group,
+    describe,
+    command,
+    default_permissions,
+    guild_only,
+)
+from discord.ext import tasks
+from discord.ext.commands import Bot, Cog
 
-from commanderbot.lib.commands import checks
-
-
-def member_is_elevated():
-    async def predicate(ctx: Context):
-        cog: MCCQCog = cast(MCCQCog, ctx.cog)
-        return isinstance(ctx.author, Member) and (ctx.author.id in cog.elevated_users)
-
-    return check(predicate)
+from commanderbot.ext.mccq.mccq_exceptions import (
+    BedrockQueryManagerNotConfigured,
+    JavaQueryManagerNotConfigured,
+)
+from commanderbot.ext.mccq.mccq_manager import MCCQManager
+from commanderbot.ext.mccq.mccq_options import MCCQOptions
+from commanderbot.lib import AllowedMentions
+from commanderbot.lib.interactions import checks
+from commanderbot.lib.constants import MAX_MESSAGE_LENGTH, USER_AGENT
+from commanderbot.lib.utils import str_to_file
 
 
 class MCCQCog(Cog, name="commanderbot.ext.mccq"):
     def __init__(self, bot: Bot, **options):
         self.bot: Bot = bot
         self.log: Logger = getLogger(self.qualified_name)
+        self.options = MCCQOptions.from_data(options)
 
-        # java edition commands.json
-        self.java_url: str = options.get("java_url", "")
-        if not self.java_url:
-            self.log.warning("No Java URL was provided")
+        # Create Java query manager, if configured
+        self.java_query_manager: Optional[MCCQManager] = None
+        if self.options.java:
+            self.java_query_manager = MCCQManager.from_java_options(self.options.java)
 
-        # bedrock edition commands.json
-        self.bedrock_url: str = options.get("bedrock_url", "")
-        if not self.bedrock_url:
-            self.log.warning("No Bedrock URL was provided")
-
-        # path to the file containing nothing but the version of the generated files
-        self.version_file: str = options.get("version_file", "VERSION.txt")
-
-        # labels to print instead of database keys
-        self.version_labels: dict[str, str] = options.get("version_labels", {})
-
-        # version whitelist, disabled if empty
-        self.version_whitelist = tuple(options.get("version_whitelist", []))
-
-        # versions to render in the output by default
-        # if not specified, defaults to the last whitelist entry
-        last_version = self.version_whitelist[-1] if self.version_whitelist else None
-        self.show_versions = tuple(
-            options.get("show_versions", [last_version] if last_version else ())
-        )
-
-        # url format to provide a help link, if any
-        # the placeholder `{command}` will be replaced by the base command
-        self.help_url = options.get("help_url", None)
-
-        # version to set as the "playing" status, if any
-        self.presence_version = options.get("presence_version", None)
-
-        # max lines of results, useful to prevent potential chat spam
-        self.max_results = options.get("max_results", None)
-
-        # allow certain users to run the reload command
-        self.elevated_users: list[int] = options.get("elevated_users", [])
-
-        # create java edition query manager, if a url was provided
-        self.java_query_manager: Optional[QueryManager] = None
-        if self.java_url:
-            self.java_query_manager = QueryManager(
-                database=VersionDatabase(
-                    uri=self.java_url,
-                    version_file=self.version_file,
-                    whitelist=self.version_whitelist,
-                ),
-                show_versions=self.show_versions,
+        # Create Bedrock query manager, if configured
+        self.bedrock_query_manager: Optional[MCCQManager] = None
+        if self.options.bedrock:
+            self.bedrock_query_manager = MCCQManager.from_bedrock_options(
+                self.options.bedrock
             )
 
-        # create java edition query manager, if a url was provided
-        self.bedrock_query_manager: Optional[QueryManager] = None
-        if self.bedrock_url:
-            self.bedrock_query_manager = QueryManager(
-                database=VersionDatabase(
-                    uri=self.bedrock_url,
-                    version_file=self.version_file,
-                    whitelist=self.version_whitelist,
-                ),
-                show_versions=self.show_versions,
-            )
+    async def cog_load(self):
+        self._on_reload_query_managers.start()
+        self._on_update_presence.start()
 
-    def get_version_label(self, version: str, query_manager: QueryManager) -> str:
-        actual_version = query_manager.database.get_actual_version(version) or version
-        return self.version_labels.get(version, version).format(
-            version=version, actual=actual_version
-        )
+    async def cog_unload(self):
+        self._on_reload_query_managers.stop()
+        self._on_update_presence.stop()
 
-    async def update_status(self, presence_version: str):
-        self.log.info(f"Updating status with version: {presence_version}")
-
-        presence_parts: list[str] = []
-
-        # get the latest java version, if configured
-        if self.java_query_manager:
-            self.java_query_manager.database.get(presence_version)
-            java_presence_version = self.java_query_manager.database.get_actual_version(
-                presence_version
-            )
-            presence_parts.append(f"JE {java_presence_version}")
-
-        # and the latest bedrock version, if configured
-        if self.bedrock_query_manager:
-            self.bedrock_query_manager.database.get(presence_version)
-            bedrock_presence_version = (
-                self.bedrock_query_manager.database.get_actual_version(presence_version)
-            )
-            presence_parts.append(f"BE {bedrock_presence_version}")
-
-        # and then set the bot's presence status
-        if presence_parts:
-            presence_text = " & ".join(presence_parts)
-            self.log.info(
-                "Setting presence to latest version: {}".format(presence_text)
-            )
-            activity = Activity(name=presence_text, type=ActivityType.playing)
-            await self.bot.change_presence(activity=activity)
-        else:
-            self.log.warning("No presence version to update")
-
-    async def maybe_update_status(self):
-        if self.presence_version:
-            await self.update_status(self.presence_version)
-
-    async def reload(self):
+    def _reload_query_managers(self):
+        self.log.info("Reloading query managers...")
         if self.java_query_manager:
             self.java_query_manager.reload()
+            self.log.info("Reloaded Java query manager")
         if self.bedrock_query_manager:
             self.bedrock_query_manager.reload()
-        await self.maybe_update_status()
+            self.log.info("Reloaded Bedrock query manager")
 
-    async def mccreload(self, ctx: Context):
+    # @@ TASKS
+
+    # @@ Reload the query managers every hour so the latest version stays up to date
+    @tasks.loop(hours=1)
+    async def _on_reload_query_managers(self):
+        self._reload_query_managers()
+
+    # @@ Temporary hack to update the presence every hour
+    @tasks.loop(hours=1)
+    async def _on_update_presence(self):
+        # Return early if the bot presence is configured to be updated
+        if not self.options.bot_presence:
+            return
+
+        # Get the versions for Java and Bedrock
+        self.log.info("Updating bot presence...")
+        presence_parts: list[str] = []
+        async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
+            # Get latest Java version
+            if url := self.options.bot_presence.java_version_file_url:
+                if version := await self._get_version_from_file(session, url):
+                    presence_parts.append(f"JE {version}")
+
+            # Get latest Bedrock version
+            if url := self.options.bot_presence.bedrock_version_file_url:
+                if version := await self._get_version_from_file(session, url):
+                    presence_parts.append(f"BE {version}")
+
+        # Return early if `presence_parts` is empty
+        if not presence_parts:
+            self.log.warning(
+                "Could not update presence since no Java or Bedrock versions were found"
+            )
+            return
+
+        presence_text: str = " & ".join(presence_parts)
+        activity = Activity(name=presence_text, type=ActivityType.playing)
+        await self.bot.change_presence(activity=activity)
+
+        self.log.info(f"Set presence to '{presence_text}'")
+
+    @_on_update_presence.before_loop
+    async def _before_on_update_presence(self):
+        # Wait for the bot to be ready so an exception isn't thrown
+        await self.bot.wait_until_ready()
+
+    async def _get_version_from_file(
+        self, session: aiohttp.ClientSession, version_file_url: str
+    ) -> Optional[str]:
+        async with session.get(version_file_url) as response:
+            if response.status == 200:
+                return await response.text()
+
+    # @@ COMMANDS
+
+    # @@ mccreload
+    @command(name="mccreload", description="Reloads the query managers")
+    @guild_only()
+    @default_permissions(administrator=True)
+    @checks.is_owner()
+    async def cmd_mccreload(self, interaction: Interaction):
+        self._reload_query_managers()
+        await interaction.response.send_message("✅ Reloaded query managers")
+
+    # @@ mcc
+
+    cmd_mcc = Group(name="mcc", description="Query a Minecraft command")
+
+    # @@ mcc help
+    @cmd_mcc.command(name="help", description="Show the query syntax")
+    async def cmd_mcc_help(self, interaction: Interaction):
+        pass
+
+    # @@ mcc java
+    @cmd_mcc.command(name="java", description="Query a Minecraft: Java Edition command")
+    @describe(query="The command to query (Run '/mcc help' for the query syntax)")
+    async def cmd_mcc_java(self, interaction: Interaction, query: str):
+        # Return early if the Java query manager isn't configured
+        if not self.java_query_manager:
+            raise JavaQueryManagerNotConfigured
+
+        # Respond to the interaction with a defer since we may need to do a web request
+        await interaction.response.defer()
+
+        # Try to query the command
         try:
-            await self.reload()
-        except:
-            self.log.exception("An unexpected error occurred while reloading commands")
-            await ctx.message.add_reaction("🤯")
-            return
-        await ctx.message.add_reaction("✅")
+            results = await self.java_query_manager.query_command(query)
+        except Exception as ex:
+            await interaction.delete_original_response()
+            raise ex
 
-    async def reply(self, message: Message, content: str):
-        await message.reply(content, allowed_mentions=AllowedMentions.none())
-
-    async def mcc(self, ctx: Context, command: str, query_manager: QueryManager):
-        # if no command was provided, print help and short-circuit
-        if not command:
-            help_message = "".join(
-                ("```", QueryManager.ARGUMENT_PARSER.format_help(), "```")
+        # Send message with query results
+        if len(results) <= MAX_MESSAGE_LENGTH:
+            await interaction.followup.send(
+                results, allowed_mentions=AllowedMentions.none()
             )
-            await self.reply(ctx.message, help_message)
-            return
+        # Message is too big, so send it as a file
+        else:
+            await interaction.followup.send(
+                file=str_to_file(results, "results.md"),
+                allowed_mentions=AllowedMentions.none(),
+            )
 
+    # @@ mcc bedrock
+    @cmd_mcc.command(
+        name="bedrock", description="Query a Minecraft: Bedrock Edition command"
+    )
+    @describe(query="The command to query (Run '/mcc help' for the query syntax)")
+    async def cmd_mcc_bedrock(self, interaction: Interaction, query: str):
+        # Return early if the Bedrock query manager isn't configured
+        if not self.bedrock_query_manager:
+            raise BedrockQueryManagerNotConfigured
+
+        # Respond to the interaction with a defer since we may need to do a web request
+        await interaction.response.defer()
+
+        # Try to query the command
         try:
-            # get a copy of the parsed arguments so we can tell the user about them
-            arguments = QueryManager.parse_query_arguments(command)
+            results = await self.bedrock_query_manager.query_command(query)
+        except Exception as ex:
+            await interaction.delete_original_response()
+            raise ex
 
-            # get the command results to render
-            full_results = query_manager.results_from_arguments(arguments)
-            num_full_results = sum(len(lines) for lines in full_results.values())
-
-            # trim results, if enabled
-            results = full_results
-            num_trimmed_results = 0
-            if self.max_results and (num_full_results > self.max_results):
-                num_trimmed_results = num_full_results - self.max_results
-                results = {}
-                num_results = 0
-                for version, lines in full_results.items():
-                    results[version] = []
-                    for line in lines:
-                        results[version].append(line)
-                        num_results += 1
-                        if num_results == self.max_results:
-                            break
-
-        except mccq.errors.ArgumentParserFailed:
-            self.log.info(
-                "Failed to parse arguments for the command: {}".format(command)
+        # Send message with query results
+        if len(results) <= MAX_MESSAGE_LENGTH:
+            await interaction.followup.send(
+                results, allowed_mentions=AllowedMentions.none()
             )
-            await self.reply(ctx.message, "Invalid arguments for that command")
-            return
-
-        except mccq.errors.NoVersionsAvailable:
-            self.log.info("No versions available for the command: {}".format(command))
-            await self.reply(ctx.message, "No versions available for that command")
-            return
-
-        except (mccq.errors.LoaderFailure, mccq.errors.ParserFailure):
-            self.log.exception(
-                "Failed to load data for the command: {}".format(command)
-            )
-            await self.reply(ctx.message, "Failed to load data for that command")
-            return
-
-        except RegexError:
-            self.log.info("Invalid regex for the command: {}".format(command))
-            await self.reply(
-                ctx.message,
-                "Invalid regex for that command (you may need to use escaping)",
-            )
-            return
-
-        except:
-            self.log.exception(
-                "An unexpected error occurred while processing the command: {}".format(
-                    command
-                )
-            )
-            await ctx.message.add_reaction("🤯")
-            return
-
-        if not results:
-            # let the user know if there were no results, and short-circuit
-            # note this is different from an invalid base command
-            await self.reply(ctx.message, "No results found for that command")
-            return
-
-        # if any version produced more than one command, render one paragraph per version
-        if next((True for lines in results.values() if len(lines) > 1), False):
-            paragraphs = (
-                "\n".join(
-                    (
-                        "# {}".format(self.get_version_label(version, query_manager)),
-                        *lines,
-                    )
-                )
-                for version, lines in results.items()
-            )
-            command_text = "\n".join(paragraphs)
-
-        # otherwise, if all versions rendered just 1 command, render one line per version (compact)
+        # Message is too big, so send it as a file
         else:
-            command_text = "\n".join(
-                "{}  # {}".format(
-                    lines[0], self.get_version_label(version, query_manager)
-                )
-                for version, lines in results.items()
-                if lines
+            await interaction.followup.send(
+                file=str_to_file(results, "results.md"),
+                allowed_mentions=AllowedMentions.none(),
             )
-
-        # if results were trimmed, make note of them
-        if num_trimmed_results:
-            command_text += "\n# ... trimmed {} results".format(num_trimmed_results)
-
-        # render the full code section
-        code_section = "```hs\n{}\n```".format(command_text)
-
-        help_section = None
-
-        # don't bother with the help link unless it's been configured
-        if self.help_url:
-            base_commands = set()
-            for lines in results.values():
-                for line in lines:
-                    base_commands.add(line.split(maxsplit=1)[0])
-
-            # only post the help link if we can unambiguously determine the base command
-            base_command = (
-                tuple(base_commands)[0] if (len(base_commands) == 1) else None
-            )
-            if base_command:
-                help_section = "".join(
-                    ("<", self.help_url.format(command=base_command), ">")
-                )
-
-        # leave out blank sections
-        message = "\n".join(
-            section for section in (code_section, help_section) if section is not None
-        )
-
-        # sometimes the message is too big to send
-        try:
-            await self.reply(ctx.message, message)
-        except:
-            num_full_results = sum(len(lines) for lines in results.values())
-            self.log.exception(
-                "Something went wrong while trying to respond with {} results ({} characters)".format(
-                    num_full_results, len(message)
-                )
-            )
-            await ctx.message.add_reaction("😬")
-
-    # @@ Listeners
-
-    @Cog.listener()
-    async def on_ready(self):
-        await self.maybe_update_status()
-
-    @Cog.listener()
-    async def on_resumed(self):
-        await self.maybe_update_status()
-
-    @Cog.listener()
-    async def on_presence_update(self, before: Member, after: Member):
-        if (
-            (self.presence_version)
-            and (bot_user := self.bot.user)
-            and (bot_user.id == after.id)
-        ):
-            self.log.info("My status changed!")
-            await self.update_status(self.presence_version)
-
-    # @@ Commands
-
-    @command(
-        name="mccqreload",
-        aliases=["mccreload"],
-        hidden=True,
-    )
-    @checks.any_of(
-        checks.is_owner(),
-        member_is_elevated(),
-    )
-    async def cmd_mccreload(self, ctx):
-        await self.mccreload(ctx)
-
-    @command(
-        name="mccq",
-        aliases=["mcc"],
-        help=QueryManager.ARGUMENT_PARSER.format_help(),
-    )
-    async def cmd_mccq(self, ctx: Context, *, command: str = ""):
-        if self.java_query_manager:
-            await self.mcc(ctx, command, self.java_query_manager)
-        else:
-            await ctx.message.add_reaction("🤷")
-
-    @command(
-        name="mccb",
-        aliases=["mccbedrock"],
-        help=QueryManager.ARGUMENT_PARSER.format_help(),
-    )
-    async def cmd_mccb(self, ctx: Context, *, command: str = ""):
-        if self.bedrock_query_manager:
-            await self.mcc(ctx, command, self.bedrock_query_manager)
-        else:
-            await ctx.message.add_reaction("🤷")
