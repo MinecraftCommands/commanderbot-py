@@ -58,7 +58,9 @@ class MinecraftBedrockUpdatesOptions(FeedProviderOptionsBase):
 
 class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, int]):
     def __init__(self, url: str, release_section_id: int, preview_section_id: int):
-        super().__init__(url=url, logger_name="feeds.minecraft_bedrock_updates")
+        super().__init__(
+            url=url, logger_name="commanderbot.ext.feeds.minecraft_bedrock_updates"
+        )
         self.release_section_id: int = release_section_id
         self.preview_section_id: int = preview_section_id
 

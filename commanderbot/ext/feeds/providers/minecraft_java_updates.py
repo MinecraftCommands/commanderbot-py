@@ -58,9 +58,11 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
         self,
         url: str,
         primary_changelog_viewer_url: str,
-        mirror_changelog_viewer_url: Optional[str] = None,
+        mirror_changelog_viewer_url: Optional[str],
     ):
-        super().__init__(url=url, logger_name="feeds.minecraft_java_updates")
+        super().__init__(
+            url=url, logger_name="commanderbot.ext.feeds.minecraft_java_updates"
+        )
         self._primary_changelog_viewer_url: str = primary_changelog_viewer_url
         self._mirror_changelog_viewer_url: Optional[str] = mirror_changelog_viewer_url
 
