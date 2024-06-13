@@ -32,7 +32,7 @@ class IssueNotFound(JiraException):
 class RequestError(JiraException):
     def __init__(self, issue_id: str):
         self.issue_id: str = issue_id
-        super().__init__(f"😵 An error occured while requesting `{self.issue_id}`")
+        super().__init__(f"😵 An error occurred while requesting `{self.issue_id}`")
 
 
 class IssueHasNoFields(JiraException):
