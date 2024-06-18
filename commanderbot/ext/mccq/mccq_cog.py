@@ -2,12 +2,12 @@ from logging import Logger, getLogger
 from typing import Optional
 
 import aiohttp
-from discord import Activity, ActivityType, Interaction
+from discord import Activity, ActivityType, Embed, Interaction, ui
 from discord.app_commands import (
     Group,
-    describe,
     command,
     default_permissions,
+    describe,
     guild_only,
 )
 from discord.ext import tasks
@@ -20,9 +20,25 @@ from commanderbot.ext.mccq.mccq_exceptions import (
 from commanderbot.ext.mccq.mccq_manager import MCCQManager
 from commanderbot.ext.mccq.mccq_options import MCCQOptions
 from commanderbot.lib import AllowedMentions
-from commanderbot.lib.interactions import checks
 from commanderbot.lib.constants import MAX_MESSAGE_LENGTH, USER_AGENT
+from commanderbot.lib.interactions import checks
 from commanderbot.lib.utils import str_to_file
+
+MCCQ_QUERY_SYNTAX_HELP: str = "\n".join(
+    [
+        "```hs",
+        "command [-t] [-e] [-c CAPACITY] [-v VERSION]",
+        "```",
+        "**Positional arguments**",
+        "- `command`: The command to query (Supports regex)",
+        "**Optional arguments**",
+        "- `-t`, `--showtypes`: Whether to show argument types",
+        "- `-e`, `--explode`: Whether to expand all subcommands, regardless of capacity",
+        "- `-c CAPACITY`, `--capacity CAPACITY`: Maximum number of subcommands to render before collapsing",
+        "- `-v VERSION`, `--version VERSION`: Which version(s) to use for the command (repeatable)",
+    ]
+)
+MCCQ_USAGE_HELP_URL: str = "https://github.com/Arcensoth/mccq#basic-usage"
 
 
 class MCCQCog(Cog, name="commanderbot.ext.mccq"):
@@ -60,6 +76,38 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
             self.bedrock_query_manager.reload()
             self.log.info("Reloaded Bedrock query manager")
 
+    async def _mccq(
+        self, query_manager: MCCQManager, interaction: Interaction, query: str
+    ):
+        # Respond to the interaction with a defer since we may need to do a web request
+        await interaction.response.defer()
+
+        # Try to query the command
+        try:
+            results, wiki_url = await query_manager.query_command(query)
+        except Exception as ex:
+            await interaction.delete_original_response()
+            raise ex
+
+        # Format the message and create the view if necessary
+        msg = f"```hs\n{results}\n```"
+        view = ui.View()
+        if wiki_url:
+            view.add_item(ui.Button(label="View on wiki", url=wiki_url))
+
+        # Send message with query results
+        if len(msg) <= MAX_MESSAGE_LENGTH:
+            await interaction.followup.send(
+                msg, view=view, allowed_mentions=AllowedMentions.none()
+            )
+        # Message is too big, so send it as a file
+        else:
+            await interaction.followup.send(
+                file=str_to_file(results, "results.txt"),
+                view=view,
+                allowed_mentions=AllowedMentions.none(),
+            )
+
     # @@ TASKS
 
     # @@ Reload the query managers every hour so the latest version stays up to date
@@ -68,6 +116,13 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
         self._reload_query_managers()
 
     # @@ Temporary hack to update the presence every hour
+    async def _get_version_from_file(
+        self, session: aiohttp.ClientSession, version_file_url: str
+    ) -> Optional[str]:
+        async with session.get(version_file_url) as response:
+            if response.status == 200:
+                return await response.text()
+
     @tasks.loop(hours=1)
     async def _on_update_presence(self):
         # Return early if the bot presence is configured to be updated
@@ -103,15 +158,8 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
 
     @_on_update_presence.before_loop
     async def _before_on_update_presence(self):
-        # Wait for the bot to be ready so an exception isn't thrown
+        # Wait for the bot to be ready so an exception isn't thrown when we try updating the presence
         await self.bot.wait_until_ready()
-
-    async def _get_version_from_file(
-        self, session: aiohttp.ClientSession, version_file_url: str
-    ) -> Optional[str]:
-        async with session.get(version_file_url) as response:
-            if response.status == 200:
-                return await response.text()
 
     # @@ COMMANDS
 
@@ -131,37 +179,23 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
     # @@ mcc help
     @cmd_mcc.command(name="help", description="Show the query syntax")
     async def cmd_mcc_help(self, interaction: Interaction):
-        pass
+        embed = Embed(
+            title="How to format your Minecraft command query",
+            description=MCCQ_QUERY_SYNTAX_HELP,
+            color=0x00ACED,
+        )
+        view = ui.View()
+        view.add_item(ui.Button(label="Learn more", url=MCCQ_USAGE_HELP_URL))
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     # @@ mcc java
     @cmd_mcc.command(name="java", description="Query a Minecraft: Java Edition command")
     @describe(query="The command to query (Run '/mcc help' for the query syntax)")
     async def cmd_mcc_java(self, interaction: Interaction, query: str):
-        # Return early if the Java query manager isn't configured
+        # Throw an exception if the Java query manager hasn't been configured
         if not self.java_query_manager:
             raise JavaQueryManagerNotConfigured
-
-        # Respond to the interaction with a defer since we may need to do a web request
-        await interaction.response.defer()
-
-        # Try to query the command
-        try:
-            results = await self.java_query_manager.query_command(query)
-        except Exception as ex:
-            await interaction.delete_original_response()
-            raise ex
-
-        # Send message with query results
-        if len(results) <= MAX_MESSAGE_LENGTH:
-            await interaction.followup.send(
-                results, allowed_mentions=AllowedMentions.none()
-            )
-        # Message is too big, so send it as a file
-        else:
-            await interaction.followup.send(
-                file=str_to_file(results, "results.md"),
-                allowed_mentions=AllowedMentions.none(),
-            )
+        await self._mccq(self.java_query_manager, interaction, query)
 
     # @@ mcc bedrock
     @cmd_mcc.command(
@@ -169,28 +203,7 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
     )
     @describe(query="The command to query (Run '/mcc help' for the query syntax)")
     async def cmd_mcc_bedrock(self, interaction: Interaction, query: str):
-        # Return early if the Bedrock query manager isn't configured
+        # Throw an exception if the Bedrock query manager hasn't been configured
         if not self.bedrock_query_manager:
             raise BedrockQueryManagerNotConfigured
-
-        # Respond to the interaction with a defer since we may need to do a web request
-        await interaction.response.defer()
-
-        # Try to query the command
-        try:
-            results = await self.bedrock_query_manager.query_command(query)
-        except Exception as ex:
-            await interaction.delete_original_response()
-            raise ex
-
-        # Send message with query results
-        if len(results) <= MAX_MESSAGE_LENGTH:
-            await interaction.followup.send(
-                results, allowed_mentions=AllowedMentions.none()
-            )
-        # Message is too big, so send it as a file
-        else:
-            await interaction.followup.send(
-                file=str_to_file(results, "results.md"),
-                allowed_mentions=AllowedMentions.none(),
-            )
+        await self._mccq(self.bedrock_query_manager, interaction, query)
