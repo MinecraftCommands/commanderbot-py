@@ -68,63 +68,6 @@ class MCCQManager:
             logger_name="commanderbot.ext.mccq.bedrock_manager",
         )
 
-    def reload(self):
-        self._query_manager.reload()
-
-    async def query_command(self, query: str) -> str:
-        # Get the query results
-        results, num_trimmed_results = await self._do_query(query)
-
-        # Raise an exception to let the user know there were no results
-        # Note: This is different from an invalid base command
-        if not results:
-            raise QueryReturnedNoResults
-
-        # If any version produced more than one command, create one paragraph per version
-        command_text: str = ""
-        if any((len(v) > 1 for v in results.values())):
-            paragraphs = (
-                "\n".join((f"# {self._get_version_label(version)}", *lines))
-                for version, lines in results.items()
-            )
-            command_text = "\n".join(paragraphs)
-
-        # Otherwise, if all versions produced just 1 command, create one line per version (compact)
-        else:
-            command_text = "\n".join(
-                (
-                    f"{lines[0]}  # {self._get_version_label(version)}"
-                    for version, lines in results.items()
-                    if lines
-                )
-            )
-
-        # If results were trimmed, make note of them
-        if num_trimmed_results:
-            command_text += f"\n# ... trimmed {num_trimmed_results} results"
-
-        # Create the full code section
-        code_section: str = f"```hs\n{command_text}\n```"
-
-        # Create the wiki link section
-        wiki_section: Optional[str] = None
-        if self._wiki_url:
-            base_commands: set[str] = set()
-            for lines in results.values():
-                for line in lines:
-                    base_commands.add(line.split(maxsplit=1)[0])
-
-            # Only post the wiki link if we can unambiguously determine the base command
-            if len(base_commands) == 1 and (cmd := next(iter(base_commands))):
-                wiki_section = f"<{self._wiki_url.format(command=cmd)}>"
-
-        # Leave out blank sections
-        formatted_results = "\n".join(
-            section for section in (code_section, wiki_section) if section
-        )
-
-        return formatted_results
-
     async def _do_query(self, query: str) -> tuple[QueryResults, int]:
         try:
             # Get the query results
@@ -178,3 +121,52 @@ class MCCQManager:
             )
             return label.format(version=version, actual=actual_version)
         return version
+
+    async def query_command(self, query: str) -> tuple[str, Optional[str]]:
+        # Get the query results
+        results, num_trimmed_results = await self._do_query(query)
+
+        # Raise an exception to let the user know there were no results
+        # Note: This is different from an invalid base command
+        if not results:
+            raise QueryReturnedNoResults
+
+        # If any version produced more than one command, create one paragraph per version
+        formatted_results: str = ""
+        if any((len(v) > 1 for v in results.values())):
+            paragraphs = (
+                "\n".join((f"# {self._get_version_label(version)}", *lines))
+                for version, lines in results.items()
+            )
+            formatted_results = "\n".join(paragraphs)
+
+        # Otherwise, if all versions produced just 1 command, create one line per version (compact)
+        else:
+            formatted_results = "\n".join(
+                (
+                    f"{lines[0]}  # {self._get_version_label(version)}"
+                    for version, lines in results.items()
+                    if lines
+                )
+            )
+
+        # If results were trimmed, make note of them
+        if num_trimmed_results:
+            formatted_results += f"\n# ... trimmed {num_trimmed_results} results"
+
+        # Try to create the wiki URL
+        wiki_url: Optional[str] = None
+        if self._wiki_url:
+            base_commands: set[str] = set()
+            for lines in results.values():
+                for line in lines:
+                    base_commands.add(line.split(maxsplit=1)[0])
+
+            # Only return the wiki URL if we can unambiguously determine the base command
+            if len(base_commands) == 1 and (cmd := next(iter(base_commands))):
+                wiki_url = self._wiki_url.format(command=cmd)
+
+        return (formatted_results, wiki_url)
+
+    def reload(self):
+        self._query_manager.reload()
