@@ -1,25 +1,32 @@
 import platform
+from enum import Enum, auto
 from typing import Optional
 
 import psutil
-from discord import AppInfo, Embed, Object
-from discord.app_commands import AppCommand
-from discord.ext.commands import Bot, Cog, Context, group
+from discord import AppInfo, Embed, Interaction, Object, Permissions
+from discord.app_commands import AppCommand, Choice, Group, autocomplete, describe
+from discord.ext.commands import Bot, Cog
 
-from commanderbot.ext.sudo.sudo_data import CogUsesStore, SyncType
+from commanderbot.ext.sudo.sudo_data import CogWithStore
 from commanderbot.ext.sudo.sudo_exceptions import (
     CogHasNoStore,
     GlobalSyncError,
+    GuildIDNotFound,
     GuildSyncError,
-    SyncUnknownGuild,
     UnknownCog,
     UnsupportedStoreExport,
 )
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
-from commanderbot.lib.commands import checks
-from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
+from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
+from commanderbot.lib.interactions import checks
 from commanderbot.lib.json import json_dumps
 from commanderbot.lib.utils import SizeUnit, bytes_to, pointer_size, str_to_file
+
+
+class SyncTypeChoices(Enum):
+    sync_only = auto()
+    copy = auto()
+    remove = auto()
 
 
 class SudoCog(Cog, name="commanderbot.ext.sudo"):
@@ -30,14 +37,35 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         self.process: psutil.Process = psutil.Process()
         self.process.cpu_percent()
 
-    @group(name="sudo", brief="Commands for bot maintainers")
-    @checks.is_owner()
-    async def cmd_sudo(self, ctx: Context):
-        if not ctx.invoked_subcommand:
-            await ctx.send_help(self.cmd_sudo)
+    # @@ AUTOCOMPLETE
+    async def cog_with_store_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        choices: list[Choice] = []
+        for cog in self.bot.cogs.values():
+            if isinstance(cog, CogWithStore):
+                name: str = cog.qualified_name
+                if not value:
+                    choices.append(Choice(name=name, value=name))
+                elif value in name:
+                    choices.append(Choice(name=name, value=name))
 
-    @cmd_sudo.command(name="appinfo", brief="Show application info")
-    async def cmd_appinfo(self, ctx: Context):
+        return choices
+
+    # @@ COMMANDS
+
+    # @@ sudo
+
+    cmd_sudo = Group(
+        name="sudo",
+        description="Commands for bot maintainers",
+        default_permissions=Permissions(administrator=True),
+    )
+
+    # @@ sudo appinfo
+    @cmd_sudo.command(name="appinfo", description="Show the application info")
+    @checks.is_owner()
+    async def cmd_sudo_appinfo(self, interaction: Interaction):
         # Get app info
         app: AppInfo = await self.bot.application_info()
 
@@ -113,156 +141,119 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         for k, v in fields.items():
             embed.add_field(name=k, value=v)
 
-        await ctx.reply(embed=embed, mention_author=False)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @cmd_sudo.command(name="shutdown", brief="Shutdowns the bot")
-    async def cmd_sudo_shutdown(self, ctx: Context):
-        result = await confirm_with_reaction(
-            self.bot, ctx, "Are you sure you want to shutdown the bot?"
+    # @@ sudo shutdown
+    @cmd_sudo.command(name="shutdown", description="Shut down the bot")
+    @checks.is_owner()
+    async def cmd_sudo_shutdown(self, interaction: Interaction):
+        result = await respond_with_confirmation(
+            interaction, "Are you sure you want to shut down the bot?", ephemeral=True
         )
         match result:
             case ConfirmationResult.YES:
-                await ctx.reply("😴 Shutting down...", mention_author=False)
+                await interaction.followup.send("😴 Shutting down...", ephemeral=True)
                 await self.bot.close()
-            case (ConfirmationResult.NO | ConfirmationResult.NO_RESPONSE):
-                await ctx.reply("🙂 Continuing...", mention_author=False)
+            case ConfirmationResult.NO | ConfirmationResult.NO_RESPONSE:
+                await interaction.followup.send("🙂 Continuing...", ephemeral=True)
 
-    @cmd_sudo.command(name="export", brief="Exports a cog's store if it has one")
-    async def cmd_sudo_export(self, ctx: Context, cog: str):
+    # @@ sudo export
+    @cmd_sudo.command(name="export", description="Export a cog's store")
+    @describe(cog="The cog to export")
+    @autocomplete(cog=cog_with_store_autocomplete)
+    @checks.is_owner()
+    async def cmd_sudo_export(self, interaction: Interaction, cog: str):
+        # Respond with a defer since exporting the data might take a while
+        await interaction.response.defer(ephemeral=True)
+
         # Try to get the cog
         found_cog = self.bot.get_cog(cog)
         if not found_cog:
             raise UnknownCog(cog)
-
-        # Try to get the database adapter if it exists
-        if isinstance(found_cog, CogUsesStore):
-            db = found_cog.store.db
-            match db:
-                case JsonFileDatabaseAdapter():
-                    await self._export_json_store(ctx, found_cog, db)
-                case _:
-                    raise UnsupportedStoreExport(db)
-        else:
+        elif not isinstance(found_cog, CogWithStore):
             raise CogHasNoStore(found_cog)
 
-    async def _export_json_store(
-        self, ctx: Context, cog: Cog, db: JsonFileDatabaseAdapter
-    ):
-        cache = await db.get_cache()
-        data = db.serializer(cache)
-        await ctx.reply(
-            content=f"Exported Json store for `{cog.qualified_name}`",
-            file=str_to_file(json_dumps(data), f"{cog.qualified_name}.json"),
-            mention_author=False,
-        )
+        # Esport the store and respond with a followup
+        match found_cog.store.db:
+            case JsonFileDatabaseAdapter() as db:
+                cache = await db.get_cache()
+                json_data = json_dumps(db.serializer(cache))
+                await interaction.followup.send(
+                    f"Exported Json store for `{found_cog.qualified_name}`",
+                    file=str_to_file(json_data, f"{found_cog.qualified_name}.json"),
+                    ephemeral=True,
+                )
+            case _ as db:
+                raise UnsupportedStoreExport(db)
 
-    @cmd_sudo.group(name="sync", brief="Sync app commands")
-    async def cmd_sudo_sync(self, ctx: Context):
-        if not ctx.invoked_subcommand:
-            await ctx.send_help(self.cmd_sudo_sync)
+    # @@ sudo sync
 
-    @cmd_sudo_sync.command(name="global", brief="Sync global app commands")
-    async def cmd_sudo_sync_global(self, ctx: Context):
-        await ctx.message.add_reaction("⏲️")
+    cmd_sudo_sync = Group(name="sync", description="Sync app commands", parent=cmd_sudo)
+
+    # @@ sudo sync global
+    @cmd_sudo_sync.command(name="global", description="Sync global app commands")
+    @checks.is_owner()
+    async def cmd_sudo_sync_global(self, interaction: Interaction):
+        # Respond with a defer since syncing the commands may take a while
+        await interaction.response.defer(ephemeral=True)
 
         # Try to sync app commands
         synced_commands: list[AppCommand] = []
         try:
             synced_commands = await self.bot.tree.sync()
-            await ctx.message.add_reaction("✅")
         except Exception as ex:
-            await ctx.message.add_reaction("🔥")
             raise GlobalSyncError(str(ex))
-        finally:
-            assert self.bot.user
-            await ctx.message.remove_reaction("⏲️", self.bot.user)
 
-        # Send message with sync results
-        await ctx.reply(
-            f"Synced `{len(synced_commands)}` app commands globally",
-            mention_author=False,
+        # Send followup with sync results
+        await interaction.followup.send(
+            f"✅ Synced `{len(synced_commands)}` app commands globally", ephemeral=True
         )
 
-    @cmd_sudo_sync.group(name="guild", brief="Sync app commands to a guild")
-    async def cmd_sudo_sync_guild(self, ctx: Context):
-        # If we didn't invoke a subcommand, sync the current guild the normal way
-        if not ctx.invoked_subcommand:
-            if sync_to := self._get_current_guild(ctx):
-                await self._sync_guild_app_commands(ctx, sync_to)
-            else:
-                raise SyncUnknownGuild(sync_to)
-
-    @cmd_sudo_sync_guild.command(name="sync_only", brief="Sync app commands to a guild")
-    async def cmd_sudo_sync_guild_sync_only(
-        self, ctx: Context, guild: Optional[Object] = None
-    ):
-        if sync_to := guild if guild else self._get_current_guild(ctx):
-            await self._sync_guild_app_commands(ctx, sync_to, SyncType.SYNC_ONLY)
-        else:
-            raise SyncUnknownGuild(sync_to)
-
-    @cmd_sudo_sync_guild.command(
-        name="copy", brief="Copy and sync app commands to a guild"
+    # @@ sudo sync guild
+    @cmd_sudo_sync.command(name="guild", description="Sync app commands to a guild")
+    @describe(
+        sync_type="What action to take when syncing the commands",
+        guild_id="The guild to sync (If not provided, the guild that the command was ran in is used instead)",
     )
-    async def cmd_sudo_sync_guild_copy(
-        self, ctx: Context, guild: Optional[Object] = None
+    @checks.is_owner()
+    async def cmd_sudo_sync_guild(
+        self,
+        interaction: Interaction,
+        sync_type: SyncTypeChoices,
+        guild_id: Optional[int],
     ):
-        if sync_to := guild if guild else self._get_current_guild(ctx):
-            await self._sync_guild_app_commands(ctx, sync_to, SyncType.COPY)
+        # Get the guild to sync to
+        guild: Optional[Object] = None
+        syncing_to_msg: Optional[str] = None
+        if guild_id:
+            guild = Object(guild_id)
+            syncing_to_msg = f"guild `{guild.id}`"
+        elif interaction.guild_id:
+            guild = Object(interaction.guild_id)
+            syncing_to_msg = "the current guild"
         else:
-            raise SyncUnknownGuild(sync_to)
+            raise GuildIDNotFound
 
-    @cmd_sudo_sync_guild.command(
-        name="remove", brief="Remove app commands from a guild"
-    )
-    async def cmd_sudo_sync_guild_remove(
-        self, ctx: Context, guild: Optional[Object] = None
-    ):
-        if sync_to := guild if guild else self._get_current_guild(ctx):
-            await self._sync_guild_app_commands(ctx, sync_to, SyncType.REMOVE)
-        else:
-            raise SyncUnknownGuild(sync_to)
-
-    def _get_current_guild(self, ctx: Context) -> Optional[Object]:
-        """
-        Gets the current guild from `ctx` if it exists
-        """
-        return Object(id=ctx.guild.id) if ctx.guild else None
-
-    async def _sync_guild_app_commands(
-        self, ctx: Context, guild: Object, sync_type: SyncType = SyncType.SYNC_ONLY
-    ):
-        await ctx.message.add_reaction("⏲️")
-
-        # Create message used for saying if we're syncing with the current guild or with a guild ID
-        is_current_guild: bool = guild == self._get_current_guild(ctx)
-        syncing_to_msg: str = (
-            "the current guild" if is_current_guild else f"guild `{guild.id}`"
-        )
+        # Respond with a defer since syncing the commands may take a while
+        await interaction.response.defer(ephemeral=True)
 
         # Try to sync app commands
         synced_commands: list[AppCommand] = []
         try:
             match sync_type:
-                case SyncType.SYNC_ONLY:
+                case SyncTypeChoices.sync_only:
                     synced_commands = await self.bot.tree.sync(guild=guild)
-                case SyncType.COPY:
+                case SyncTypeChoices.copy:
                     self.bot.tree.copy_global_to(guild=guild)
                     synced_commands = await self.bot.tree.sync(guild=guild)
-                case SyncType.REMOVE:
+                case SyncTypeChoices.remove:
                     self.bot.tree.clear_commands(guild=guild)
                     synced_commands = await self.bot.tree.sync(guild=guild)
-
-            await ctx.message.add_reaction("✅")
         except Exception as ex:
-            await ctx.message.add_reaction("🔥")
             raise GuildSyncError(guild, str(ex))
-        finally:
-            assert self.bot.user
-            await ctx.message.remove_reaction("⏲️", self.bot.user)
 
-        # Send message with sync results
-        await ctx.reply(
+        # Send followup with sync results
+        await interaction.followup.send(
             f"Synced `{len(synced_commands)}` app commands to {syncing_to_msg}",
-            mention_author=False,
+            ephemeral=True,
         )

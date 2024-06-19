@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from typing import Protocol, runtime_checkable
 
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter, SQLDatabaseAdapter
@@ -10,11 +9,5 @@ class DatabaseAdapter(Protocol):
 
 
 @runtime_checkable
-class CogUsesStore(Protocol):
+class CogWithStore(Protocol):
     store: DatabaseAdapter
-
-
-class SyncType(Enum):
-    SYNC_ONLY = auto()
-    COPY = auto()
-    REMOVE = auto()
