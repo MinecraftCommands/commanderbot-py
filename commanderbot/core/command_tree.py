@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Iterable, Optional, TypeAlias
+from typing import Optional, Iterable, TypeAlias
 
 from discord import AppCommandType
 from discord.abc import Snowflake
@@ -129,19 +129,30 @@ class CachingCommandTree(CommandTree):
         else:
             self._global_cache.clear()
 
-    async def build_cache(self, *, guilds: Optional[Iterable[Snowflake]]):
+    async def build_global_cache(self):
         """
-        Builds the command cache using app commands that are currently synced to Discord
+        Builds the global command cache using global app commands that are currently synced to Discord
         """
         self._log.info(
-            "Building command cache from the currently synced app commands..."
+            "Building global command cache from the currently synced global app commands..."
         )
 
         await self.fetch_commands(use_cache=False)
-        for guild in guilds if guilds else []:
+
+        self._log.info("Done building global command cache.")
+
+    async def build_guild_cache(self, guilds: Iterable[Snowflake]):
+        """
+        Builds the guild command cache using guild app commands that are currently synced to Discord
+        """
+        self._log.info(
+            "Building guild command cache from the currently synced guild app commands..."
+        )
+
+        for guild in guilds:
             await self.fetch_commands(guild=guild, use_cache=False)
 
-        self._log.info("Done building command cache.")
+        self._log.info("Done building guild command cache.")
 
     # @overrides CommandTree
     async def fetch_command(
