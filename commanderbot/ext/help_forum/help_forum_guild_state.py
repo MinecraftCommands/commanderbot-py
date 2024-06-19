@@ -303,11 +303,7 @@ class HelpForumGuildState(CogGuildState):
         }
 
         # Create embed and add fields
-        embed: Embed = Embed(
-            title=f"💬 {forum.name}",
-            url=forum.jump_url,
-            color=0x00ACED,
-        )
+        embed: Embed = Embed(title=forum.mention, color=0x00ACED)
         for k, v in fields.items():
             embed.add_field(name=k, value=v)
 
