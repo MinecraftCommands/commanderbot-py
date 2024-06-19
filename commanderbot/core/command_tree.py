@@ -139,7 +139,7 @@ class CachingCommandTree(CommandTree):
 
         await self.fetch_commands(use_cache=False)
 
-        self._log.info("Done building global command cache.")
+        self._log.info("Finished building global command cache.")
 
     async def build_guild_cache(self, guilds: Iterable[Snowflake]):
         """
@@ -152,7 +152,7 @@ class CachingCommandTree(CommandTree):
         for guild in guilds:
             await self.fetch_commands(guild=guild, use_cache=False)
 
-        self._log.info("Done building guild command cache.")
+        self._log.info("Finished building guild command cache.")
 
     # @overrides CommandTree
     async def fetch_command(

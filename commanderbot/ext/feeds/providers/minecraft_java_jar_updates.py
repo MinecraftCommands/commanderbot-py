@@ -123,7 +123,7 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
             self._log.info("Building version cache...")
             await self._fetch_latest_versions()
             self._log.info(
-                f"Done building version cache (Initial size: {len(self._cache)})"
+                f"Finished building version cache (Initial size: {len(self._cache)})"
             )
             return
 
