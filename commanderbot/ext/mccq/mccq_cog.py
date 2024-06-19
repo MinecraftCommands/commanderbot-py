@@ -38,7 +38,7 @@ MCCQ_QUERY_SYNTAX_HELP: str = "\n".join(
         "- `-v VERSION`, `--version VERSION`: Which version(s) to use for the command (repeatable)",
     ]
 )
-MCCQ_USAGE_HELP_URL: str = "https://github.com/Arcensoth/mccq#basic-usage"
+MCCQ_REPO_URL: str = "https://github.com/Arcensoth/mccq"
 
 
 class MCCQCog(Cog, name="commanderbot.ext.mccq"):
@@ -185,7 +185,7 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
             color=0x00ACED,
         )
         view = ui.View()
-        view.add_item(ui.Button(label="Learn more", url=MCCQ_USAGE_HELP_URL))
+        view.add_item(ui.Button(label="Learn more", url=MCCQ_REPO_URL))
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     # @@ mcc java
