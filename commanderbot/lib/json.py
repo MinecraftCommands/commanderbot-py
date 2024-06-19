@@ -1,7 +1,8 @@
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
+
 from commanderbot.lib.extended_json_encoder import ExtendedJsonEncoder
 from commanderbot.lib.types import JsonObject
 
@@ -18,16 +19,14 @@ def json_load(path: Path) -> JsonObject:
 
 
 async def json_load_async(path: Path) -> JsonObject:
-    loop = asyncio.get_running_loop()
-    data = await loop.run_in_executor(None, json_load, path)
-    return data
+    return await asyncio.to_thread(json_load, path)
 
 
 def json_dump(
     data: JsonObject,
     path: Path,
     mkdir: bool = False,
-    indent: int = None,
+    indent: Optional[int] = None,
 ):
     if mkdir:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -37,15 +36,18 @@ def json_dump(
         fp.write(output)
 
 
-def json_dumps(data: JsonObject) -> str:
-    return json.dumps(data, cls=ExtendedJsonEncoder)
-
-
 async def json_dump_async(
     data: JsonObject,
     path: Path,
     mkdir: bool = False,
-    indent: int = None,
+    indent: Optional[int] = None,
 ):
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, json_dump, data, path, mkdir, indent)
+    await asyncio.to_thread(json_dump, data, path, mkdir, indent)
+
+
+def json_dumps(data: JsonObject) -> str:
+    return json.dumps(data, cls=ExtendedJsonEncoder)
+
+
+async def json_dumps_async(data: JsonObject) -> str:
+    return await asyncio.to_thread(json_dumps, data)
