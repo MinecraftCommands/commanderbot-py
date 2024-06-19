@@ -27,6 +27,11 @@ def run():
         help="The .env file to load environment variables from (defaults to .env)",
         default=".env",
     )
+    arg_parser.add_argument(
+        "--synctree",
+        help="Sync global app commands after the bot has logged in (Useful for setting up the bot for the first time)",
+        action="store_true",
+    )
     arg_parser.add_argument("--log", help="Log level", default="WARNING")
     parsed_args = arg_parser.parse_args()
 
@@ -68,6 +73,8 @@ def run():
 
         else:
             bot_token = input("Enter bot token: ")
+
+    config["sync_tree"] = parsed_args.synctree
 
     log.warning("Running bot...")
 

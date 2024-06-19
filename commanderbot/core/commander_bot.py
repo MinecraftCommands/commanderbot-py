@@ -23,6 +23,7 @@ class CommanderBot(CommanderBotBase):
     def __init__(self, *args, **kwargs):
         # Account for options that don't belong to the discord.py Bot base.
         self._extensions_data = kwargs.pop("extensions", None)
+        self._sync_tree_on_login = kwargs.pop("sync_tree", False)
 
         # Account for options that need further processing.
         intents = Intents.default()
@@ -137,11 +138,21 @@ class CommanderBot(CommanderBotBase):
 
     # @overrides Bot
     async def setup_hook(self):
+        # Configure extensions.
         if self._extensions_data:
             await self._configure_extensions(self._extensions_data)
-            await self.command_tree.build_cache(guilds=self.guilds)
         else:
             self.log.warning("No extensions configured.")
+
+        # Sync global app commands and build the command cache.
+        # We only build the guild command cache since `sync()` will build the global command cache.
+        if self._sync_tree_on_login:
+            await self.command_tree.sync()
+            await self.command_tree.build_guild_cache(self.guilds)
+        # Otherwise, just build the command cache.
+        else:
+            await self.command_tree.build_global_cache()
+            await self.command_tree.build_guild_cache(self.guilds)
 
     # @overrides Bot
     async def on_connect(self):
