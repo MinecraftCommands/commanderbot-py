@@ -41,7 +41,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     - Minecraft: Bedrock Edition Previews
     - Minecraft: Java Edition Release Jars
     - Minecraft: Java Edition Snapshot Jars
-- Added a command for banning users
+- `moderation`:
+  - Added a way to kick a user and send them a DM with the reason
+    - Does not work with users who have elevated permissions
+  - Added a way to ban a user and send them a DM with the reason
+    - Does not work with users who have elevated permissions
 - Added a config option for `mccq` to allow certain users to run the reload command
 - Added a link button under `jira` issue embeds
 
@@ -65,17 +69,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Errors now use an embed
 - `automod`: Errors now use an embed
 - `mccq`:
+  - Ported to slash commands
   - Adjusted the format of the presence status set by `mccq`
   - Changed syntax highlighting to `hs`
 - `status`: Ported to slash commands
 - `ping`: Ported to slash commands
 - Reworked how cogs with a database are created
 - Separated privileged intents and regular intents in the bot config
-  - `Intents.default()` is fine most of the time and specifying privileged intents shouldn't require you to specify *every* intent you need.
+  - `Intents.default()` is fine most of the time and specifying privileged intents shouldn't require you to specify *every* intent you need
 
 ### Removed
 
 - The `pack` cog has been removed since the official [Beet bot](https://github.com/mcbeet/beet-bot) does the same thing
+- Removed the `kick` cog and moved its functionality to the `moderation` cog
 
 ## [0.19.0] - 2022-08-27
 
