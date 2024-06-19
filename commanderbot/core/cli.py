@@ -6,7 +6,7 @@ from logging import getLogger
 from dotenv import load_dotenv
 
 from commanderbot.core.commander_bot import CommanderBot
-from commanderbot.lib.logging import setup_logging
+from commanderbot.core.logging import setup_logging
 
 __all__ = ("run",)
 
