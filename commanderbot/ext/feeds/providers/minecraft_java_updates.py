@@ -113,7 +113,7 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
             self._log.info("Building changelog cache...")
             await self._fetch_latest_changelogs()
             self._log.info(
-                f"Done building changelog cache (Initial size: {len(self._cache)})"
+                f"Finished building changelog cache (Initial size: {len(self._cache)})"
             )
             return
 
