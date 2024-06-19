@@ -33,7 +33,7 @@ from commanderbot.lib.cogs.database import (
     UnsupportedDatabaseOptions,
 )
 from commanderbot.lib.commands import checks as command_checks
-from commanderbot.lib.interactions import ColorTransformer, EmojiTransformer, checks
+from commanderbot.lib.app_commands import ColorTransformer, EmojiTransformer, checks
 
 
 def _make_store(bot: Bot, cog: Cog, options: StacktracerOptions) -> StacktracerStore:

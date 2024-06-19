@@ -26,7 +26,7 @@ from commanderbot.lib.cogs.database import (
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
-from commanderbot.lib.interactions import checks
+from commanderbot.lib.app_commands import checks
 
 
 class FeedProviderChoices(Enum):

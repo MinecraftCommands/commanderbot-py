@@ -21,7 +21,7 @@ from commanderbot.ext.mccq.mccq_manager import MCCQManager
 from commanderbot.ext.mccq.mccq_options import MCCQOptions
 from commanderbot.lib import AllowedMentions
 from commanderbot.lib.constants import MAX_MESSAGE_LENGTH, USER_AGENT
-from commanderbot.lib.interactions import checks
+from commanderbot.lib.app_commands import checks
 from commanderbot.lib.utils import str_to_file
 
 MCCQ_QUERY_SYNTAX_HELP: str = "\n".join(

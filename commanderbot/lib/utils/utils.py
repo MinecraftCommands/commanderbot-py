@@ -1,10 +1,10 @@
 import asyncio
+import ctypes
 import io
 import json
 import os
 import re
 import traceback
-from ctypes import c_void_p, sizeof
 from enum import Enum
 from typing import (
     Any,
@@ -12,11 +12,8 @@ from typing import (
     Callable,
     Coroutine,
     Generator,
-    List,
     Mapping,
     Optional,
-    Set,
-    Tuple,
     TypeVar,
     cast,
 )
@@ -86,7 +83,7 @@ def is_custom_emoji(emoji: str) -> bool:
     return bool(CUSTOM_EMOJI_PATTERN.match(emoji))
 
 
-def member_roles_from(member: User | Member, role_ids: Set[RoleID]) -> Set[RoleID]:
+def member_roles_from(member: User | Member, role_ids: set[RoleID]) -> set[RoleID]:
     """
     Return the set of matching member roles.
     A plain [User] may be passed, however an empty set will always be returned.
@@ -113,7 +110,7 @@ def dict_without_falsies(d: Optional[Mapping[str, Any]] = None, **kwargs):
     return {k: v for k, v in dd.items() if v}
 
 
-async def async_expand(it: AsyncIterable[T]) -> List[T]:
+async def async_expand(it: AsyncIterable[T]) -> list[T]:
     return [value async for value in it]
 
 
@@ -197,7 +194,7 @@ async def send_message_or_file(
     destination: Messageable,
     content: str,
     *,
-    file_callback: Callable[[], Tuple[str, str, str]],
+    file_callback: Callable[[], tuple[str, str, str]],
     allowed_mentions: AllowedMentions,
     character_cap: int = CHARACTER_CAP,
     **kwargs,
@@ -258,7 +255,7 @@ def pointer_size() -> int:
     """
     Returns the size of a pointer (in bits) for the system that Python is running on
     """
-    return sizeof(c_void_p) * 8
+    return ctypes.sizeof(ctypes.c_void_p) * 8
 
 
 class SizeUnit(Enum):

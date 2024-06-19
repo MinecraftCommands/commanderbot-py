@@ -11,7 +11,7 @@ from commanderbot.ext.quote.quote_exceptions import (
     MissingQuotePermissions,
 )
 from commanderbot.lib import AllowedMentions, MemberOrUser, MessageableChannel
-from commanderbot.lib.interactions import MessageTransformer
+from commanderbot.lib.app_commands import MessageTransformer
 
 AUTO_EMBED_PATTERN = re.compile(r"^https?:\/\/\S\S+$")
 

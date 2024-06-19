@@ -10,7 +10,7 @@ from commanderbot.ext.stacktracer.stacktracer_guild_state import StacktracerGuil
 from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
 from commanderbot.lib import Color, EventData, LogOptions
 from commanderbot.lib.cogs import GuildPartitionedCogState
-from commanderbot.lib.interactions import command_name
+from commanderbot.lib.app_commands import command_name
 from commanderbot.lib.utils import format_context_cause
 
 
