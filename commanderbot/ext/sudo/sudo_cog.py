@@ -18,7 +18,7 @@ from commanderbot.ext.sudo.sudo_exceptions import (
 )
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
-from commanderbot.lib.interactions import checks
+from commanderbot.lib.app_commands import checks
 from commanderbot.lib.json import json_dumps
 from commanderbot.lib.utils import SizeUnit, bytes_to, pointer_size, str_to_file
 

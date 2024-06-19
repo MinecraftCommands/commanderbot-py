@@ -14,7 +14,7 @@ from commanderbot.core.commander_bot_base import (
     AppCommandErrorHandler,
 )
 from commanderbot.lib import EventData, ResponsiveException
-from commanderbot.lib.interactions import send_or_followup, command_name
+from commanderbot.lib.app_commands import send_or_followup, command_name
 
 
 @dataclass

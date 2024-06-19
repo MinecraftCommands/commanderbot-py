@@ -25,7 +25,7 @@ from commanderbot.ext.manifest.manifest_exceptions import (
     UnableToUpdateLatestVersion,
 )
 from commanderbot.ext.manifest.manifest_version_manager import ManifestVersionManager
-from commanderbot.lib.interactions import checks
+from commanderbot.lib.app_commands import checks
 from commanderbot.lib.utils import str_to_file
 
 DEFAULT_NAME = "pack.name"

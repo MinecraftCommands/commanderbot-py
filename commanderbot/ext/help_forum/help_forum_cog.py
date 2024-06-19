@@ -30,7 +30,7 @@ from commanderbot.lib.cogs.database import (
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
-from commanderbot.lib.interactions import EmojiTransformer
+from commanderbot.lib.app_commands import EmojiTransformer
 from commanderbot.lib.utils import is_bot
 
 

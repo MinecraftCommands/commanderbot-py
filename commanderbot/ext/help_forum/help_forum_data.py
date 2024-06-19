@@ -18,8 +18,7 @@ from commanderbot.lib import (
     GuildID,
     JsonSerializable,
 )
-from commanderbot.lib.forums import require_tag
-from commanderbot.lib.utils.utils import dict_without_falsies
+from commanderbot.lib.utils import dict_without_falsies, require_forum_tag
 
 
 @dataclass
@@ -106,7 +105,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         # Returns the forum tag if it exists
         # This is just a wrapper around our library function so we can throw a custom exception
         try:
-            return require_tag(forum, tag_str)
+            return require_forum_tag(forum, tag_str)
         except:
             raise HelpForumInvalidTag(forum.id, tag_str)
 
