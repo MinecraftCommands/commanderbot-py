@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Iterator, Optional, Set, Tuple
+from typing import Any, Iterable, Iterator, Optional
 
 from discord import Guild, Member, Role
 
@@ -21,7 +21,7 @@ class RoleSet(JsonSerializable, FromDataMixin):
         The underlying set of role IDs.
     """
 
-    _values: Set[RoleID] = field(default_factory=set)
+    _values: set[RoleID] = field(default_factory=set)
 
     @classmethod
     def try_from_data(cls, data):
@@ -47,10 +47,10 @@ class RoleSet(JsonSerializable, FromDataMixin):
             return role
         return role.id
 
-    def _get_member_role_ids(self, member: Member) -> Set[RoleID]:
+    def _get_member_role_ids(self, member: Member) -> set[RoleID]:
         return {role.id for role in member.roles}
 
-    def iter_roles(self, guild: Guild) -> Iterable[Tuple[RoleID, Optional[Role]]]:
+    def iter_roles(self, guild: Guild) -> Iterable[tuple[RoleID, Optional[Role]]]:
         for role_id in self._values:
             role = guild.get_role(role_id)
             yield role_id, role

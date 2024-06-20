@@ -1,12 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Thread
-
 from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
-from commanderbot.lib.utils import dict_without_nones
+from commanderbot.lib import JsonObject, is_thread, utils
 
 
 @dataclass
@@ -38,9 +35,9 @@ class EditThread(AutomodActionBase):
 
     async def apply(self, event: AutomodEvent):
         thread = event.channel
-        if not isinstance(thread, Thread):
+        if not is_thread(thread):
             return
-        params = dict_without_nones(
+        params = utils.dict_without_nones(
             name=self.name,
             archived=self.archived,
             locked=self.locked,

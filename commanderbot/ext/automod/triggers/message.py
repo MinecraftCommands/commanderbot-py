@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar
 
 from commanderbot.ext.automod import events
 from commanderbot.ext.automod.automod_event import AutomodEvent
@@ -35,7 +35,7 @@ class Message(AutomodTriggerBase):
 
     event_types = (events.MessageSent, events.MessageEdited)
 
-    content: Optional[List[str]] = None
+    content: Optional[list[str]] = None
     channel_types: Optional[ChannelTypesGuard] = None
     channels: Optional[ChannelsGuard] = None
     author_roles: Optional[RolesGuard] = None

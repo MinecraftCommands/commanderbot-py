@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Set, Type, TypeVar, cast
+from typing import Optional, Type, TypeVar, cast
 
 from discord import Member, Message, Role, TextChannel, Thread, User
 
@@ -63,8 +63,8 @@ class MentionsRemovedFromMessage(AutomodTriggerBase):
             return True
 
         # We want to preserve the order of mentions.
-        removed_user_mentions: Set[User | Member] = set()
-        removed_role_mentions: Set[Role] = set()
+        removed_user_mentions: set[User | Member] = set()
+        removed_role_mentions: set[Role] = set()
 
         # If the message was edited, check for mentions that were present in the message
         # only prior to editing.

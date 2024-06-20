@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Iterable, Optional, cast
 
 from discord import AllowedMentions, Embed, File, Message, TextChannel, User
 from discord.ext.commands import Context
@@ -34,7 +34,7 @@ class UserRecord:
     username: str
 
     # map YYYY-MM-DD to score (initialized at 0)
-    score_by_day: DefaultDict[Tuple[int, int, int], int] = field(
+    score_by_day: defaultdict[tuple[int, int, int], int] = field(
         default_factory=lambda: defaultdict(lambda: 0)
     )
 
@@ -47,7 +47,7 @@ class UserRecord:
         return len(self.score_by_day)
 
 
-UserTable = Dict[IDType, UserRecord]
+UserTable = dict[IDType, UserRecord]
 
 
 @dataclass
@@ -78,7 +78,7 @@ class HelpChatReport:
     before: datetime
     label: str
     built_at: datetime
-    channel_states: List[ChannelState]
+    channel_states: list[ChannelState]
     user_table: UserTable
 
     @property
@@ -101,11 +101,11 @@ class HelpChatReport:
         # Return the final embed.
         return embed
 
-    def get_user_records(self) -> List[UserRecord]:
+    def get_user_records(self) -> list[UserRecord]:
         # Get user results, in arbitrary order.
         return list(self.user_table.values())
 
-    def get_sorted_user_records(self) -> List[UserRecord]:
+    def get_sorted_user_records(self) -> list[UserRecord]:
         # Get user results, sorted by score in descending order.
         return sorted(
             self.get_user_records(), key=lambda user_record: -user_record.total_score
@@ -201,22 +201,20 @@ class HelpChatReportBuildContext:
     def __init__(
         self,
         ctx: Context,
-        help_channels: List[HelpChannel],
+        help_channels: list[HelpChannel],
         after: datetime,
         before: datetime,
         label: str,
     ):
         self.ctx: Context = ctx
-        self.help_channels: List[HelpChannel] = help_channels
+        self.help_channels: list[HelpChannel] = help_channels
         self.after: datetime = after
         self.before: datetime = before
         self.label: str = label
 
         self._progress_message: Optional[Message] = field(init=False, default=None)
-        self._built_at: datetime = field(
-            init=False, default_factory=lambda: utcnow()
-        )
-        self._channel_states: List[ChannelState] = field(
+        self._built_at: datetime = field(init=False, default_factory=lambda: utcnow())
+        self._channel_states: list[ChannelState] = field(
             init=False, default_factory=lambda: []
         )
         self._user_table: UserTable = field(init=False, default_factory=lambda: {})
@@ -234,16 +232,16 @@ class HelpChatReportBuildContext:
         ]
         self._user_table = {}
 
-    def get_states_with_status(self, status: ChannelStatus) -> List[ChannelState]:
+    def get_states_with_status(self, status: ChannelStatus) -> list[ChannelState]:
         return [state for state in self._channel_states if state.status == status]
 
-    def get_states_incomplete(self) -> List[ChannelState]:
+    def get_states_incomplete(self) -> list[ChannelState]:
         return self.get_states_with_status(ChannelStatus.INCOMPLETE)
 
-    def get_states_in_progress(self) -> List[ChannelState]:
+    def get_states_in_progress(self) -> list[ChannelState]:
         return self.get_states_with_status(ChannelStatus.IN_PROGRESS)
 
-    def get_states_complete(self) -> List[ChannelState]:
+    def get_states_complete(self) -> list[ChannelState]:
         return self.get_states_with_status(ChannelStatus.COMPLETE)
 
     def is_finished(self) -> bool:

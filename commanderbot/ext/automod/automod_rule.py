@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from discord.utils import utcnow
 
@@ -59,9 +59,9 @@ class AutomodRule:
 
     log: Optional[LogOptions]
 
-    triggers: List[AutomodTrigger]
-    conditions: List[AutomodCondition]
-    actions: List[AutomodAction]
+    triggers: list[AutomodTrigger]
+    conditions: list[AutomodCondition]
+    actions: list[AutomodAction]
 
     @staticmethod
     def from_data(data: JsonObject) -> AutomodRule:

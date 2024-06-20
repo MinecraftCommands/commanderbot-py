@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Optional, Set
+from typing import Optional
 
 from discord import TextChannel, Thread
 
 from commanderbot.lib.from_data_mixin import FromDataMixin
+from commanderbot.lib.type_predicates import is_thread
 from commanderbot.lib.types import ChannelID
 
 __all__ = ("ChannelsGuard",)
@@ -22,8 +23,8 @@ class ChannelsGuard(FromDataMixin):
         The channels to exclude. A channel will match if it is not in this set.
     """
 
-    include: Set[ChannelID] = field(default_factory=set)
-    exclude: Set[ChannelID] = field(default_factory=set)
+    include: set[ChannelID] = field(default_factory=set)
+    exclude: set[ChannelID] = field(default_factory=set)
 
     @classmethod
     def try_from_data(cls, data):
@@ -43,7 +44,7 @@ class ChannelsGuard(FromDataMixin):
         # TODO Should we add extra logic for categories too? #enhance
 
         # If the channel is a thread, apply some additional containment logic.
-        if isinstance(channel, Thread):
+        if is_thread(channel):
             # If the thread has a parent channel (it should), check that first.
             if parent_channel := channel.parent:
                 # If the parent channel is included, ignore the thread only if it's
@@ -62,7 +63,7 @@ class ChannelsGuard(FromDataMixin):
         # TODO Should we add extra logic for categories too? #enhance
 
         # If the channel is a thread, apply some additional containment logic.
-        if isinstance(channel, Thread):
+        if is_thread(channel):
             # If the thread has a parent channel (it should), check that first.
             if parent_channel := channel.parent:
                 # If the parent channel is excluded, ignore the thread only if it's

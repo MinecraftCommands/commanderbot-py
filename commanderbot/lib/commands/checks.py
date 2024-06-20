@@ -1,5 +1,6 @@
-from discord import Member
 from discord.ext import commands
+
+from commanderbot.lib.type_predicates import is_member
 
 # NOTE See: https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html#checks
 
@@ -36,7 +37,7 @@ def guild_only():
 
 def member_only():
     def predicate(ctx: commands.Context) -> bool:
-        return isinstance(ctx.author, Member)
+        return is_member(ctx.author)
 
     return commands.check(predicate)
 

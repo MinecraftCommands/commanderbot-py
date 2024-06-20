@@ -9,11 +9,14 @@ from discord.utils import format_dt
 from commanderbot.ext.faq.faq_exceptions import QueryReturnedNoResults
 from commanderbot.ext.faq.faq_options import FaqOptions
 from commanderbot.ext.faq.faq_store import FaqEntry, FaqStore
-from commanderbot.lib import MAX_MESSAGE_LENGTH
+from commanderbot.lib import (
+    ConfirmationResult,
+    constants,
+    respond_with_confirmation,
+    utils,
+)
 from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.cogs.views import CogStateModal
-from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
-from commanderbot.lib.utils import async_expand
 
 
 @dataclass
@@ -39,7 +42,7 @@ class FaqGuildState(CogGuildState):
         suggestions_gen = self.store.query_faqs_by_terms(
             self.guild, query, sort=True, cap=self.options.term_cap
         )
-        suggestions: list[str] = await async_expand(
+        suggestions: list[str] = await utils.async_expand(
             (entry.key async for entry in suggestions_gen)
         )
         raise QueryReturnedNoResults(query, *suggestions)
@@ -90,7 +93,7 @@ class FaqGuildState(CogGuildState):
 
     async def list_faqs(self, interaction: Interaction):
         # Get all faqs and format them
-        entries: list[FaqEntry] = await async_expand(
+        entries: list[FaqEntry] = await utils.async_expand(
             self.store.get_faqs(self.guild, sort=True)
         )
         formatted_entries: str = ", ".join((f"`{entry.key}`" for entry in entries))
@@ -265,7 +268,7 @@ class AddFaqModal(FaqModal):
             label="Content",
             style=TextStyle.paragraph,
             placeholder="The content of this FAQ.",
-            max_length=MAX_MESSAGE_LENGTH,
+            max_length=constants.MAX_MESSAGE_LENGTH,
             required=True,
         )
 
@@ -315,7 +318,7 @@ class ModifyFaqModal(FaqModal):
             style=TextStyle.paragraph,
             placeholder="The content of this FAQ.",
             default=entry.content,
-            max_length=MAX_MESSAGE_LENGTH,
+            max_length=constants.MAX_MESSAGE_LENGTH,
             required=True,
         )
 

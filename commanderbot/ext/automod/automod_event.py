@@ -1,12 +1,18 @@
 from dataclasses import dataclass, field
 from logging import Logger
-from typing import Any, ClassVar, Dict, Iterable, Optional, Protocol, Tuple, Type, cast
+from typing import Any, ClassVar, Iterable, Optional, Protocol, Type, cast
 
 from discord import Member, TextChannel, Thread, User
 from discord.ext.commands import Bot
 from discord.utils import format_dt, utcnow
 
-from commanderbot.lib import ShallowFormatter, TextMessage, TextReaction, ValueFormatter
+from commanderbot.lib import (
+    ShallowFormatter,
+    TextMessage,
+    TextReaction,
+    ValueFormatter,
+    is_thread,
+)
 
 
 class AutomodEvent(Protocol):
@@ -61,7 +67,7 @@ class AutomodEvent(Protocol):
         """Remove metadata from the event."""
         ...
 
-    def get_fields(self, unsafe: bool = False) -> Dict[str, Any]:
+    def get_fields(self, unsafe: bool = False) -> dict[str, Any]:
         """Get the full event data."""
         ...
 
@@ -76,15 +82,15 @@ class AutomodEventBase:
     bot: Bot
     log: Logger
 
-    _metadata: Dict[str, Any] = field(init=False, default_factory=dict)
+    _metadata: dict[str, Any] = field(init=False, default_factory=dict)
 
-    SAFE_TYPES: ClassVar[Tuple[Type, ...]] = (bool, int, float, str)
+    SAFE_TYPES: ClassVar[tuple[Type, ...]] = (bool, int, float, str)
 
     def __init__(
         self,
         bot: Bot,
         log: Logger,
-        **data: Dict[str, Any],
+        **data: dict[str, Any],
     ) -> None:
         self.bot = bot
         self.log = log
@@ -96,7 +102,7 @@ class AutomodEventBase:
 
     @property
     def thread(self) -> Optional[Thread]:
-        if isinstance(self.channel, Thread):
+        if is_thread(self.channel):
             return self.channel
 
     @property
@@ -129,7 +135,7 @@ class AutomodEventBase:
     def remove_metadata(self, key: str):
         del self._metadata[key]
 
-    def get_fields(self, unsafe: bool = False) -> Dict[str, Any]:
+    def get_fields(self, unsafe: bool = False) -> dict[str, Any]:
         if unsafe:
             return self._get_fields_unsafe()
         return self._get_fields_safe()
@@ -145,7 +151,7 @@ class AutomodEventBase:
             return content.format_map(fields)
         return ShallowFormatter().format(content, **fields)
 
-    def _get_fields_unsafe(self) -> Dict[str, Any]:
+    def _get_fields_unsafe(self) -> dict[str, Any]:
         format_args = self._get_fields_safe()
         format_args.update(
             channel=self.channel,
@@ -158,7 +164,7 @@ class AutomodEventBase:
         format_args.update(self._metadata)
         return format_args
 
-    def _get_fields_safe(self) -> Dict[str, Any]:
+    def _get_fields_safe(self) -> dict[str, Any]:
         return {k: v for k, v in self._yield_safe_fields()}
 
     def _is_value_safe(self, v: Any) -> bool:
@@ -166,7 +172,7 @@ class AutomodEventBase:
             isinstance(v, ValueFormatter) and (type(v.value) in self.SAFE_TYPES)
         )
 
-    def _yield_safe_fields(self) -> Iterable[Tuple[str, Any]]:
+    def _yield_safe_fields(self) -> Iterable[tuple[str, Any]]:
         if self.channel is not None:
             yield "channel_id", self.channel.id,
             yield "channel_name", self.channel.name,
@@ -206,14 +212,14 @@ class AutomodEventBase:
 
     def _yield_safe_member_fields(
         self, prefix: str, member: Member
-    ) -> Iterable[Tuple[str, Any]]:
+    ) -> Iterable[tuple[str, Any]]:
         yield from self._yield_safe_user_fields(prefix, cast(User, member))
         yield f"{prefix}_nick", member.nick
         yield from self._yield_member_date_fields(prefix, member)
 
     def _yield_safe_user_fields(
         self, prefix: str, user: User
-    ) -> Iterable[Tuple[str, Any]]:
+    ) -> Iterable[tuple[str, Any]]:
         yield f"{prefix}_id", user.id
         yield f"{prefix}_name", f"{user}"
         yield f"{prefix}_username", user.name
@@ -223,7 +229,7 @@ class AutomodEventBase:
 
     def _yield_member_date_fields(
         self, prefix: str, member: Member
-    ) -> Iterable[Tuple[str, Any]]:
+    ) -> Iterable[tuple[str, Any]]:
         # joined_at
         joined_at_value = "Unknown"
         if joined_at := member.joined_at:
@@ -247,11 +253,11 @@ class AutomodEventBase:
             format_dt(member.created_at, style="R")
         )
 
-    def _yield_extra_fields(self) -> Iterable[Tuple[str, Any]]:
+    def _yield_extra_fields(self) -> Iterable[tuple[str, Any]]:
         """Override this to provide additional fields based on the event type."""
         if False:
             yield
 
-    def _yield_metadata_fields(self) -> Iterable[Tuple[str, Any]]:
+    def _yield_metadata_fields(self) -> Iterable[tuple[str, Any]]:
         for k, v in self._metadata.items():
             yield k, v

@@ -6,7 +6,7 @@ from discord.ext import tasks
 from discord.utils import utcnow
 
 from commanderbot.ext.manifest.manifest_data import Version
-from commanderbot.lib.constants import USER_AGENT
+from commanderbot.lib import constants
 
 
 class ManifestVersionManager:
@@ -32,7 +32,7 @@ class ManifestVersionManager:
             return
 
         # Try to update the version
-        headers: dict[str, str] = {"User-Agent": USER_AGENT}
+        headers: dict[str, str] = {"User-Agent": constants.USER_AGENT}
         async with aiohttp.ClientSession() as session:
             async with session.get(self.url, headers=headers) as response:
                 self.prev_request_date = utcnow()

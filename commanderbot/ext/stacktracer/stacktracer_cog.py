@@ -1,6 +1,6 @@
 from typing import Optional, cast
 
-from discord import Guild, Interaction, Message, TextChannel, Thread, User
+from discord import Interaction, Message, TextChannel, Thread, User
 from discord.app_commands import (
     Group,
     Transform,
@@ -24,7 +24,8 @@ from commanderbot.ext.stacktracer.stacktracer_json_store import StacktracerJsonS
 from commanderbot.ext.stacktracer.stacktracer_options import StacktracerOptions
 from commanderbot.ext.stacktracer.stacktracer_state import StacktracerState
 from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
-from commanderbot.lib import Color, EventData
+from commanderbot.lib import Color, EventData, is_guild
+from commanderbot.lib.app_commands import ColorTransformer, EmojiTransformer, checks
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -33,7 +34,6 @@ from commanderbot.lib.cogs.database import (
     UnsupportedDatabaseOptions,
 )
 from commanderbot.lib.commands import checks as command_checks
-from commanderbot.lib.app_commands import ColorTransformer, EmojiTransformer, checks
 
 
 def _make_store(bot: Bot, cog: Cog, options: StacktracerOptions) -> StacktracerStore:
@@ -214,7 +214,7 @@ class StacktracerCog(
         description="Show the error logging configuration for this guild",
     )
     async def cmd_stacktracer_guild_show(self, interaction: Interaction):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_guild_log_options(interaction)
 
     @cmd_guild.command(
@@ -235,7 +235,7 @@ class StacktracerCog(
         emoji: Optional[Transform[str, EmojiTransformer]],
         color: Optional[Transform[Color, ColorTransformer]],
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].set_guild_log_options(
             interaction,
             channel=channel,
@@ -249,5 +249,5 @@ class StacktracerCog(
         description="Remove the error logging configuration for this guild",
     )
     async def cmd_stacktracer_guild_remove(self, interaction: Interaction):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].remove_guild_log_options(interaction)

@@ -6,8 +6,7 @@ import aiohttp
 from discord.ext import tasks
 from discord.utils import utcnow
 
-from commanderbot.lib import USER_AGENT
-from commanderbot.lib.types import JsonObject
+from commanderbot.lib import JsonObject, constants
 
 from .exceptions import MissingFeedHandler
 from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
@@ -81,7 +80,9 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
 
     async def _fetch_latest_changelogs(self) -> list[MinecraftJavaChangelog]:
         new_changelogs = []
-        async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
+        async with aiohttp.ClientSession(
+            headers={"User-Agent": constants.USER_AGENT}
+        ) as session:
             async with session.get(
                 self.url, headers={"If-Modified-Since": self._last_modified or ""}
             ) as response:

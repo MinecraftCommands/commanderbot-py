@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Self
+from typing import Self
 from discord import Member, Role
 
 from commanderbot.ext.roles.roles_store import RolesStore
@@ -9,10 +9,10 @@ from commanderbot.ext.roles.roles_store import RolesStore
 
 @dataclass
 class RolesResult:
-    not_registered: List[Role]
+    not_registered: list[Role]
 
     @staticmethod
-    def _join_mentions(roles: List[Role]) -> str:
+    def _join_mentions(roles: list[Role]) -> str:
         if len(roles) > 1:
             return (
                 ", ".join(role.mention for role in roles[:-1])
@@ -27,35 +27,35 @@ class RolesResult:
     async def build(cls, store: RolesStore, *args, **kwargs) -> Self:
         raise NotImplementedError()
 
-    async def apply(self) -> List[str]:
+    async def apply(self) -> list[str]:
         raise NotImplementedError()
 
 
 @dataclass
 class JoinableRolesResult(RolesResult):
     member: Member
-    joinable: List[Role]
-    not_joinable: List[Role]
-    already_in: List[Role]
+    joinable: list[Role]
+    not_joinable: list[Role]
+    already_in: list[Role]
 
     @classmethod
     async def build(
         cls,
         store: RolesStore,
         member: Member,
-        roles: List[Role],
+        roles: list[Role],
     ) -> JoinableRolesResult:
         # A role is joinable if:
         # 1. it is registered; and
         # 2. it is configured as joinable; and
         # 3. the member does not already have it.
-        joinable: List[Role] = []
-        not_registered: List[Role] = []
-        not_joinable: List[Role] = []
-        already_in: List[Role] = []
+        joinable: list[Role] = []
+        not_registered: list[Role] = []
+        not_joinable: list[Role] = []
+        already_in: list[Role] = []
         for role in roles:
-            if role_enty := await store.get_role_entry(role):
-                if not role_enty.joinable:
+            if role_entry := await store.get_role_entry(role):
+                if not role_entry.joinable:
                     not_joinable.append(role)
                     continue
             else:
@@ -74,7 +74,7 @@ class JoinableRolesResult(RolesResult):
         )
 
     # @implements RolesResult
-    async def apply(self) -> List[str]:
+    async def apply(self) -> list[str]:
         lines = []
         if self.joinable:
             joinable_mentions = self._join_mentions(self.joinable)
@@ -101,28 +101,28 @@ class JoinableRolesResult(RolesResult):
 @dataclass
 class LeavableRolesResult(RolesResult):
     member: Member
-    leavable: List[Role]
-    not_leavable: List[Role]
-    not_in: List[Role]
+    leavable: list[Role]
+    not_leavable: list[Role]
+    not_in: list[Role]
 
     @classmethod
     async def build(
         cls,
         store: RolesStore,
         member: Member,
-        roles: List[Role],
+        roles: list[Role],
     ) -> LeavableRolesResult:
         # A role is leavable if:
         # 1. it is registered; and
         # 2. it is configured as leavable; and
         # 3. the member has it.
-        leavable: List[Role] = []
-        not_registered: List[Role] = []
-        not_leavable: List[Role] = []
-        not_in: List[Role] = []
+        leavable: list[Role] = []
+        not_registered: list[Role] = []
+        not_leavable: list[Role] = []
+        not_in: list[Role] = []
         for role in roles:
-            if role_enty := await store.get_role_entry(role):
-                if not role_enty.leavable:
+            if role_entry := await store.get_role_entry(role):
+                if not role_entry.leavable:
                     not_leavable.append(role)
                     continue
             else:
@@ -141,7 +141,7 @@ class LeavableRolesResult(RolesResult):
         )
 
     # @implements RolesResult
-    async def apply(self) -> List[str]:
+    async def apply(self) -> list[str]:
         lines = []
         if self.leavable:
             leavable_mentions = self._join_mentions(self.leavable)
@@ -169,23 +169,23 @@ class LeavableRolesResult(RolesResult):
 class AddableRolesResult(RolesResult):
     target: Member
     actor: Member
-    addable: List[Role]
-    already_in: List[Role]
+    addable: list[Role]
+    already_in: list[Role]
 
     @classmethod
     async def build(
         cls,
         store: RolesStore,
         target_user: Member,
-        roles: List[Role],
+        roles: list[Role],
         acting_user: Member,
     ) -> AddableRolesResult:
         # A role is addable if:
         # 1. it is registered; and
         # 2. the member does not already have it.
-        addable: List[Role] = []
-        not_registered: List[Role] = []
-        already_in: List[Role] = []
+        addable: list[Role] = []
+        not_registered: list[Role] = []
+        already_in: list[Role] = []
         for role in roles:
             if not await store.get_role_entry(role):
                 not_registered.append(role)
@@ -203,7 +203,7 @@ class AddableRolesResult(RolesResult):
         )
 
     # @implements RolesResult
-    async def apply(self) -> List[str]:
+    async def apply(self) -> list[str]:
         lines = []
         if self.addable:
             addable_mentions = self._join_mentions(self.addable)
@@ -234,23 +234,23 @@ class AddableRolesResult(RolesResult):
 class RemovableRolesResult(RolesResult):
     target: Member
     actor: Member
-    removable: List[Role]
-    not_in: List[Role]
+    removable: list[Role]
+    not_in: list[Role]
 
     @classmethod
     async def build(
         cls,
         store: RolesStore,
         target_user: Member,
-        roles: List[Role],
+        roles: list[Role],
         acting_user: Member,
     ) -> RemovableRolesResult:
         # A role is removable if:
         # 1. it is registered; and
         # 2. the member has it.
-        removable: List[Role] = []
-        not_registered: List[Role] = []
-        not_in: List[Role] = []
+        removable: list[Role] = []
+        not_registered: list[Role] = []
+        not_in: list[Role] = []
         for role in roles:
             if not await store.get_role_entry(role):
                 not_registered.append(role)
@@ -268,7 +268,7 @@ class RemovableRolesResult(RolesResult):
         )
 
     # @implements RolesResult
-    async def apply(self) -> List[str]:
+    async def apply(self) -> list[str]:
         lines = []
         if self.removable:
             removable_mentions = self._join_mentions(self.removable)

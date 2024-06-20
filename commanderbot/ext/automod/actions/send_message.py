@@ -2,11 +2,9 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Optional, Type, TypeVar
 
-from discord.abc import Messageable
-
 from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import AllowedMentions, ChannelID, JsonObject
+from commanderbot.lib import AllowedMentions, ChannelID, JsonObject, MessageableChannel
 from commanderbot.lib.utils import timedelta_from_field_optional
 
 ST = TypeVar("ST")
@@ -47,7 +45,9 @@ class SendMessage(AutomodActionBase):
             delete_after=delete_after,
         )
 
-    async def resolve_channel(self, event: AutomodEvent) -> Optional[Messageable]:
+    async def resolve_channel(
+        self, event: AutomodEvent
+    ) -> Optional[MessageableChannel]:
         if self.channel is not None:
             return event.bot.get_channel(self.channel)
         return event.channel

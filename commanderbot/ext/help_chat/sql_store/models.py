@@ -1,18 +1,20 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from discord import TextChannel
 from discord.ext.commands import Context
 from sqlalchemy import Column, DateTime, Integer, func
 from sqlalchemy.orm.decl_api import registry
 
+from commanderbot.lib import is_text_channel
+
 mapper_registry = registry()
 metadata = mapper_registry.metadata
 sqmetakey = "sqmeta"
 
 
-def sqmeta(meta: Any) -> Dict[str, Any]:
+def sqmeta(meta: Any) -> dict[str, Any]:
     return {sqmetakey: meta}
 
 
@@ -51,7 +53,7 @@ class HelpChannel(Base):
             raise ValueError(
                 f"Failed to resolve help channel from channel ID: {self.channel}"
             )
-        if not isinstance(channel, TextChannel):
+        if not is_text_channel(channel):
             raise ValueError(
                 f"Help channel resolved into non-text type channel: {channel}"
             )

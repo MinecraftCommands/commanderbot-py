@@ -3,7 +3,7 @@ from typing import Any
 from discord import Object
 from discord.ext.commands import Cog
 
-from commanderbot.lib.responsive_exception import ResponsiveException
+from commanderbot.lib import ResponsiveException
 
 
 class SudoException(ResponsiveException):

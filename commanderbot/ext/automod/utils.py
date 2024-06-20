@@ -1,10 +1,10 @@
 from collections import defaultdict
 from importlib import import_module
-from typing import Any, DefaultDict
+from typing import Any
 
 from commanderbot.lib import JsonObject, ResponsiveException
 
-module_function_cache: DefaultDict[str, DefaultDict[str, Any]] = defaultdict(
+module_function_cache: defaultdict[str, defaultdict[str, Any]] = defaultdict(
     lambda: defaultdict(lambda: None)
 )
 

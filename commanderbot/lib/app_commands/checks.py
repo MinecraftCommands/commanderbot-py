@@ -1,6 +1,7 @@
-from discord import Interaction, Member, app_commands
+from discord import Interaction, app_commands
 
-from commanderbot.lib.utils import utils
+import commanderbot.lib.utils.utils as utils
+from commanderbot.lib.type_predicates import is_member
 
 __all__ = ("is_owner", "is_administrator", "is_guild_admin_or_bot_owner")
 
@@ -23,7 +24,7 @@ def is_guild_admin_or_bot_owner():
             return True
 
         # Check if the interaction user is a guild admin
-        if interaction.guild and isinstance(interaction.user, Member):
+        if interaction.guild and is_member(interaction.user):
             return interaction.user.guild_permissions.administrator
 
         return False

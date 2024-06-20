@@ -3,7 +3,7 @@ from textwrap import dedent
 import allay
 from discord.ext.commands import Bot, Cog, Context, command
 
-from commanderbot.lib.responsive_exception import ResponsiveException
+from commanderbot.lib import ResponsiveException
 
 CMD_HELP = """
     Convert plaintext into a text-component via Allay
@@ -33,7 +33,7 @@ class AllayCog(Cog, name="commanderbot.ext.allay"):
     async def cmd_allay(self, ctx: Context):
         contents = ctx.message.content.partition("\n")
 
-        indent = None
+        indent: int = 0
 
         # The first part of the command (before any newlines), split by spaces so we can separate the command name and the indent
         command_and_optional_indent = contents[0].split(" ")
@@ -94,7 +94,7 @@ class AllayCog(Cog, name="commanderbot.ext.allay"):
                 raise ResponsiveException(
                     f"```\n{error}\n```\nUsage: <https://github.com/DoubleF3lix/Allay#format>"
                 ) from error
-            await ctx.send("```json\n" + parsed_contents + "\n```")
+            await ctx.send(f"```json\n{parsed_contents}\n```")
         else:
             await ctx.reply(
                 "No text specified (did you forget to add a newline?)",

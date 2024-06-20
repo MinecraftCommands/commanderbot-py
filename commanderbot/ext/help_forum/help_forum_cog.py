@@ -1,6 +1,5 @@
 from discord import (
     ForumChannel,
-    Guild,
     Interaction,
     Message,
     PartialEmoji,
@@ -23,6 +22,8 @@ from commanderbot.ext.help_forum.help_forum_json_store import HelpForumJsonStore
 from commanderbot.ext.help_forum.help_forum_options import HelpForumOptions
 from commanderbot.ext.help_forum.help_forum_state import HelpForumState
 from commanderbot.ext.help_forum.help_forum_store import HelpForumStore
+from commanderbot.lib import is_forum_channel, is_guild, is_thread, utils
+from commanderbot.lib.app_commands import EmojiTransformer
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -30,9 +31,6 @@ from commanderbot.lib.cogs.database import (
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
-from commanderbot.lib.app_commands import EmojiTransformer
-from commanderbot.lib.utils import is_bot
-
 
 def _make_store(bot: Bot, cog: Cog, options: HelpForumOptions) -> HelpForumStore:
     db_options = options.database
@@ -75,7 +73,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     async def on_thread_create(self, thread: Thread):
         # Make sure this thread was created in a forum channel
         forum = thread.parent
-        if not isinstance(forum, ForumChannel):
+        if not is_forum_channel(forum):
             return
 
         await self.state[forum.guild].on_thread_create(forum, thread)
@@ -88,7 +86,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
         # Ignore updates if the ID doesn't refer to a thread for some reason
         thread = await self.bot.fetch_channel(payload.thread_id)
-        if not isinstance(thread, Thread):
+        if not is_thread(thread):
             return
 
         # Ignored pinned threads
@@ -97,7 +95,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
         # Make sure this thread is in a forum channel
         forum = thread.parent
-        if not isinstance(forum, ForumChannel):
+        if not is_forum_channel(forum):
             return
 
         await self.state[forum.guild].on_unresolve(forum, thread)
@@ -106,7 +104,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     async def on_message(self, message: Message):
         # Make sure this message was sent in a thread
         thread = message.channel
-        if not isinstance(thread, Thread):
+        if not is_thread(thread):
             return
 
         # Ignore pinned threads
@@ -115,11 +113,11 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
         # Make sure this thread is in a forum channel
         forum = thread.parent
-        if not isinstance(forum, ForumChannel):
+        if not is_forum_channel(forum):
             return
 
         # Try resolving the thread
-        if not is_bot(self.bot, message.author):
+        if not utils.is_bot(self.bot, message.author):
             emoji = PartialEmoji.from_str(message.content)
             await self.state[forum.guild].on_resolve(forum, thread, message, emoji)
         # Try deleting the message if it was a pin message sent by the bot
@@ -131,12 +129,12 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         # Make sure this reaction was not added by the bot
-        if is_bot(self.bot, payload.user_id):
+        if utils.is_bot(self.bot, payload.user_id):
             return
 
         # Make sure this reaction was added to a message in a thread
         thread = await self.bot.fetch_channel(payload.channel_id)
-        if not isinstance(thread, Thread):
+        if not is_thread(thread):
             return
 
         # Ignore pinned threads
@@ -145,7 +143,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
         # Make sure this thread is in a forum channel
         forum = thread.parent
-        if not isinstance(forum, ForumChannel):
+        if not is_forum_channel(forum):
             return
 
         message = thread.get_partial_message(payload.message_id)
@@ -172,19 +170,19 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     async def cmd_resolve(self, interaction: Interaction):
         # Make sure this command was ran from a thread
         thread = interaction.channel
-        if not isinstance(thread, Thread):
+        if not is_thread(thread):
             raise InvalidResolveLocation
 
         # Make sure this thread is in a forum channel
         forum = thread.parent
-        if not isinstance(forum, ForumChannel):
+        if not is_forum_channel(forum):
             raise InvalidResolveLocation
 
         # Make sure this thread isn't pinned
         if thread.flags.pinned:
             raise UnableToResolvePinned
 
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await interaction.response.defer()
         await self.state[interaction.guild].on_resolve_command(
             interaction, forum, thread
@@ -209,7 +207,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         unresolved_tag: str,
         resolved_tag: str,
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].register_forum_channel(
             interaction, forum, resolved_emoji, unresolved_tag, resolved_tag
         )
@@ -220,13 +218,15 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     )
     @describe(forum="The help forum to deregister")
     async def cmd_forum_deregister(self, interaction: Interaction, forum: ForumChannel):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].deregister_forum_channel(interaction, forum)
 
-    @cmd_forum.command(name="details", description="Show the details about a help forum")
+    @cmd_forum.command(
+        name="details", description="Show the details about a help forum"
+    )
     @describe(forum="The help forum to show details about")
     async def cmd_forum_details(self, interaction: Interaction, forum: ForumChannel):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].details(interaction, forum)
 
     # @@ forum modify
@@ -241,7 +241,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         forum: ForumChannel,
         emoji: Transform[str, EmojiTransformer],
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_resolved_emoji(
             interaction, forum, emoji
         )
@@ -253,7 +253,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     async def cmd_forum_modify_unresolved_tag(
         self, interaction: Interaction, forum: ForumChannel, tag: str
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_unresolved_tag(
             interaction, forum, tag
         )
@@ -265,5 +265,5 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     async def cmd_forum_modify_resolved_tag(
         self, interaction: Interaction, forum: ForumChannel, tag: str
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_resolved_tag(interaction, forum, tag)

@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Set, Tuple, Type
+from typing import Optional, Type
 
 from discord import AllowedMentions, Member, Message, Permissions, Role
+from discord.ext.commands import Context
 
 from commanderbot.ext.roles.roles_result import (
     AddableRolesResult,
@@ -11,9 +12,14 @@ from commanderbot.ext.roles.roles_result import (
     RolesResult,
 )
 from commanderbot.ext.roles.roles_store import RoleEntry, RoleEntryPair, RolesStore
-from commanderbot.lib import GuildContext, MemberContext, RoleID, RoleSet
+from commanderbot.lib import (
+    ConfirmationResult,
+    RoleID,
+    RoleSet,
+    confirm_with_reaction,
+    is_member,
+)
 from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
 
 SAFE_PERMS = Permissions.none()
 # general
@@ -60,21 +66,21 @@ class RolesGuildState(CogGuildState):
 
     store: RolesStore
 
-    async def reply(self, ctx: GuildContext, content: str) -> Message:
+    async def reply(self, ctx: Context, content: str) -> Message:
         """Wraps `Context.reply()` with some extension-default boilerplate."""
         return await ctx.message.reply(
             content,
             allowed_mentions=AllowedMentions.none(),
         )
 
-    def sort_role_pairs(self, role_pairs: List[RoleEntryPair]) -> List[RoleEntryPair]:
+    def sort_role_pairs(self, role_pairs: list[RoleEntryPair]) -> list[RoleEntryPair]:
         # Sort by stringified role name.
         return sorted(role_pairs, key=lambda role_pair: str(role_pair[0]))
 
-    def flatten_role_pairs(self, role_pairs: List[RoleEntryPair]) -> str:
+    def flatten_role_pairs(self, role_pairs: list[RoleEntryPair]) -> str:
         return " ".join(role.mention for role, role_entry in role_pairs)
 
-    def expand_role_pairs(self, role_pairs: List[RoleEntryPair]) -> str:
+    def expand_role_pairs(self, role_pairs: list[RoleEntryPair]) -> str:
         lines = []
         for role, role_entry in role_pairs:
             # Start with the role mention.
@@ -102,9 +108,9 @@ class RolesGuildState(CogGuildState):
         self.log.warning(f"Cleaning-up unresolved role with ID: {role_id}")
         await self.store.deregister_role_by_id(self.guild.id, role_id)
 
-    async def get_all_role_pairs(self) -> List[RoleEntryPair]:
+    async def get_all_role_pairs(self) -> list[RoleEntryPair]:
         # Flatten the full list of role entry pairs.
-        role_pairs: List[RoleEntryPair] = []
+        role_pairs: list[RoleEntryPair] = []
         role_entries = await self.store.get_all_role_entries(self.guild)
         for role_entry in role_entries:
             # If the role can be resolved, add it to the list.
@@ -124,9 +130,9 @@ class RolesGuildState(CogGuildState):
             if role_entry.joinable or (role_entry.leavable and (role in member.roles)):
                 return role
 
-    async def get_relevant_role_pairs(self, member: Member) -> List[RoleEntryPair]:
+    async def get_relevant_role_pairs(self, member: Member) -> list[RoleEntryPair]:
         # Build a list of relevant role entry pairs.
-        role_pairs: List[RoleEntryPair] = []
+        role_pairs: list[RoleEntryPair] = []
         role_entries = await self.store.get_all_role_entries(self.guild)
         for role_entry in role_entries:
             # If the role is relevant to the user, add it to the list.
@@ -149,7 +155,7 @@ class RolesGuildState(CogGuildState):
             return unsafe_perms
 
     async def should_register_role(
-        self, ctx: GuildContext, role: Role
+        self, ctx: Context, role: Role
     ) -> ConfirmationResult:
         # If the role contains unsafe permissions, ask for confirmation.
         if unsafe_perms := await self.get_unsafe_role_perms(role):
@@ -169,7 +175,7 @@ class RolesGuildState(CogGuildState):
 
     async def register_role(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         role: Role,
         joinable: bool,
         leavable: bool,
@@ -216,11 +222,11 @@ class RolesGuildState(CogGuildState):
             await self.reply(ctx, f"❌ {role.mention} has **not** been registered.")
         # If no answer was provided, don't do anything.
 
-    async def deregister_role(self, ctx: GuildContext, role: Role):
+    async def deregister_role(self, ctx: Context, role: Role):
         await self.store.deregister_role(role)
         await self.reply(ctx, f"✅ {role.mention} has been deregistered.")
 
-    async def show_all_roles(self, ctx: GuildContext):
+    async def show_all_roles(self, ctx: Context):
         if role_pairs := await self.get_all_role_pairs():
             role_pairs_str = self.flatten_role_pairs(role_pairs)
             await self.reply(
@@ -232,9 +238,10 @@ class RolesGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"🤷 There are no roles registered.")
 
-    async def show_relevant_roles(self, ctx: MemberContext):
+    async def show_relevant_roles(self, ctx: Context):
         # List only roles that are relevant to this user.
         member = ctx.author
+        assert is_member(member)
         if role_pairs := await self.get_relevant_role_pairs(member):
             role_pairs_str = self.flatten_role_pairs(role_pairs)
             await self.reply(
@@ -247,15 +254,15 @@ class RolesGuildState(CogGuildState):
             await self.reply(ctx, f"🤷 There are no roles relevant to you.")
 
     async def get_matching_role_pairs(
-        self, roles: List[Role]
-    ) -> List[Tuple[Role, RoleEntry]]:
+        self, roles: list[Role]
+    ) -> list[tuple[Role, RoleEntry]]:
         return [
             (role, role_entry)
             for role in roles
             if (role_entry := await self.store.get_role_entry(role))
         ]
 
-    async def about_roles(self, ctx: MemberContext, roles: List[Role]):
+    async def about_roles(self, ctx: Context, roles: list[Role]):
         if role_pairs := await self.get_matching_role_pairs(roles):
             role_pairs_str = self.expand_role_pairs(role_pairs)
             await self.reply(
@@ -265,14 +272,14 @@ class RolesGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"🤷 Couldn't find any matching roles.")
 
-    async def join_roles(self, ctx: MemberContext, roles: List[Role]):
+    async def join_roles(self, ctx: Context, roles: list[Role]):
         await self.join_leave_roles(ctx, roles, JoinableRolesResult)
 
-    async def leave_roles(self, ctx: MemberContext, roles: List[Role]):
+    async def leave_roles(self, ctx: Context, roles: list[Role]):
         await self.join_leave_roles(ctx, roles, LeavableRolesResult)
 
     async def join_leave_roles(
-        self, ctx: MemberContext, roles: List[Role], result_type: Type[RolesResult]
+        self, ctx: Context, roles: list[Role], result_type: Type[RolesResult]
     ):
         if not roles:
             await self.reply(ctx, "🤔 You didn't provide any roles.")
@@ -284,20 +291,20 @@ class RolesGuildState(CogGuildState):
         await self.reply(ctx, content)
 
     async def add_roles_to_members(
-        self, ctx: MemberContext, roles: List[Role], members: List[Member]
+        self, ctx: Context, roles: list[Role], members: list[Member]
     ):
         await self.add_remove_roles(ctx, roles, members, AddableRolesResult)
 
     async def remove_roles_from_members(
-        self, ctx: MemberContext, roles: List[Role], members: List[Member]
+        self, ctx: Context, roles: list[Role], members: list[Member]
     ):
         await self.add_remove_roles(ctx, roles, members, RemovableRolesResult)
 
     async def add_remove_roles(
         self,
-        ctx: MemberContext,
-        roles: List[Role],
-        members: List[Member],
+        ctx: Context,
+        roles: list[Role],
+        members: list[Member],
         result_type: Type[RolesResult],
     ):
         if not roles:
@@ -318,7 +325,7 @@ class RolesGuildState(CogGuildState):
         content = "\n".join(lines)
         await self.reply(ctx, content)
 
-    async def show_permitted_roles(self, ctx: GuildContext):
+    async def show_permitted_roles(self, ctx: Context):
         permitted_roles = await self.store.get_permitted_roles(self.guild)
         if permitted_roles is not None:
             count_permitted_roles = len(permitted_roles)
@@ -334,7 +341,7 @@ class RolesGuildState(CogGuildState):
                 f"No roles are permitted to add/remove other users to/from roles.",
             )
 
-    async def set_permitted_roles(self, ctx: GuildContext, *roles: Role):
+    async def set_permitted_roles(self, ctx: Context, *roles: Role):
         if not roles:
             await self.reply(ctx, "🤷 No roles provided.")
             return
@@ -353,7 +360,7 @@ class RolesGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"✅ Changed permitted roles to: {new_role_mentions}")
 
-    async def clear_permitted_roles(self, ctx: GuildContext):
+    async def clear_permitted_roles(self, ctx: Context):
         old_permitted_roles = await self.store.set_permitted_roles(self.guild, None)
         if old_permitted_roles is not None:
             role_mentions = old_permitted_roles.to_mentions(self.guild)

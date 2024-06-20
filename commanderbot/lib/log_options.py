@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 
 from discord import Client, Embed, Message, TextChannel, Thread
 
@@ -9,9 +9,10 @@ from commanderbot.lib.constants import (
     MAX_EMBED_DESCRIPTION_LENGTH,
     MAX_EMBED_TITLE_LENGTH,
 )
+from commanderbot.lib.exceptions import ResponsiveException
 from commanderbot.lib.from_data_mixin import FromDataMixin
-from commanderbot.lib.responsive_exception import ResponsiveException
 from commanderbot.lib.types import ChannelID
+from commanderbot.lib.type_predicates import is_text_channel, is_thread
 from commanderbot.lib.utils import (
     sanitize_stacktrace,
     send_message_or_file,
@@ -69,7 +70,7 @@ class LogOptions(FromDataMixin):
 
     async def _require_channel(self, client: Client) -> TextChannel | Thread:
         if channel := client.get_channel(self.channel):
-            if isinstance(channel, TextChannel | Thread):
+            if is_text_channel(channel) or is_thread(channel):
                 return channel
             raise ResponsiveException(f"Resolved invalid log channel: `{channel}`")
         raise ResponsiveException(
@@ -92,7 +93,7 @@ class LogOptions(FromDataMixin):
         client: Client,
         content: str,
         *,
-        file_callback: Optional[Callable[[], Tuple[str, str, str]]] = None,
+        file_callback: Optional[Callable[[], tuple[str, str, str]]] = None,
         allowed_mentions: Optional[AllowedMentions] = None,
     ) -> Message:
         """
@@ -131,7 +132,7 @@ class LogOptions(FromDataMixin):
         title: str,
         description: str,
         *,
-        file_callback: Optional[Callable[[], Tuple[str, str, str, str]]] = None,
+        file_callback: Optional[Callable[[], tuple[str, str, str, str]]] = None,
         allowed_mentions: Optional[AllowedMentions] = None,
     ) -> Message:
         """
@@ -188,7 +189,7 @@ class LogOptions(FromDataMixin):
 
     def format_channel_name(self, client: Client) -> str:
         if channel := client.get_channel(self.channel):
-            if isinstance(channel, TextChannel | Thread):
+            if is_text_channel(channel) or is_thread(channel):
                 return channel.mention
             return f"Invalid channel `{channel}`"
         return f"Unknown channel `{self.channel}`"

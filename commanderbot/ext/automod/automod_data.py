@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterable, DefaultDict, Dict, Iterable, Optional, Set, Type
+from typing import Any, AsyncIterable, Iterable, Optional, Type
 
 from discord import Guild
 from discord.utils import utcnow
@@ -24,7 +24,7 @@ from commanderbot.lib.utils import (
     update_json_with_path,
 )
 
-RulesByEventType = DefaultDict[Type[AutomodEvent], Set[AutomodRule]]
+RulesByEventType = defaultdict[Type[AutomodEvent], set[AutomodRule]]
 
 
 class AutomodRuleWithNameAlreadyExists(ResponsiveException):
@@ -46,14 +46,14 @@ class AutomodRuleNotRegistered(ResponsiveException):
 
 
 class AutomodInvalidFields(ResponsiveException):
-    def __init__(self, names: Set[str]):
-        self.names: Set[str] = names
+    def __init__(self, names: set[str]):
+        self.names: set[str] = names
         super().__init__("These fields are invalid: " + "`" + "` `".join(names) + "`")
 
 
 class AutomodUnmodifiableFields(ResponsiveException):
-    def __init__(self, names: Set[str]):
-        self.names: Set[str] = names
+    def __init__(self, names: set[str]):
+        self.names: set[str] = names
         super().__init__(
             "These fields cannot be modified: " + "`" + "` `".join(names) + "`"
         )
@@ -68,7 +68,7 @@ class AutomodGuildData:
     permitted_roles: Optional[RoleSet] = None
 
     # Index rules by name for faster look-up in commands.
-    rules: Dict[str, AutomodRule] = field(init=False, default_factory=dict)
+    rules: dict[str, AutomodRule] = field(init=False, default_factory=dict)
 
     # Group rules by event type for faster look-up during event dispatch.
     rules_by_event_type: RulesByEventType = field(
@@ -215,7 +215,7 @@ class AutomodGuildData:
         return rule
 
 
-def _guilds_defaultdict_factory() -> DefaultDict[GuildID, AutomodGuildData]:
+def _guilds_defaultdict_factory() -> defaultdict[GuildID, AutomodGuildData]:
     return defaultdict(lambda: AutomodGuildData())
 
 
@@ -226,7 +226,7 @@ class AutomodData:
     Implementation of `AutomodStore` using an in-memory object hierarchy.
     """
 
-    guilds: DefaultDict[GuildID, AutomodGuildData] = field(
+    guilds: defaultdict[GuildID, AutomodGuildData] = field(
         default_factory=_guilds_defaultdict_factory
     )
 

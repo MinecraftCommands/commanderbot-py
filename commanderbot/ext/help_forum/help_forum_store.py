@@ -1,4 +1,4 @@
-from typing import Optional, Protocol, Tuple
+from typing import Optional, Protocol
 
 from discord import ForumChannel, ForumTag, Guild, PartialEmoji
 
@@ -67,10 +67,10 @@ class HelpForumStore(Protocol):
 
     async def modify_unresolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForum, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         ...
 
     async def modify_resolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForum, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         ...

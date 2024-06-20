@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, List, Tuple
+from typing import Iterable
 
 from discord import CategoryChannel, TextChannel
+from discord.ext.commands import Context
 
 from commanderbot.ext.help_chat.help_chat_report import HelpChatReportBuildContext
 from commanderbot.ext.help_chat.help_chat_store import HelpChannel, HelpChatStore
-from commanderbot.lib import GuildContext
+from commanderbot.lib import is_category_channel, is_text_channel
 from commanderbot.lib.cogs import CogGuildState
 
 
@@ -25,17 +26,15 @@ class HelpChatGuildState(CogGuildState):
 
     @staticmethod
     def _flatten_text_channels(
-        channels: Tuple[TextChannel | CategoryChannel, ...]
+        channels: tuple[TextChannel | CategoryChannel, ...]
     ) -> Iterable[TextChannel]:
         for channel in channels:
-            if isinstance(channel, TextChannel):
+            if is_text_channel(channel):
                 yield channel
-            elif isinstance(channel, CategoryChannel):
-                yield from (
-                    ch for ch in channel.channels if isinstance(ch, TextChannel)
-                )
+            elif is_category_channel(channel):
+                yield from (ch for ch in channel.channels if is_text_channel(ch))
 
-    async def list_channels(self, ctx: GuildContext):
+    async def list_channels(self, ctx: Context):
         if help_channels := await self.store.get_help_channels(self.guild):
             pairs = [
                 (help_channel, help_channel.channel(ctx))
@@ -52,7 +51,7 @@ class HelpChatGuildState(CogGuildState):
         else:
             await ctx.send(f"No help channels")
 
-    async def list_channels_by_creation_date(self, ctx: GuildContext):
+    async def list_channels_by_creation_date(self, ctx: Context):
         if help_channels := await self.store.get_help_channels(self.guild):
             channels = [hc.channel(ctx) for hc in help_channels]
             sorted_channels = sorted(channels, key=lambda ch: ch.created_at)
@@ -68,12 +67,12 @@ class HelpChatGuildState(CogGuildState):
 
     async def add_channels(
         self,
-        ctx: GuildContext,
-        channels: Tuple[TextChannel | CategoryChannel, ...],
+        ctx: Context,
+        channels: tuple[TextChannel | CategoryChannel, ...],
     ):
-        added_help_channels: List[HelpChannel] = []
-        already_help_channels: List[HelpChannel] = []
-        failed_channels: List[TextChannel] = []
+        added_help_channels: list[HelpChannel] = []
+        already_help_channels: list[HelpChannel] = []
+        failed_channels: list[TextChannel] = []
 
         for channel in self._flatten_text_channels(channels):
             try:
@@ -111,12 +110,12 @@ class HelpChatGuildState(CogGuildState):
 
     async def remove_channels(
         self,
-        ctx: GuildContext,
-        channels: Tuple[TextChannel | CategoryChannel, ...],
+        ctx: Context,
+        channels: tuple[TextChannel | CategoryChannel, ...],
     ):
-        removed_help_channels: List[TextChannel] = []
-        not_help_channels: List[TextChannel] = []
-        failed_channels: List[TextChannel] = []
+        removed_help_channels: list[TextChannel] = []
+        not_help_channels: list[TextChannel] = []
+        failed_channels: list[TextChannel] = []
 
         for channel in self._flatten_text_channels(channels):
             try:
@@ -150,7 +149,7 @@ class HelpChatGuildState(CogGuildState):
 
     async def build_report(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         after: datetime,
         before: datetime,
         label: str,
@@ -159,7 +158,7 @@ class HelpChatGuildState(CogGuildState):
         min_score: int,
     ):
         # Build the report, which will send progress updates as each channel is scanned.
-        help_channels: List[HelpChannel] = await self.store.get_help_channels(
+        help_channels: list[HelpChannel] = await self.store.get_help_channels(
             self.guild
         )
         report_context = HelpChatReportBuildContext(

@@ -18,6 +18,7 @@ from discord import (
     ThreadMember,
     User,
 )
+from discord.ext.commands import Context
 from discord.utils import utcnow
 from yaml import YAMLError
 
@@ -27,7 +28,6 @@ from commanderbot.ext.automod.automod_rule import AutomodRule
 from commanderbot.ext.automod.automod_store import AutomodStore
 from commanderbot.lib import (
     Color,
-    GuildContext,
     LogOptions,
     ResponsiveException,
     RoleSet,
@@ -126,14 +126,14 @@ class AutomodGuildState(CogGuildState):
                 raise ResponsiveException(str(ex)) from ex
         raise ResponsiveException("Missing code block declared as `json` or `yaml`")
 
-    async def reply(self, ctx: GuildContext, content: str):
+    async def reply(self, ctx: Context, content: str):
         """Wraps `Context.reply()` with some extension-default boilerplate."""
         await ctx.message.reply(
             content,
             allowed_mentions=AllowedMentions.none(),
         )
 
-    async def show_default_log_options(self, ctx: GuildContext):
+    async def show_default_log_options(self, ctx: Context):
         log_options = await self.store.get_default_log_options(self.guild)
         if log_options:
             channel = cast(TextChannel, self.bot.get_channel(log_options.channel))
@@ -147,7 +147,7 @@ class AutomodGuildState(CogGuildState):
 
     async def set_default_log_options(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         channel: TextChannel,
         stacktrace: Optional[bool],
         emoji: Optional[str],
@@ -174,7 +174,7 @@ class AutomodGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"Configured default logging for {channel.mention}")
 
-    async def remove_default_log_options(self, ctx: GuildContext):
+    async def remove_default_log_options(self, ctx: Context):
         old_log_options = await self.store.set_default_log_options(self.guild, None)
         if old_log_options:
             channel = cast(TextChannel, self.bot.get_channel(old_log_options.channel))
@@ -182,7 +182,7 @@ class AutomodGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"No default logging is configured")
 
-    async def show_permitted_roles(self, ctx: GuildContext):
+    async def show_permitted_roles(self, ctx: Context):
         permitted_roles = await self.store.get_permitted_roles(self.guild)
         if permitted_roles:
             count_permitted_roles = len(permitted_roles)
@@ -195,7 +195,7 @@ class AutomodGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"No roles are permitted to manage automod")
 
-    async def set_permitted_roles(self, ctx: GuildContext, *roles: Role):
+    async def set_permitted_roles(self, ctx: Context, *roles: Role):
         new_permitted_roles = RoleSet(set(role.id for role in roles))
         new_role_mentions = new_permitted_roles.to_mentions(self.guild)
         old_permitted_roles = await self.store.set_permitted_roles(
@@ -211,7 +211,7 @@ class AutomodGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"Changed permitted roles to {new_role_mentions}")
 
-    async def clear_permitted_roles(self, ctx: GuildContext):
+    async def clear_permitted_roles(self, ctx: Context):
         old_permitted_roles = await self.store.set_permitted_roles(self.guild, None)
         if old_permitted_roles:
             role_mentions = old_permitted_roles.to_mentions(self.guild)
@@ -219,7 +219,7 @@ class AutomodGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"No roles are permitted to manage automod")
 
-    async def show_rules(self, ctx: GuildContext, query: str = ""):
+    async def show_rules(self, ctx: Context, query: str = ""):
         if query:
             rules = await async_expand(self.store.query_rules(self.guild, query))
         else:
@@ -272,7 +272,7 @@ class AutomodGuildState(CogGuildState):
 
     async def print_rule(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         query: str,
         path: Optional[JsonPath] = None,
     ):
@@ -297,7 +297,7 @@ class AutomodGuildState(CogGuildState):
             content = f"```yaml\n{output_yaml}\n```"
             file_callback = lambda: ("", output_yaml, f"{rule.name}.yaml")
             return await send_message_or_file(
-                ctx,
+                ctx.channel,
                 content,
                 file_callback=file_callback,
                 allowed_mentions=AllowedMentions.none(),
@@ -306,12 +306,12 @@ class AutomodGuildState(CogGuildState):
         else:
             await self.reply(ctx, f"No rule found matching `{query}`")
 
-    async def add_rule(self, ctx: GuildContext, body: str):
+    async def add_rule(self, ctx: Context, body: str):
         data = self._parse_body(body)
         rule = await self.store.add_rule(self.guild, data)
         await self.reply(ctx, f"Added automod rule `{rule.name}`")
 
-    async def remove_rule(self, ctx: GuildContext, name: str):
+    async def remove_rule(self, ctx: Context, name: str):
         # Get the corresponding rule.
         rule = await self.store.require_rule(self.guild, name)
         # Then ask for confirmation to actually remove it.
@@ -330,7 +330,7 @@ class AutomodGuildState(CogGuildState):
 
     async def modify_rule(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         name: str,
         path: JsonPath,
         op: JsonPathOp,
@@ -340,11 +340,11 @@ class AutomodGuildState(CogGuildState):
         rule = await self.store.modify_rule(self.guild, name, path, op, data)
         await self.reply(ctx, f"Modified automod rule `{rule.name}`")
 
-    async def enable_rule(self, ctx: GuildContext, name: str):
+    async def enable_rule(self, ctx: Context, name: str):
         rule = await self.store.enable_rule(self.guild, name)
         await self.reply(ctx, f"Enabled automod rule `{rule.name}`")
 
-    async def disable_rule(self, ctx: GuildContext, name: str):
+    async def disable_rule(self, ctx: Context, name: str):
         rule = await self.store.disable_rule(self.guild, name)
         await self.reply(ctx, f"Disabled automod rule `{rule.name}`")
 

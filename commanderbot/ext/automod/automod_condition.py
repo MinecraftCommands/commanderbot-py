@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional, Protocol
+from typing import Any, Iterable, Optional, Protocol
 
 from commanderbot.ext.automod import conditions
 from commanderbot.ext.automod.automod_entity import (
@@ -39,7 +39,7 @@ class AutomodConditionBase(AutomodEntityBase):
         return False
 
 
-def deserialize_conditions(data: Iterable[Any]) -> List[AutomodCondition]:
+def deserialize_conditions(data: Iterable[Any]) -> list[AutomodCondition]:
     return deserialize_entities(
         entity_type=AutomodConditionBase,
         data=data,

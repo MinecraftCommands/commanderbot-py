@@ -1,7 +1,7 @@
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, DefaultDict, Dict, Optional, Tuple, Self
+from typing import Any, Optional, Self
 
 from discord import ForumChannel, ForumTag, Guild, PartialEmoji
 
@@ -17,8 +17,8 @@ from commanderbot.lib import (
     FromDataMixin,
     GuildID,
     JsonSerializable,
+    utils,
 )
-from commanderbot.lib.utils import dict_without_falsies, require_forum_tag
 
 
 @dataclass
@@ -73,7 +73,7 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
 
 @dataclass
 class HelpForumGuildData(JsonSerializable, FromDataMixin):
-    help_forums: Dict[ChannelID, HelpForumForumData] = field(default_factory=dict)
+    help_forums: dict[ChannelID, HelpForumForumData] = field(default_factory=dict)
 
     # @overrides FromDataMixin
     @classmethod
@@ -89,8 +89,8 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
     # @implements JsonSerializable
     def to_json(self) -> Any:
         # Omit empty help forums
-        return dict_without_falsies(
-            help_forums=dict_without_falsies(
+        return utils.dict_without_falsies(
+            help_forums=utils.dict_without_falsies(
                 {
                     str(channel_id): forum_data.to_json()
                     for channel_id, forum_data in self.help_forums.items()
@@ -105,7 +105,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         # Returns the forum tag if it exists
         # This is just a wrapper around our library function so we can throw a custom exception
         try:
-            return require_forum_tag(forum, tag_str)
+            return utils.require_forum_tag(forum, tag_str)
         except:
             raise HelpForumInvalidTag(forum.id, tag_str)
 
@@ -167,7 +167,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
 
     def modify_unresolved_tag(
         self, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForumForumData, ForumTag]:
+    ) -> tuple[HelpForumForumData, ForumTag]:
         # Modify unresolved tag ID for a help forum
         forum_data = self.require_help_forum(forum)
         valid_tag = self._require_tag(forum, tag)
@@ -176,7 +176,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
 
     def modify_resolved_tag(
         self, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForumForumData, ForumTag]:
+    ) -> tuple[HelpForumForumData, ForumTag]:
         # Modify resolved tag ID for a help forum
         forum_data = self.require_help_forum(forum)
         valid_tag = self._require_tag(forum, tag)
@@ -184,14 +184,14 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         return (forum_data, valid_tag)
 
 
-def _guilds_defaultdict_factory() -> DefaultDict[GuildID, HelpForumGuildData]:
+def _guilds_defaultdict_factory() -> defaultdict[GuildID, HelpForumGuildData]:
     return defaultdict(lambda: HelpForumGuildData())
 
 
 # @implements HelpForumStore
 @dataclass
 class HelpForumData(JsonSerializable, FromDataMixin):
-    guilds: DefaultDict[GuildID, HelpForumGuildData] = field(
+    guilds: defaultdict[GuildID, HelpForumGuildData] = field(
         default_factory=_guilds_defaultdict_factory
     )
 
@@ -210,8 +210,8 @@ class HelpForumData(JsonSerializable, FromDataMixin):
     # @implements JsonSerializable
     def to_json(self) -> Any:
         # Omit empty guilds, as well as an empty list of guilds
-        return dict_without_falsies(
-            guilds=dict_without_falsies(
+        return utils.dict_without_falsies(
+            guilds=utils.dict_without_falsies(
                 {
                     str(guild_id): guild_data.to_json()
                     for guild_id, guild_data in self.guilds.items()
@@ -265,11 +265,11 @@ class HelpForumData(JsonSerializable, FromDataMixin):
     # @implements HelpForumStore
     async def modify_unresolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForum, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         return self.guilds[guild.id].modify_unresolved_tag(forum, tag)
 
     # @implements HelpForumStore
     async def modify_resolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForum, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         return self.guilds[guild.id].modify_resolved_tag(forum, tag)

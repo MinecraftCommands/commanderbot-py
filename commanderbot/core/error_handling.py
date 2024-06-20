@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from logging import Logger
-from typing import List, Optional
+from typing import Optional
 
 from discord import Message, AllowedMentions
 from discord.interactions import Interaction
@@ -21,9 +21,9 @@ from commanderbot.lib.app_commands import send_or_followup, command_name
 class ErrorHandling:
     log: Logger
 
-    event_error_handlers: List[EventErrorHandler] = field(default_factory=list)
-    command_error_handlers: List[CommandErrorHandler] = field(default_factory=list)
-    app_command_error_handlers: List[AppCommandErrorHandler] = field(
+    event_error_handlers: list[EventErrorHandler] = field(default_factory=list)
+    command_error_handlers: list[CommandErrorHandler] = field(default_factory=list)
+    app_command_error_handlers: list[AppCommandErrorHandler] = field(
         default_factory=list
     )
 

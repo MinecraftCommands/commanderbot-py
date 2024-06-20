@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 from discord import Guild, TextChannel
 from sqlalchemy.future import select
@@ -26,7 +26,7 @@ class HelpChatSQLStore(CogStore):
         async with self.db.connect() as conn:
             await conn.run_sync(models.metadata.create_all)
 
-    async def get_help_channels(self, guild: Guild) -> List[HelpChannel]:
+    async def get_help_channels(self, guild: Guild) -> list[HelpChannel]:
         await self._ensure_init()
         async with self.db.session() as session:
             result = await session.execute(
@@ -36,7 +36,7 @@ class HelpChatSQLStore(CogStore):
             )
             rows = result.all()
         help_channels = [row[0] for row in rows]
-        return cast(List[models.HelpChannel], help_channels)
+        return cast(list[models.HelpChannel], help_channels)
 
     async def get_help_channel(
         self, guild: Guild, channel: TextChannel

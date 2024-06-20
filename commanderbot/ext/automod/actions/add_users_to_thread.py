@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Tuple
 
 from discord import Thread
 
@@ -21,8 +20,8 @@ class AddUsersToThread(AutomodActionBase):
         The roles to add to the thread. Any user with any of these roles will be added.
     """
 
-    users: Tuple[UserID] = field(default_factory=lambda: tuple())
-    roles: Tuple[RoleID] = field(default_factory=lambda: tuple())
+    users: tuple[UserID] = field(default_factory=tuple)
+    roles: tuple[RoleID] = field(default_factory=tuple)
 
     async def try_add_user(self, event: AutomodEvent, thread: Thread, user_id: UserID):
         try:

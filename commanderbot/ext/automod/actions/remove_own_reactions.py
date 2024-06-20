@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Tuple
 
 from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
@@ -17,7 +16,7 @@ class RemoveOwnReactions(AutomodActionBase):
         The reactions to remove.
     """
 
-    reactions: Tuple[str]
+    reactions: tuple[str]
 
     async def apply(self, event: AutomodEvent):
         if message := event.message:

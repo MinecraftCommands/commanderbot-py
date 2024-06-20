@@ -19,10 +19,8 @@ from commanderbot.ext.mccq.mccq_exceptions import (
 )
 from commanderbot.ext.mccq.mccq_manager import MCCQManager
 from commanderbot.ext.mccq.mccq_options import MCCQOptions
-from commanderbot.lib import AllowedMentions
+from commanderbot.lib import AllowedMentions, constants, utils
 from commanderbot.lib.app_commands import checks
-from commanderbot.lib.constants import MAX_MESSAGE_LENGTH, USER_AGENT
-from commanderbot.lib.utils import str_to_file
 
 MCCQ_QUERY_SYNTAX_HELP: str = "\n".join(
     [
@@ -96,14 +94,14 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
             view.add_item(ui.Button(label="View on wiki", url=wiki_url))
 
         # Send message with query results
-        if len(msg) <= MAX_MESSAGE_LENGTH:
+        if len(msg) <= constants.MAX_MESSAGE_LENGTH:
             await interaction.followup.send(
                 msg, view=view, allowed_mentions=AllowedMentions.none()
             )
         # Message is too big, so send it as a file
         else:
             await interaction.followup.send(
-                file=str_to_file(results, "results.txt"),
+                file=utils.str_to_file(results, "results.txt"),
                 view=view,
                 allowed_mentions=AllowedMentions.none(),
             )
@@ -132,7 +130,9 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
         # Get the versions for Java and Bedrock
         self.log.info("Updating bot presence...")
         presence_parts: list[str] = []
-        async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
+        async with aiohttp.ClientSession(
+            headers={"User-Agent": constants.USER_AGENT}
+        ) as session:
             # Get latest Java version
             if url := self.options.bot_presence.java_version_file_url:
                 if version := await self._get_version_from_file(session, url):

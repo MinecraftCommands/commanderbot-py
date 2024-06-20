@@ -26,14 +26,18 @@ from discord import (
     Interaction,
     Member,
     Message,
-    TextChannel,
-    Thread,
+    PartialMessageable,
     User,
 )
-from discord.abc import Messageable
 from discord.ext.commands import Bot, Context
 
-from commanderbot.lib.types import RoleID, UserID
+from commanderbot.lib.type_predicates import (
+    is_member,
+    is_text_channel,
+    is_thread,
+    is_user,
+)
+from commanderbot.lib.types import MessageableChannel, RoleID, UserID
 
 CHARACTER_CAP = 1900
 INVITE_LINK_PATTERN = re.compile(
@@ -50,11 +54,10 @@ T = TypeVar("T")
 def is_bot(bot: Bot, user: User | Member | UserID) -> bool:
     if not bot.user:
         return False
-    elif isinstance(user, (User, Member)):
+    elif is_user(user) or is_member(user):
         return user == bot.user
-    elif isinstance(user, UserID):
+    else:
         return user == bot.user.id
-    return False
 
 
 def is_owner(client: Client, user: User | Member) -> bool:
@@ -88,7 +91,7 @@ def member_roles_from(member: User | Member, role_ids: set[RoleID]) -> set[RoleI
     Return the set of matching member roles.
     A plain [User] may be passed, however an empty set will always be returned.
     """
-    if isinstance(member, User):
+    if is_user(member):
         return set()
     member_role_ids = {role.id for role in member.roles}
     matching_role_ids = role_ids.intersection(member_role_ids)
@@ -154,7 +157,7 @@ def format_context_cause(ctx: Context | Interaction) -> str:
         parts.append("`Unknown User`")
 
     if channel := ctx.channel:
-        if isinstance(channel, TextChannel | Thread):
+        if is_text_channel(channel) or is_thread(channel):
             parts.append(f"in {channel.mention}")
         else:
             parts.append(f"in channel `{channel}` (ID `{channel.id}`)")
@@ -191,7 +194,7 @@ def str_to_file(contents: str, file_name: str) -> File:
 
 
 async def send_message_or_file(
-    destination: Messageable,
+    destination: MessageableChannel | PartialMessageable,
     content: str,
     *,
     file_callback: Callable[[], tuple[str, str, str]],

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import AsyncIterable, Optional
 
 from discord import Guild, Role
 
@@ -34,7 +34,15 @@ class RolesJsonStore(CogStore):
         return old_value
 
     # @implements RolesStore
-    async def get_all_role_entries(self, guild: Guild) -> List[RoleEntry]:
+    async def get_role_entries(
+        self, guild: Guild
+    ) -> AsyncIterable[tuple[RoleID, RoleEntry]]:
+        cache = await self.db.get_cache()
+        async for entry in cache.get_role_entries(guild):
+            yield entry
+
+    # @implements RolesStore
+    async def get_all_role_entries(self, guild: Guild) -> list[RoleEntry]:
         cache = await self.db.get_cache()
         return await cache.get_all_role_entries(guild)
 

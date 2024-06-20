@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Protocol, Tuple
+from typing import AsyncIterable, Optional, Protocol
 
 from discord import Guild, Role
 
@@ -32,7 +32,7 @@ class RoleEntry(Protocol):
     description: Optional[str]
 
 
-RoleEntryPair = Tuple[Role, RoleEntry]
+RoleEntryPair = tuple[Role, RoleEntry]
 
 
 class RolesStore(Protocol):
@@ -40,19 +40,19 @@ class RolesStore(Protocol):
     Abstracts the data storage and persistence of the roles cog.
     """
 
-    async def get_permitted_roles(self, guild: Guild) -> Optional[RoleSet]:
-        ...
+    async def get_permitted_roles(self, guild: Guild) -> Optional[RoleSet]: ...
 
     async def set_permitted_roles(
         self, guild: Guild, permitted_roles: Optional[RoleSet]
-    ) -> Optional[RoleSet]:
-        ...
+    ) -> Optional[RoleSet]: ...
 
-    async def get_all_role_entries(self, guild: Guild) -> List[RoleEntry]:
-        ...
+    def get_role_entries(
+        self, guild: Guild
+    ) -> AsyncIterable[tuple[RoleID, RoleEntry]]: ...
 
-    async def get_role_entry(self, role: Role) -> Optional[RoleEntry]:
-        ...
+    async def get_all_role_entries(self, guild: Guild) -> list[RoleEntry]: ...
+
+    async def get_role_entry(self, role: Role) -> Optional[RoleEntry]: ...
 
     async def register_role(
         self,
@@ -60,13 +60,10 @@ class RolesStore(Protocol):
         joinable: bool,
         leavable: bool,
         description: Optional[str],
-    ) -> RoleEntry:
-        ...
+    ) -> RoleEntry: ...
 
-    async def deregister_role(self, role: Role) -> RoleEntry:
-        ...
+    async def deregister_role(self, role: Role) -> RoleEntry: ...
 
     async def deregister_role_by_id(
         self, guild_id: GuildID, role_id: RoleID
-    ) -> RoleEntry:
-        ...
+    ) -> RoleEntry: ...

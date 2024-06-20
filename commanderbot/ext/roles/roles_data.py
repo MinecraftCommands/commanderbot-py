@@ -1,14 +1,13 @@
-from __future__ import annotations
-
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import DefaultDict, Dict, List, Optional
+from typing import AsyncIterable, Optional
 
 from discord import Guild, Role
 from discord.utils import utcnow
 
 from commanderbot.ext.roles.roles_store import (
+    RoleEntry,
     RoleIDNotRegistered,
     RoleNotRegistered,
 )
@@ -27,7 +26,7 @@ class RoleEntryData:
     description: Optional[str] = None
 
     @staticmethod
-    def from_data(data: JsonObject) -> RoleEntryData:
+    def from_data(data: JsonObject) -> "RoleEntryData":
         return RoleEntryData(
             role_id=int(data["role_id"]),
             added_on=datetime.fromisoformat(data["added_on"]),
@@ -49,13 +48,13 @@ class RoleEntryData:
 @dataclass
 class RolesGuildData:
     # Index roles by ID for faster look-up in commands.
-    role_entries: Dict[RoleID, RoleEntryData]
+    role_entries: dict[RoleID, RoleEntryData]
 
     # Roles that are permitted to manage the extension within this guild.
     permitted_roles: Optional[RoleSet] = None
 
     @staticmethod
-    def from_data(data: JsonObject) -> RolesGuildData:
+    def from_data(data: JsonObject) -> "RolesGuildData":
         role_entries_flat = [
             RoleEntryData.from_data(raw_entry)
             for raw_entry in data.get("role_entries", [])
@@ -85,7 +84,7 @@ class RolesGuildData:
         self.permitted_roles = permitted_roles
         return old_value
 
-    def get_all_role_entries(self) -> List[RoleEntryData]:
+    def get_all_role_entries(self) -> list[RoleEntryData]:
         return list(self.role_entries.values())
 
     def get_role_entry(self, role: Role) -> Optional[RoleEntryData]:
@@ -127,7 +126,7 @@ class RolesGuildData:
         raise RoleIDNotRegistered(role_id)
 
 
-def _guilds_defaultdict_factory() -> DefaultDict[GuildID, RolesGuildData]:
+def _guilds_defaultdict_factory() -> defaultdict[GuildID, RolesGuildData]:
     return defaultdict(lambda: RolesGuildData(role_entries={}))
 
 
@@ -138,12 +137,12 @@ class RolesData:
     Implementation of `RolesStore` using an in-memory object hierarchy.
     """
 
-    guilds: DefaultDict[GuildID, RolesGuildData] = field(
+    guilds: defaultdict[GuildID, RolesGuildData] = field(
         default_factory=_guilds_defaultdict_factory
     )
 
     @staticmethod
-    def from_data(data: JsonObject) -> RolesData:
+    def from_data(data: JsonObject) -> "RolesData":
         guilds = _guilds_defaultdict_factory()
         guilds.update(
             {
@@ -176,16 +175,18 @@ class RolesData:
         return self.guilds[guild.id].set_permitted_roles(permitted_roles)
 
     # @implements RolesStore
-    async def get_role_entries(self, guild: Guild) -> List[RoleEntryData]:
+    async def get_role_entries(
+        self, guild: Guild
+    ) -> AsyncIterable[tuple[RoleID, RoleEntry]]:
         for role_id, role_entry in self.guilds[guild.id].role_entries.items():
-            yield role_id, role_entry
+            yield (role_id, role_entry)
 
     # @implements RolesStore
-    async def get_all_role_entries(self, guild: Guild) -> List[RoleEntryData]:
-        return self.guilds[guild.id].get_all_role_entries()
+    async def get_all_role_entries(self, guild: Guild) -> list[RoleEntry]:
+        return self.guilds[guild.id].get_all_role_entries()  # type: ignore
 
     # @implements RolesStore
-    async def get_role_entry(self, role: Role) -> Optional[RoleEntryData]:
+    async def get_role_entry(self, role: Role) -> Optional[RoleEntry]:
         return self.guilds[role.guild.id].get_role_entry(role)
 
     # @implements RolesStore
@@ -195,7 +196,7 @@ class RolesData:
         joinable: bool,
         leavable: bool,
         description: Optional[str],
-    ) -> RoleEntryData:
+    ) -> RoleEntry:
         return self.guilds[role.guild.id].register_role(
             role,
             joinable=joinable,
@@ -204,11 +205,11 @@ class RolesData:
         )
 
     # @implements RolesStore
-    async def deregister_role(self, role: Role) -> RoleEntryData:
+    async def deregister_role(self, role: Role) -> RoleEntry:
         return self.guilds[role.guild.id].deregister_role(role)
 
     # @implements RolesStore
     async def deregister_role_by_id(
         self, guild_id: GuildID, role_id: RoleID
-    ) -> RoleEntryData:
+    ) -> RoleEntry:
         return self.guilds[guild_id].deregister_role_by_id(role_id)

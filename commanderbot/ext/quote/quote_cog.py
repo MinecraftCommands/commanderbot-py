@@ -10,7 +10,13 @@ from commanderbot.ext.quote.quote_exceptions import (
     ChannelNotMessageable,
     MissingQuotePermissions,
 )
-from commanderbot.lib import AllowedMentions, MemberOrUser, MessageableChannel
+from commanderbot.lib import (
+    AllowedMentions,
+    MemberOrUser,
+    MessageableGuildChannel,
+    is_member,
+    is_messagable_guild_channel,
+)
 from commanderbot.lib.app_commands import MessageTransformer
 
 AUTO_EMBED_PATTERN = re.compile(r"^https?:\/\/\S\S+$")
@@ -20,9 +26,11 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
 
-    def _user_can_quote(self, user: MemberOrUser, channel: MessageableChannel) -> bool:
+    def _user_can_quote(
+        self, user: MemberOrUser, channel: MessageableGuildChannel
+    ) -> bool:
         # Return early if `user` is not a guild member.
-        if not isinstance(user, Member):
+        if not is_member(user):
             return False
 
         # User is a guild member, so check if they can quote this channel.
@@ -51,13 +59,13 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         allowed_mentions: AllowedMentions,
     ):
         # Make sure the channel can be quoted from.
-        channel: MessageableChannel = message.channel
-        if not isinstance(channel, MessageableChannel):
+        message_channel = message.channel
+        if not is_messagable_guild_channel(message_channel):
             raise ChannelNotMessageable
 
         # Make sure the quoter has read permissions in the channel.
         quoter: MemberOrUser = interaction.user
-        if not self._user_can_quote(quoter, channel):
+        if not self._user_can_quote(quoter, message_channel):
             raise MissingQuotePermissions
 
         # Build the message content containing the quote metadata.
@@ -93,7 +101,7 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         attachment_urls_gen = (att.url for att in message.attachments)
         embed_urls_gen = (embed.url for embed in message.embeds if embed.url)
 
-        assert isinstance(interaction.channel, MessageableChannel)
+        assert is_messagable_guild_channel(interaction.channel)
         for url in chain(attachment_urls_gen, embed_urls_gen):
             await interaction.channel.send(url)
 

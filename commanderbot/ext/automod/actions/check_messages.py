@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional, Tuple, Type, TypeVar, cast
+from typing import Optional, Type, TypeVar, cast
 
 from discord import Member, TextChannel, Thread
-from discord.abc import Messageable
 
 from commanderbot.ext.automod.automod_action import (
     AutomodAction,
@@ -14,7 +13,7 @@ from commanderbot.ext.automod.automod_condition import (
     deserialize_conditions,
 )
 from commanderbot.ext.automod.automod_event import AutomodEvent, AutomodEventBase
-from commanderbot.lib import ChannelID, JsonObject, TextMessage
+from commanderbot.lib import ChannelID, JsonObject, TextMessage, MessageableChannel
 
 ST = TypeVar("ST")
 
@@ -61,8 +60,8 @@ class CheckMessages(AutomodActionBase):
         The channel to perform the search in. Defaults to the channel in context.
     """
 
-    conditions: Tuple[AutomodCondition]
-    actions: Tuple[AutomodAction]
+    conditions: tuple[AutomodCondition]
+    actions: tuple[AutomodAction]
 
     lookup_limit: Optional[int] = None
 
@@ -81,7 +80,9 @@ class CheckMessages(AutomodActionBase):
             lookup_limit=data.get("lookup_limit"),
         )
 
-    async def resolve_channel(self, event: AutomodEvent) -> Optional[Messageable]:
+    async def resolve_channel(
+        self, event: AutomodEvent
+    ) -> Optional[MessageableChannel]:
         if self.channel is not None:
             return event.bot.get_channel(self.channel)  # type: ignore
         return event.channel

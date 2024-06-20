@@ -6,7 +6,7 @@ from typing import Any, cast
 from jsonpath_ng import JSONPath as JsonPath
 from jsonpath_ng import parse
 
-from commanderbot.lib.responsive_exception import ResponsiveException
+from commanderbot.lib.exceptions import ResponsiveException
 
 __all__ = (
     "JsonPath",

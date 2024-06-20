@@ -1,15 +1,5 @@
 from dataclasses import dataclass
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    Type,
-    TypeVar,
-)
+from typing import Any, ClassVar, Iterable, Optional, Protocol, Type, TypeVar
 
 from commanderbot.ext.automod.utils import deserialize_module_object
 from commanderbot.lib import JsonObject, JsonSerializable
@@ -76,7 +66,7 @@ ET = TypeVar("ET", bound="AutomodEntityBase")
 def deserialize_entity(
     entity_type: Type[ET],
     data: Any,
-    defaults: Optional[Dict[str, Any]] = None,
+    defaults: Optional[dict[str, Any]] = None,
 ) -> ET:
     """
     Create an entity from raw data.
@@ -86,7 +76,7 @@ def deserialize_entity(
     with any `defaults` given.
     """
     # prepare the processed data
-    processed_data: Dict[str, Any] = defaults.copy() if defaults else {}
+    processed_data: dict[str, Any] = defaults.copy() if defaults else {}
     if isinstance(data, dict):
         processed_data.update(data)
     elif isinstance(data, str):
@@ -104,8 +94,8 @@ def deserialize_entity(
 def deserialize_entities(
     entity_type: Type[ET],
     data: Iterable[Any],
-    defaults: Optional[Dict[str, Any]] = None,
-) -> List[ET]:
+    defaults: Optional[dict[str, Any]] = None,
+) -> list[ET]:
     """
     Create a list of entities from raw data.
 

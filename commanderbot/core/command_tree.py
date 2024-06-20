@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Optional, Iterable, TypeAlias
+from typing import Iterable, Optional, TypeAlias
 
 from discord import AppCommandType
 from discord.abc import Snowflake

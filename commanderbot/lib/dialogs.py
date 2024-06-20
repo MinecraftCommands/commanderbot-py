@@ -8,7 +8,7 @@ from discord.ext.commands import Bot, Context
 from discord.interactions import Interaction
 from discord.ui import Button, View, button
 
-from commanderbot.lib import AllowedMentions
+from commanderbot.lib.allowed_mentions import AllowedMentions
 
 __all__ = (
     "ConfirmationResult",

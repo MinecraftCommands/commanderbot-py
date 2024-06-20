@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, Type, TypeVar
+from typing import Type, TypeVar
 
 from commanderbot.ext.automod.automod_condition import (
     AutomodCondition,
@@ -23,7 +23,7 @@ class NoneOf(AutomodConditionBase):
         The sub-conditions to check.
     """
 
-    conditions: Tuple[AutomodCondition]
+    conditions: tuple[AutomodCondition]
 
     @classmethod
     def from_data(cls: Type[ST], data: JsonObject) -> ST:

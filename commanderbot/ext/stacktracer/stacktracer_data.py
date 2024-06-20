@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, DefaultDict, Optional, Self
+from typing import Any, Optional, Self
 
 from discord import Guild
 
@@ -34,7 +34,7 @@ class StacktracerGuildData(JsonSerializable, FromDataMixin):
         return old_value
 
 
-def _guilds_defaultdict_factory() -> DefaultDict[GuildID, StacktracerGuildData]:
+def _guilds_defaultdict_factory() -> defaultdict[GuildID, StacktracerGuildData]:
     return defaultdict(lambda: StacktracerGuildData())
 
 
@@ -49,7 +49,7 @@ class StacktracerData(JsonSerializable, FromDataMixin):
     log_options: Optional[LogOptions] = None
 
     # Per-guild log options configured by admins (or owners).
-    guilds: DefaultDict[GuildID, StacktracerGuildData] = field(
+    guilds: defaultdict[GuildID, StacktracerGuildData] = field(
         default_factory=_guilds_defaultdict_factory
     )
 

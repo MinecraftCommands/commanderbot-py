@@ -1,15 +1,5 @@
 from dataclasses import dataclass
-from typing import (
-    Any,
-    ClassVar,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from typing import Any, ClassVar, Iterable, Optional, Protocol, Type, TypeVar
 
 from commanderbot.ext.automod import triggers
 from commanderbot.ext.automod.automod_entity import (
@@ -24,7 +14,7 @@ ST = TypeVar("ST")
 
 
 class AutomodTrigger(AutomodEntity, Protocol):
-    event_types: ClassVar[Tuple[Type[AutomodEvent], ...]]
+    event_types: ClassVar[tuple[Type[AutomodEvent], ...]]
 
     description: Optional[str]
 
@@ -47,7 +37,7 @@ class AutomodTriggerBase(AutomodEntityBase):
     default_module_prefix = triggers.__name__
     module_function_name = "create_trigger"
 
-    event_types: ClassVar[Tuple[Type[AutomodEvent], ...]] = tuple()
+    event_types: ClassVar[tuple[Type[AutomodEvent], ...]] = tuple()
 
     description: Optional[str]
 
@@ -73,7 +63,7 @@ class AutomodTriggerBase(AutomodEntityBase):
         return False
 
 
-def deserialize_triggers(data: Iterable[Any]) -> List[AutomodTrigger]:
+def deserialize_triggers(data: Iterable[Any]) -> list[AutomodTrigger]:
     return deserialize_entities(
         entity_type=AutomodTriggerBase,
         data=data,

@@ -7,7 +7,7 @@ import aiohttp
 from discord.ext import tasks
 from discord.utils import utcnow
 
-from commanderbot.lib import USER_AGENT, JsonObject
+from commanderbot.lib import JsonObject, constants
 
 from .exceptions import MissingFeedHandler, UnknownMinecraftVersionFormat
 from .feed_provider_base import FeedProviderBase, FeedProviderOptionsBase
@@ -79,7 +79,9 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
 
     async def _fetch_latest_changelogs(self) -> list[ZendeskArticle]:
         new_changelogs = []
-        async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
+        async with aiohttp.ClientSession(
+            headers={"User-Agent": constants.USER_AGENT}
+        ) as session:
             async with session.get(
                 self.url, headers={"If-None-Match": self._etag or ""}
             ) as response:
