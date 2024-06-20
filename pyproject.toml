@@ -16,6 +16,9 @@ python = "^3.11"
 "discord.py" = "^2.3.0"
 python-dotenv = "^1.0.0"
 
+# For using newer type hints in older Python versions (For now).
+typing-extensions = "^4.12.0"
+
 # These are used for logging.
 colorama = "^0.4.0"
 colorlog = "^6.7.0"
