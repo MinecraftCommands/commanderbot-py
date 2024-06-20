@@ -116,7 +116,7 @@ class InviteGuildState(CogGuildState):
         # Respond to this interaction with a confirmation dialog
         result: ConfirmationResult = await respond_with_confirmation(
             interaction,
-            f"Are you sure you want to remove invite `{entry.key}`?",
+            f"Are you sure you want to remove the invite `{entry.key}`?",
             timeout=10.0,
         )
 
