@@ -119,7 +119,7 @@ class FaqGuildState(CogGuildState):
         # Respond to this interaction with a confirmation dialog
         result: ConfirmationResult = await respond_with_confirmation(
             interaction,
-            f"Are you sure you want to remove FAQ `{entry.key}`?",
+            f"Are you sure you want to remove the FAQ `{entry.key}`?",
             timeout=10.0,
         )
 
