@@ -1,12 +1,13 @@
-from typing import Any, Dict, TypeAlias
+from typing import Any, TypeAlias
 
 from discord import (
+    CategoryChannel,
     DMChannel,
+    ForumChannel,
     GroupChannel,
     Guild,
     Member,
     Message,
-    PartialMessageable,
     Reaction,
     StageChannel,
     TextChannel,
@@ -28,14 +29,13 @@ __all__ = (
     "RawOptions",
     "JsonObject",
     "MemberOrUser",
-    "PartialMessageableChannel",
+    "Channel",
+    "GuildChannel",
     "MessageableChannel",
-    "UnmentionableMessageableChannel",
     "MessageableGuildChannel",
+    "ConnectableChannel",
     "TextMessage",
     "TextReaction",
-    "GuildContext",
-    "MemberContext",
 )
 
 
@@ -51,37 +51,28 @@ AppCommandID: TypeAlias = IDType
 
 RawOptions: TypeAlias = Any
 
-JsonObject: TypeAlias = Dict[str, Any]
+JsonObject: TypeAlias = dict[str, Any]
 
 MemberOrUser: TypeAlias = Member | User
 
-PartialMessageableChannel: TypeAlias = (
-    TextChannel | VoiceChannel | StageChannel | Thread | DMChannel | PartialMessageable
+Channel: TypeAlias = (
+    TextChannel
+    | ForumChannel
+    | Thread
+    | VoiceChannel
+    | StageChannel
+    | DMChannel
+    | GroupChannel
+    | CategoryChannel
 )
-"""
-Channel types that can be partial messageable.
-
-A redefinition of the type alias found in `discord.abc`.
-"""
-
-MessageableChannel: TypeAlias = PartialMessageableChannel | GroupChannel
-"""
-Channel types that messages can be sent in.
-
-A redefinition of the type alias found in `discord.abc`.
-"""
-
-UnmentionableMessageableChannel: TypeAlias = (
-    DMChannel | GroupChannel | PartialMessageable
+GuildChannel: TypeAlias = (
+    TextChannel | ForumChannel | Thread | VoiceChannel | StageChannel | CategoryChannel
 )
-"""
-Channel types that messages can be sent in, but have no way to be mentioned.
-"""
-
+MessageableChannel: TypeAlias = (
+    TextChannel | Thread | VoiceChannel | StageChannel | DMChannel | GroupChannel
+)
 MessageableGuildChannel: TypeAlias = TextChannel | Thread | VoiceChannel | StageChannel
-"""
-Channel types that are messageable in a guild
-"""
+ConnectableChannel: TypeAlias = VoiceChannel | StageChannel
 
 
 class TextMessage(Message):
@@ -120,29 +111,3 @@ class TextReaction(Reaction):
     """
 
     message: TextMessage
-
-
-class GuildContext(Context):
-    """
-    A [Context] from within a [Guild].
-
-    This is a dummy class that can be used in casts to convince static analysis that
-    this [Context] does indeed contain a [Guild].
-
-    This is not intended to be used anywhere other than type-hinting.
-    """
-
-    guild: Guild
-
-
-class MemberContext(GuildContext):
-    """
-    A [Context] from within a [Guild] with an author that is a [Member].
-
-    This is a dummy class that can be used in casts to convince static analysis that
-    this [Context] contains an `author` that is a [Member] and not just a [User].
-
-    This is not intended to be used anywhere other than type-hinting.
-    """
-
-    author: Member

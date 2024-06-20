@@ -2,11 +2,10 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from discord import AllowedMentions, Colour, Embed, Message
-from discord.abc import Messageable
 from discord.ext.commands import Bot, Cog, Context, group
 from discord.ext.commands.converter import ColourConverter
 
-from commanderbot.lib import MessageableChannel
+from commanderbot.lib import MessageableChannel, is_messagable_channel
 from commanderbot.lib.commands import checks
 
 HEADING_PREFIX = "👉"
@@ -18,7 +17,7 @@ class PosterBoardCog(Cog, name="commanderbot.ext.poster_board"):
 
     async def send_embed(
         self,
-        destination: Messageable,
+        destination: MessageableChannel,
         title: Optional[str] = None,
         content: Optional[str] = None,
         colour: Optional[Colour] = None,
@@ -44,6 +43,7 @@ class PosterBoardCog(Cog, name="commanderbot.ext.poster_board"):
         content: Optional[str] = None,
     ):
         actual_dest = destination if destination is not None else ctx.channel
+        assert is_messagable_channel(actual_dest)
         await self.send_embed(
             destination=actual_dest, title=title, content=content, colour=colour
         )
@@ -59,6 +59,8 @@ class PosterBoardCog(Cog, name="commanderbot.ext.poster_board"):
         limit: Optional[int] = 100,
     ):
         actual_dest = destination if destination is not None else ctx.channel
+        assert is_messagable_channel(actual_dest)
+
         to_message = to_message if to_message is not None else from_message
         after_ts: datetime = from_message.created_at - timedelta(milliseconds=1)
         before_ts: datetime = to_message.created_at + timedelta(milliseconds=1)

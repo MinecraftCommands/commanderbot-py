@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 from discord import ForumChannel, ForumTag, Guild
 
@@ -78,7 +78,7 @@ class HelpForumJsonStore(CogStore):
     # @implements HelpForumStore
     async def modify_unresolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForum, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         cache = await self.db.get_cache()
         help_forum, new_tag = await cache.modify_unresolved_tag(guild, forum, tag)
         await self.db.dirty()
@@ -87,7 +87,7 @@ class HelpForumJsonStore(CogStore):
     # @implements HelpForumStore
     async def modify_resolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> Tuple[HelpForum, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         cache = await self.db.get_cache()
         help_forum, new_tag = await cache.modify_resolved_tag(guild, forum, tag)
         await self.db.dirty()

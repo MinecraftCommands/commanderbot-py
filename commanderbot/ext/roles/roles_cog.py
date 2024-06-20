@@ -1,6 +1,6 @@
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 
-from discord import Guild, Member, Role
+from discord import Member, Role
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog, Context, Greedy
 
@@ -10,7 +10,7 @@ from commanderbot.ext.roles.roles_json_store import RolesJsonStore
 from commanderbot.ext.roles.roles_options import RolesOptions
 from commanderbot.ext.roles.roles_state import RolesState
 from commanderbot.ext.roles.roles_store import RolesStore
-from commanderbot.lib import GuildContext, MemberContext
+from commanderbot.lib import is_guild, is_member
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -42,8 +42,8 @@ def member_has_permission():
     async def predicate(ctx: Context):
         cog = cast(RolesCog, ctx.cog)
         return (
-            isinstance(ctx.guild, Guild)
-            and isinstance(ctx.author, Member)
+            is_guild(ctx.guild)
+            and is_member(ctx.author)
             and await cog.state[ctx.guild].member_has_permission(ctx.author)
         )
 
@@ -83,10 +83,10 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
             store=self.store,
         )
 
-    def filter_unique_roles(self, roles: Any) -> List[Role]:
+    def filter_unique_roles(self, roles: Any) -> list[Role]:
         return list({role: None for role in roles}.keys())
 
-    def filter_unique_members(self, members: Any) -> List[Member]:
+    def filter_unique_members(self, members: Any) -> list[Member]:
         return list({member: None for member in members}.keys())
 
     # @@ COMMANDS
@@ -99,8 +99,9 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
     )
     @checks.guild_only()
     @checks.member_only()
-    async def cmd_join(self, ctx: MemberContext, *roles: LenientRoleConverter):
+    async def cmd_join(self, ctx: Context, *roles: LenientRoleConverter):
         unique_roles = self.filter_unique_roles(roles)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].join_roles(ctx, unique_roles)
 
     # @@ leave
@@ -111,8 +112,9 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
     )
     @checks.guild_only()
     @checks.member_only()
-    async def cmd_leave(self, ctx: MemberContext, *roles: LenientRoleConverter):
+    async def cmd_leave(self, ctx: Context, *roles: LenientRoleConverter):
         unique_roles = self.filter_unique_roles(roles)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].leave_roles(ctx, unique_roles)
 
     # @@ roles
@@ -123,8 +125,9 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
     )
     @checks.guild_only()
     @checks.member_only()
-    async def cmd_roles(self, ctx: MemberContext):
+    async def cmd_roles(self, ctx: Context):
         if not ctx.invoked_subcommand:
+            assert is_guild(ctx.guild)
             await self.state[ctx.guild].show_relevant_roles(ctx)
 
     # @@ roles options
@@ -135,8 +138,9 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
     )
     @checks.is_guild_admin_or_bot_owner()
     @checks.member_only()
-    async def cmd_roles_options(self, ctx: MemberContext):
+    async def cmd_roles_options(self, ctx: Context):
         if not ctx.invoked_subcommand:
+            assert is_guild(ctx.guild)
             await ctx.send_help(self.cmd_roles_options)
 
     # @@ roles options permit
@@ -145,32 +149,36 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
         name="permit",
         brief="Configure the set of roles permitted to add/remove other users to/from roles.",
     )
-    async def cmd_roles_options_permit(self, ctx: GuildContext):
+    async def cmd_roles_options_permit(self, ctx: Context):
         if not ctx.invoked_subcommand:
             if ctx.subcommand_passed:
                 await ctx.send_help(self.cmd_roles_options_permit)
             else:
+                assert is_guild(ctx.guild)
                 await self.state[ctx.guild].show_permitted_roles(ctx)
 
     @cmd_roles_options_permit.command(
         name="show",
         brief="Show the roles permitted to add/remove other users to/from roles.",
     )
-    async def cmd_roles_options_permit_show(self, ctx: GuildContext):
+    async def cmd_roles_options_permit_show(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].show_permitted_roles(ctx)
 
     @cmd_roles_options_permit.command(
         name="set",
         brief="Set the roles permitted to add/remove other users to/from roles.",
     )
-    async def cmd_roles_options_permit_set(self, ctx: GuildContext, *roles: Role):
+    async def cmd_roles_options_permit_set(self, ctx: Context, *roles: Role):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].set_permitted_roles(ctx, *roles)
 
     @cmd_roles_options_permit.command(
         name="clear",
         brief="Clear all roles permitted to add/remove other users to/from roles.",
     )
-    async def cmd_roles_options_permit_clear(self, ctx: GuildContext):
+    async def cmd_roles_options_permit_clear(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].clear_permitted_roles(ctx)
 
     # @@ roles show
@@ -180,7 +188,8 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
         brief="Show relevant roles.",
     )
     @checks.member_only()
-    async def cmd_roles_show(self, ctx: MemberContext):
+    async def cmd_roles_show(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].show_relevant_roles(ctx)
 
     # @@ roles about
@@ -190,8 +199,9 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
         brief="Describe one or more roles.",
     )
     @checks.member_only()
-    async def cmd_roles_about(self, ctx: MemberContext, *roles: LenientRoleConverter):
+    async def cmd_roles_about(self, ctx: Context, *roles: LenientRoleConverter):
         unique_roles = self.filter_unique_roles(roles)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].about_roles(ctx, unique_roles)
 
     # @@ roles join
@@ -201,8 +211,9 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
         brief="Join one or more roles.",
     )
     @checks.member_only()
-    async def cmd_roles_join(self, ctx: MemberContext, *roles: LenientRoleConverter):
+    async def cmd_roles_join(self, ctx: Context, *roles: LenientRoleConverter):
         unique_roles = self.filter_unique_roles(roles)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].join_roles(ctx, unique_roles)
 
     # @@ roles leave
@@ -212,8 +223,9 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
         brief="Leave one or more roles.",
     )
     @checks.member_only()
-    async def cmd_roles_leave(self, ctx: MemberContext, *roles: LenientRoleConverter):
+    async def cmd_roles_leave(self, ctx: Context, *roles: LenientRoleConverter):
         unique_roles = self.filter_unique_roles(roles)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].leave_roles(ctx, unique_roles)
 
     # @@ roles showall
@@ -227,7 +239,8 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
         member_has_permission(),
         checks.is_owner(),
     )
-    async def cmd_roles_showall(self, ctx: GuildContext):
+    async def cmd_roles_showall(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].show_all_roles(ctx)
 
     # @@ roles add
@@ -243,10 +256,11 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
     )
     @checks.member_only()
     async def cmd_roles_add(
-        self, ctx: MemberContext, roles: Greedy[LenientRoleConverter], *members: Member
+        self, ctx: Context, roles: Greedy[LenientRoleConverter], *members: Member
     ):
         unique_roles = self.filter_unique_roles(roles)
         unique_members = self.filter_unique_members(members)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].add_roles_to_members(
             ctx, unique_roles, unique_members
         )
@@ -264,10 +278,11 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
     )
     @checks.member_only()
     async def cmd_roles_remove(
-        self, ctx: MemberContext, roles: Greedy[LenientRoleConverter], *members: Member
+        self, ctx: Context, roles: Greedy[LenientRoleConverter], *members: Member
     ):
         unique_roles = self.filter_unique_roles(roles)
         unique_members = self.filter_unique_members(members)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].remove_roles_from_members(
             ctx, unique_roles, unique_members
         )
@@ -281,13 +296,14 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
     @checks.is_guild_admin_or_bot_owner()
     async def cmd_roles_register(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         role: Role,
         joinable: bool = True,
         leavable: bool = True,
         *,
         description: Optional[str],
     ):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].register_role(
             ctx,
             role,
@@ -303,5 +319,6 @@ class RolesCog(Cog, name="commanderbot.ext.roles"):
         brief="Deregister a role.",
     )
     @checks.is_guild_admin_or_bot_owner()
-    async def cmd_roles_deregister(self, ctx: GuildContext, role: Role):
+    async def cmd_roles_deregister(self, ctx: Context, role: Role):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].deregister_role(ctx, role)

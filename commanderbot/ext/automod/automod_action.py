@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional, Protocol
+from typing import Any, Iterable, Optional, Protocol
 
 from commanderbot.ext.automod import actions
 from commanderbot.ext.automod.automod_entity import (
@@ -38,7 +38,7 @@ class AutomodActionBase(AutomodEntityBase):
         """Override this to apply the action."""
 
 
-def deserialize_actions(data: Iterable[Any]) -> List[AutomodAction]:
+def deserialize_actions(data: Iterable[Any]) -> list[AutomodAction]:
     return deserialize_entities(
         entity_type=AutomodActionBase,
         data=data,

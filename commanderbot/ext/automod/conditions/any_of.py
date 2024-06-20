@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Tuple, Type, TypeVar
+from typing import Optional, tuple, Type, TypeVar
 
 from commanderbot.ext.automod.automod_condition import (
     AutomodCondition,
@@ -26,7 +26,7 @@ class AnyOf(AutomodConditionBase):
         sub-condition is required to pass.
     """
 
-    conditions: Tuple[AutomodCondition]
+    conditions: tuple[AutomodCondition]
     count: Optional[int] = None
 
     @classmethod

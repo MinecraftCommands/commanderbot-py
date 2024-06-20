@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Set
+from typing import Optional
 
 from discord import Reaction
 
@@ -24,8 +24,8 @@ class ReactionsGuard(FromDataMixin):
         The number of reactions to check for.
     """
 
-    include: Set[str] = field(default_factory=set)
-    exclude: Set[str] = field(default_factory=set)
+    include: set[str] = field(default_factory=set)
+    exclude: set[str] = field(default_factory=set)
 
     count: Optional[IntegerRange] = None
 

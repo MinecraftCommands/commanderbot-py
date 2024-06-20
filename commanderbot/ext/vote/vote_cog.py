@@ -1,5 +1,4 @@
 import re
-from ast import alias
 from typing import Iterable, cast
 
 import emoji

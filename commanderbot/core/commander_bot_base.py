@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Any, Callable, Coroutine, Dict, Optional, TypeAlias
+from typing import Any, Callable, Coroutine, Optional, TypeAlias
 
 from discord.interactions import Interaction
 from discord.ext.commands import Bot, Context
@@ -43,7 +43,7 @@ class CommanderBotBase(ABC, Bot):
         ...
 
     @abstractmethod
-    def get_extension_options(self, ext_name: str) -> Optional[Dict[str, Any]]:
+    def get_extension_options(self, ext_name: str) -> Optional[dict[str, Any]]:
         ...
 
     @abstractmethod

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional, Set
+from typing import Iterable, Optional
 
 from discord import Member, Role, User
 
@@ -23,8 +23,8 @@ class RolesGuard(FromDataMixin):
         The roles to exclude. A member will match if they have none of these.
     """
 
-    include: Set[RoleID] = field(default_factory=set)
-    exclude: Set[RoleID] = field(default_factory=set)
+    include: set[RoleID] = field(default_factory=set)
+    exclude: set[RoleID] = field(default_factory=set)
 
     @classmethod
     def try_from_data(cls, data):
@@ -78,10 +78,10 @@ class RolesGuard(FromDataMixin):
             return role.id not in self.exclude
         return True
 
-    def filter_members(self, members: Iterable[User | Member]) -> List[User | Member]:
+    def filter_members(self, members: Iterable[User | Member]) -> list[User | Member]:
         """Filter a sequence of members based on the guard."""
         return [member for member in members if self.member_matches(member)]
 
-    def filter_roles(self, roles: Iterable[Role]) -> List[Role]:
+    def filter_roles(self, roles: Iterable[Role]) -> list[Role]:
         """Filter a sequence of roles based on the guard."""
         return [role for role in roles if self.role_matches(role)]

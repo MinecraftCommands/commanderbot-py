@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 __all__ = (
     "DatabaseOptions",
@@ -32,7 +32,7 @@ class JsonFileDatabaseOptions(DatabaseOptions):
     indent: Optional[int] = None
 
     @staticmethod
-    def from_dict(options: Dict[str, Any]) -> "JsonFileDatabaseOptions":
+    def from_dict(options: dict[str, Any]) -> "JsonFileDatabaseOptions":
         return JsonFileDatabaseOptions(
             path=Path(options["path"]),
             no_init=options.get("no_init"),
@@ -46,7 +46,7 @@ class SQLiteDatabaseOptions(DatabaseOptions):
     no_init: Optional[bool] = None
 
     @staticmethod
-    def from_dict(options: Dict[str, Any]) -> "SQLiteDatabaseOptions":
+    def from_dict(options: dict[str, Any]) -> "SQLiteDatabaseOptions":
         return SQLiteDatabaseOptions(
             path=Path(options["path"]),
             no_init=options.get("no_init"),

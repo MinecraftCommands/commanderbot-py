@@ -1,4 +1,4 @@
-from discord import Guild, Interaction, Permissions
+from discord import Interaction, Permissions
 from discord.app_commands import Choice, Group, autocomplete, describe
 from discord.ext.commands import Bot, Cog
 
@@ -8,7 +8,7 @@ from commanderbot.ext.invite.invite_json_store import InviteJsonStore
 from commanderbot.ext.invite.invite_options import InviteOptions
 from commanderbot.ext.invite.invite_state import InviteState
 from commanderbot.ext.invite.invite_store import InviteEntry, InviteStore
-from commanderbot.lib import MAX_AUTOCOMPLETE_CHOICES
+from commanderbot.lib import constants, is_guild, utils
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -16,7 +16,6 @@ from commanderbot.lib.cogs.database import (
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
-from commanderbot.lib.utils import async_expand
 
 
 def _make_store(bot: Bot, cog: Cog, options: InviteOptions) -> InviteStore:
@@ -64,13 +63,13 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         """
 
         # Get all invites filtered by `value`
-        assert isinstance(interaction.guild, Guild)
-        invites: list[InviteEntry] = await async_expand(
+        assert is_guild(interaction.guild)
+        invites: list[InviteEntry] = await utils.async_expand(
             self.store.get_invites(
                 interaction.guild,
                 invite_filter=value,
                 sort=True,
-                cap=MAX_AUTOCOMPLETE_CHOICES,
+                cap=constants.MAX_AUTOCOMPLETE_CHOICES,
             )
         )
 
@@ -88,13 +87,13 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         """
 
         # Get all invites and tags filtered by `value`
-        assert isinstance(interaction.guild, Guild)
-        items: list[InviteEntry | str] = await async_expand(
+        assert is_guild(interaction.guild)
+        items: list[InviteEntry | str] = await utils.async_expand(
             self.store.get_invites_and_tags(
                 interaction.guild,
                 item_filter=value,
                 sort=True,
-                cap=MAX_AUTOCOMPLETE_CHOICES,
+                cap=constants.MAX_AUTOCOMPLETE_CHOICES,
             )
         )
 
@@ -118,19 +117,19 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     @describe(query="The invite or tag to get")
     @autocomplete(query=invite_and_tag_autocomplete)
     async def cmd_invite_get(self, interaction: Interaction, query: str):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].get_invite(interaction, query)
 
     # @@ invite list
     @cmd_invite.command(name="list", description="List available invites")
     async def cmd_invite_list(self, interaction: Interaction):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].list_invites(interaction)
 
     # @@ invite here
     @cmd_invite.command(name="here", description="Get the invite for this server")
     async def cmd_invite_here(self, interaction: Interaction):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].get_guild_invite(interaction)
 
     # @@ invites
@@ -145,7 +144,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     # @@ invites add
     @cmd_invites.command(name="add", description="Add a new invite")
     async def cmd_invites_add(self, interaction: Interaction):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].add_invite(interaction)
 
     # @@ invites modify
@@ -153,7 +152,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     @describe(invite="The invite to modify")
     @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_modify(self, interaction: Interaction, invite: str):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_invite(interaction, invite)
 
     # @@ invites remove
@@ -161,7 +160,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     @describe(invite="The invite to remove")
     @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_remove(self, interaction: Interaction, invite: str):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].remove_invite(interaction, invite)
 
     # @@ invites details
@@ -169,7 +168,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     @describe(invite="The invite to show details about")
     @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_details(self, interaction: Interaction, invite: str):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_invite_details(interaction, invite)
 
     # @@ invites here
@@ -183,7 +182,7 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     @describe(invite="The invite to set as the invite for this server")
     @autocomplete(invite=invite_autocomplete)
     async def cmd_invites_here_set(self, interaction: Interaction, invite: str):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].set_guild_invite(interaction, invite)
 
     # @@ invites here clear
@@ -191,11 +190,13 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         name="clear", description="Clear the invite for this server"
     )
     async def cmd_invites_here_clear(self, interaction: Interaction):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].clear_guild_invite(interaction)
 
     # @@ invites here show
-    @cmd_invites_here.command(name="show", description="Show the invite for this server")
+    @cmd_invites_here.command(
+        name="show", description="Show the invite for this server"
+    )
     async def cmd_invites_here_show(self, interaction: Interaction):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_guild_invite(interaction)

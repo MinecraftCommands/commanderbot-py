@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Self
+from typing import Any, Optional, Self
 
 from commanderbot.lib import FromDataMixin
 
@@ -10,7 +10,7 @@ from commanderbot.lib import FromDataMixin
 class ConfiguredExtension(FromDataMixin):
     name: str
     disabled: bool = False
-    options: Optional[Dict[str, Any]] = None
+    options: Optional[dict[str, Any]] = None
 
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:

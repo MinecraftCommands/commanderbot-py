@@ -1,9 +1,17 @@
-from typing import Optional
+from typing import Any, Optional, Type
 
 from discord import AllowedMentions, Interaction
 from discord.ext.commands import Context
 
-__all__ = ("ResponsiveException",)
+__all__ = (
+    "MalformedData",
+    "ResponsiveException",
+)
+
+
+class MalformedData(Exception):
+    def __init__(self, cls: Type, data: Any):
+        super().__init__(f"Cannot create {cls.__name__} from {type(data).__name__}")
 
 
 class ResponsiveException(Exception):

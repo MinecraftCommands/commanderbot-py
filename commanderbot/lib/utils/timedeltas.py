@@ -1,7 +1,7 @@
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-from commanderbot.lib.data import MalformedData
+from commanderbot.lib.exceptions import MalformedData
 from commanderbot.lib.types import JsonObject
 
 __all__ = (
@@ -14,11 +14,11 @@ __all__ = (
 )
 
 
-def timedelta_from_dict(d: Dict[str, Any]) -> timedelta:
+def timedelta_from_dict(d: dict[str, Any]) -> timedelta:
     return timedelta(**d)
 
 
-def timedelta_to_dict(td: timedelta) -> Dict[str, Any]:
+def timedelta_to_dict(td: timedelta) -> dict[str, Any]:
     return dict(
         days=td.days,
         seconds=td.seconds,

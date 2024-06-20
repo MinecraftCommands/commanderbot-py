@@ -17,8 +17,7 @@ from commanderbot.ext.invite.invite_exceptions import (
     InviteTagMatchesExistingKey,
 )
 from commanderbot.ext.invite.invite_store import InviteEntry
-from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
-from commanderbot.lib.utils import dict_without_falsies, is_invite_link
+from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID, utils
 
 
 @dataclass
@@ -106,9 +105,9 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        return dict_without_falsies(
+        return utils.dict_without_falsies(
             # Omit empty entries
-            invite_entries=dict_without_falsies(
+            invite_entries=utils.dict_without_falsies(
                 {key: entry.to_json() for key, entry in self.invite_entries.items()},
             ),
             guild_key=self.guild_key,
@@ -173,7 +172,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
                 raise InviteTagMatchesExistingKey(tag)
 
         # Check if the invite link is valid
-        if not is_invite_link(link):
+        if not utils.is_invite_link(link):
             raise InvalidInviteLink(link)
 
         # Create and add a new invite entry
@@ -214,7 +213,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
                 raise InviteTagMatchesExistingKey(tag)
 
         # Check if the invite link is valid
-        if not is_invite_link(link):
+        if not utils.is_invite_link(link):
             raise InvalidInviteLink(link)
 
         # Modify the invite entry
@@ -309,8 +308,8 @@ class InviteData(JsonSerializable, FromDataMixin):
     # @implements JsonSerializable
     def to_json(self) -> Any:
         # Omit empty guilds, as well as an empty list of guilds
-        return dict_without_falsies(
-            guilds=dict_without_falsies(
+        return utils.dict_without_falsies(
+            guilds=utils.dict_without_falsies(
                 {
                     str(guild_id): guild_data.to_json()
                     for guild_id, guild_data in self.guilds.items()

@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from discord.ext.commands import Context
 from discord.interactions import Interaction
@@ -66,7 +66,7 @@ class CommanderBot(CommanderBotBase):
             self.log.info(f"Using intents flags: {self.intents.value}")
 
         # Configure extensions.
-        self.configured_extensions: Dict[str, ConfiguredExtension] = {}
+        self.configured_extensions: dict[str, ConfiguredExtension] = {}
 
     async def _configure_extensions(self, extensions_data: list):
         if not isinstance(extensions_data, list):
@@ -74,7 +74,7 @@ class CommanderBot(CommanderBotBase):
 
         self.log.info(f"Processing {len(extensions_data)} extensions...")
 
-        all_extensions: List[ConfiguredExtension] = [
+        all_extensions: list[ConfiguredExtension] = [
             ConfiguredExtension.from_data(entry) for entry in extensions_data
         ]
 
@@ -82,7 +82,7 @@ class CommanderBot(CommanderBotBase):
         for ext in all_extensions:
             self.configured_extensions[ext.name] = ext
 
-        enabled_extensions: List[ConfiguredExtension] = [
+        enabled_extensions: list[ConfiguredExtension] = [
             ext for ext in all_extensions if not ext.disabled
         ]
 
@@ -120,7 +120,7 @@ class CommanderBot(CommanderBotBase):
         return cast(CachingCommandTree, self.tree)
 
     # @implements CommanderBotBase
-    def get_extension_options(self, ext_name: str) -> Optional[Dict[str, Any]]:
+    def get_extension_options(self, ext_name: str) -> Optional[dict[str, Any]]:
         if configured_extension := self.configured_extensions.get(ext_name):
             return configured_extension.options
 

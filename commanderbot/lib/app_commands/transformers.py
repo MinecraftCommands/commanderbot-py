@@ -8,7 +8,7 @@ from emoji import is_emoji
 
 from commanderbot.lib.color import Color
 from commanderbot.lib.constants import MAX_AUTOCOMPLETE_CHOICES
-from commanderbot.lib.responsive_exception import ResponsiveException
+from commanderbot.lib.exceptions import ResponsiveException
 from commanderbot.lib.utils.utils import is_custom_emoji, is_message_link
 
 __all__ = (

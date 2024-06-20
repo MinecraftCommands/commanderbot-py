@@ -15,7 +15,6 @@ from discord import (
     ThreadMember,
     User,
 )
-from discord.abc import GuildChannel
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog, Context
 
@@ -25,7 +24,17 @@ from commanderbot.ext.automod.automod_json_store import AutomodJsonStore
 from commanderbot.ext.automod.automod_options import AutomodOptions
 from commanderbot.ext.automod.automod_state import AutomodState
 from commanderbot.ext.automod.automod_store import AutomodStore
-from commanderbot.lib import GuildContext, MessageableChannel, TextMessage, TextReaction
+from commanderbot.lib import (
+    GuildChannel,
+    MessageableChannel,
+    TextMessage,
+    TextReaction,
+    is_guild,
+    is_member,
+    is_text_channel,
+    is_thread,
+    utils,
+)
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -34,7 +43,6 @@ from commanderbot.lib.cogs.database import (
     UnsupportedDatabaseOptions,
 )
 from commanderbot.lib.commands import ColorConverter, checks
-from commanderbot.lib.utils import is_bot, parse_json_path, parse_json_path_op
 
 
 def make_automod_store(bot: Bot, cog: Cog, options: AutomodOptions) -> AutomodStore:
@@ -58,8 +66,8 @@ def member_has_permission():
     async def predicate(ctx: Context):
         cog = cast(AutomodCog, ctx.cog)
         return (
-            isinstance(ctx.guild, Guild)
-            and isinstance(ctx.author, Member)
+            is_guild(ctx.guild)
+            and is_member(ctx.author)
             and await cog.state[ctx.guild].member_has_permission(ctx.author)
         )
 
@@ -75,7 +83,7 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
     bot
         The bot/client instance this cog is attached to.
     options
-        Immutable, pre-defined settings that define core cog behaviour.
+        Immutable, pre-defined settings that define core cog behavior.
     store
         Abstracts the data storage and persistence of this cog.
     state
@@ -101,19 +109,19 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         )
 
     def _guild_state_for_message(self, message: Message) -> Optional[AutomodGuildState]:
-        if isinstance(message.channel, TextChannel | Thread) and (
-            not is_bot(self.bot, message.author)
+        if (is_text_channel(message.channel) or is_thread(message.channel)) and (
+            not utils.is_bot(self.bot, message.author)
         ):
             return self.state[message.channel.guild]
 
     def _guild_state_for_member(self, member: Member) -> Optional[AutomodGuildState]:
-        if not is_bot(self.bot, member):
+        if not utils.is_bot(self.bot, member):
             return self.state[member.guild]
 
     def _guild_state_for_channel(
         self, channel: GuildChannel
     ) -> Optional[AutomodGuildState]:
-        if isinstance(channel, TextChannel | Thread):
+        if is_text_channel(channel) or is_thread(channel):
             return self.state[channel.guild]
 
     def _guild_state_for_thread(self, thread: Thread) -> Optional[AutomodGuildState]:
@@ -129,9 +137,9 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         self, channel: MessageableChannel, user: User
     ) -> Optional[AutomodGuildState]:
         if (
-            isinstance(channel, TextChannel | Thread)
-            and isinstance(user, Member)
-            and (not is_bot(self.bot, user))
+            (is_text_channel(channel) or is_thread(channel))
+            and is_member(user)
+            and (not utils.is_bot(self.bot, user))
         ):
             return self.state[channel.guild]
 
@@ -139,9 +147,12 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         self, reaction: Reaction, actor: User
     ) -> Optional[AutomodGuildState]:
         if (
-            isinstance(reaction.message.channel, TextChannel | Thread)
-            and isinstance(actor, Member)
-            and (not is_bot(self.bot, actor))
+            (
+                is_text_channel(reaction.message.channel)
+                or is_thread(reaction.message.channel)
+            )
+            and is_member(actor)
+            and (not utils.is_bot(self.bot, actor))
         ):
             return self.state[reaction.message.channel.guild]
 
@@ -353,7 +364,7 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         member_has_permission(),
         commands.is_owner(),
     )
-    async def cmd_automod(self, ctx: GuildContext):
+    async def cmd_automod(self, ctx: Context):
         if not ctx.invoked_subcommand:
             await ctx.send_help(self.cmd_automod)
 
@@ -363,7 +374,7 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         name="options",
         brief="Configure various automod options.",
     )
-    async def cmd_automod_options(self, ctx: GuildContext):
+    async def cmd_automod_options(self, ctx: Context):
         if not ctx.invoked_subcommand:
             await ctx.send_help(self.cmd_automod_options)
 
@@ -371,34 +382,37 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
 
     @cmd_automod_options.group(
         name="log",
-        brief="Configure the default logging behaviour.",
+        brief="Configure the default logging behavior.",
     )
-    async def cmd_automod_options_log(self, ctx: GuildContext):
+    async def cmd_automod_options_log(self, ctx: Context):
         if not ctx.invoked_subcommand:
             if ctx.subcommand_passed:
                 await ctx.send_help(self.cmd_automod_options_log)
             else:
+                assert is_guild(ctx.guild)
                 await self.state[ctx.guild].show_default_log_options(ctx)
 
     @cmd_automod_options_log.command(
         name="show",
-        brief="Show the default logging behaviour.",
+        brief="Show the default logging behavior.",
     )
-    async def cmd_automod_options_log_show(self, ctx: GuildContext):
+    async def cmd_automod_options_log_show(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].show_default_log_options(ctx)
 
     @cmd_automod_options_log.command(
         name="set",
-        brief="Set the default logging behaviour.",
+        brief="Set the default logging behavior.",
     )
     async def cmd_automod_options_log_set(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         channel: TextChannel,
         stacktrace: Optional[bool],
         emoji: Optional[str],
         color: Optional[ColorConverter],
     ):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].set_default_log_options(
             ctx,
             channel=channel,
@@ -409,9 +423,10 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
 
     @cmd_automod_options_log.command(
         name="remove",
-        brief="Remove the default logging behaviour.",
+        brief="Remove the default logging behavior.",
     )
-    async def cmd_automod_options_log_remove(self, ctx: GuildContext):
+    async def cmd_automod_options_log_remove(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].remove_default_log_options(ctx)
 
     # @@ automod options permit
@@ -423,32 +438,36 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         brief="Configure the set of roles permitted to manage automod.",
     )
     @checks.is_guild_admin_or_bot_owner()
-    async def cmd_automod_options_permit(self, ctx: GuildContext):
+    async def cmd_automod_options_permit(self, ctx: Context):
         if not ctx.invoked_subcommand:
             if ctx.subcommand_passed:
                 await ctx.send_help(self.cmd_automod_options_permit)
             else:
+                assert is_guild(ctx.guild)
                 await self.state[ctx.guild].show_permitted_roles(ctx)
 
     @cmd_automod_options_permit.command(
         name="show",
         brief="Show the roles permitted to manage automod.",
     )
-    async def cmd_automod_options_permit_show(self, ctx: GuildContext):
+    async def cmd_automod_options_permit_show(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].show_permitted_roles(ctx)
 
     @cmd_automod_options_permit.command(
         name="set",
         brief="Set the roles permitted to manage automod.",
     )
-    async def cmd_automod_options_permit_set(self, ctx: GuildContext, *roles: Role):
+    async def cmd_automod_options_permit_set(self, ctx: Context, *roles: Role):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].set_permitted_roles(ctx, *roles)
 
     @cmd_automod_options_permit.command(
         name="clear",
         brief="Clear all roles permitted to manage automod.",
     )
-    async def cmd_automod_options_permit_clear(self, ctx: GuildContext):
+    async def cmd_automod_options_permit_clear(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].clear_permitted_roles(ctx)
 
     # @@ automod rules
@@ -457,18 +476,20 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         name="rules",
         brief="Browse and manage automod rules.",
     )
-    async def cmd_automod_rules(self, ctx: GuildContext):
+    async def cmd_automod_rules(self, ctx: Context):
         if not ctx.invoked_subcommand:
             if ctx.subcommand_passed:
                 await ctx.send_help(self.cmd_automod_rules)
             else:
+                assert is_guild(ctx.guild)
                 await self.state[ctx.guild].show_rules(ctx)
 
     @cmd_automod_rules.command(
         name="show",
         brief="List and show automod rules.",
     )
-    async def cmd_automod_rules_show(self, ctx: GuildContext, query: str):
+    async def cmd_automod_rules_show(self, ctx: Context, query: str):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].show_rules(ctx, query)
 
     @cmd_automod_rules.command(
@@ -477,25 +498,28 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
     )
     async def cmd_automod_rules_print(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         query: str,
         path: Optional[str],
     ):
-        parsed_path = parse_json_path(path) if path else None
+        parsed_path = utils.parse_json_path(path) if path else None
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].print_rule(ctx, query, parsed_path)
 
     @cmd_automod_rules.command(
         name="add",
         brief="Add a new automod rule.",
     )
-    async def cmd_automod_rules_add(self, ctx: GuildContext, *, body: str):
+    async def cmd_automod_rules_add(self, ctx: Context, *, body: str):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].add_rule(ctx, body)
 
     @cmd_automod_rules.command(
         name="remove",
         brief="Remove an automod rule.",
     )
-    async def cmd_automod_rules_remove(self, ctx: GuildContext, name: str):
+    async def cmd_automod_rules_remove(self, ctx: Context, name: str):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].remove_rule(ctx, name)
 
     @cmd_automod_rules.command(
@@ -504,27 +528,30 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
     )
     async def cmd_automod_rules_modify(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         name: str,
         path: str,
         op: str,
         *,
         body: str,
     ):
-        parsed_path = parse_json_path(path)
-        parsed_op = parse_json_path_op(op)
+        parsed_path = utils.parse_json_path(path)
+        parsed_op = utils.parse_json_path_op(op)
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].modify_rule(ctx, name, parsed_path, parsed_op, body)
 
     @cmd_automod_rules.command(
         name="enable",
         brief="Enable an automod rule",
     )
-    async def cmd_automod_rules_enable(self, ctx: GuildContext, name: str):
+    async def cmd_automod_rules_enable(self, ctx: Context, name: str):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].enable_rule(ctx, name)
 
     @cmd_automod_rules.command(
         name="disable",
         brief="Disable an automod rule",
     )
-    async def cmd_automod_rules_disable(self, ctx: GuildContext, name: str):
+    async def cmd_automod_rules_disable(self, ctx: Context, name: str):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].disable_rule(ctx, name)

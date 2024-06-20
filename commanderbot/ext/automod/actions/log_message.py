@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Optional, Type, TypeVar
-
-from discord.abc import Messageable
+from typing import Optional, Type, TypeVar
 
 from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
@@ -10,6 +8,7 @@ from commanderbot.lib import (
     ChannelID,
     Color,
     JsonObject,
+    MessageableChannel,
     ValueFormatter,
 )
 from commanderbot.lib.utils import message_to_file
@@ -47,7 +46,7 @@ class LogMessage(AutomodActionBase):
     emoji: Optional[str] = None
     color: Optional[Color] = None
     attach_message: Optional[bool] = None
-    fields: Optional[Dict[str, str]] = None
+    fields: Optional[dict[str, str]] = None
     allowed_mentions: Optional[AllowedMentions] = None
 
     @classmethod
@@ -65,7 +64,9 @@ class LogMessage(AutomodActionBase):
             allowed_mentions=allowed_mentions,
         )
 
-    async def resolve_channel(self, event: AutomodEvent) -> Optional[Messageable]:
+    async def resolve_channel(
+        self, event: AutomodEvent
+    ) -> Optional[MessageableChannel]:
         if self.channel is not None:
             return event.bot.get_channel(self.channel)
         return event.channel

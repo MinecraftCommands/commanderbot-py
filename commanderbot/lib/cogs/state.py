@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Callable, Dict, Generic, Iterable, TypeVar
+from typing import Callable, Generic, Iterable, TypeVar
 
 from discord import Guild
 from discord.ext.commands import Bot, Cog
 
+from commanderbot.lib.type_predicates import is_guild
 from commanderbot.lib.types import GuildID
 
 __all__ = (
@@ -109,7 +110,7 @@ class CogGuildStateManager(Generic[GuildStateType]):
 
     log: Logger = field(init=False)
 
-    _state_by_id: Dict[GuildID, GuildStateType] = field(init=False)
+    _state_by_id: dict[GuildID, GuildStateType] = field(init=False)
 
     def __post_init__(self):
         self.log = getLogger(
@@ -138,7 +139,7 @@ class CogGuildStateManager(Generic[GuildStateType]):
 
     def get(self, key: Guild | GuildID) -> GuildStateType:
         # Lazily-initialize guild states as they are accessed.
-        guild = key if isinstance(key, Guild) else self.bot.get_guild(key)
+        guild = key if is_guild(key) else self.bot.get_guild(key)
         if not guild:
             raise ValueError(f"Unable to initialize state for unknown guild: {key}")
         guild_state = self._state_by_id.get(guild.id)

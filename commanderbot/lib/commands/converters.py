@@ -1,12 +1,12 @@
 import difflib
 import re
-from typing import List, Tuple
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from commanderbot.lib import Color, GuildContext
+from commanderbot.lib import Color
+from commanderbot.lib.type_predicates import is_guild
 
 __all__ = (
     "CannotDisambiguateRole",
@@ -18,7 +18,7 @@ __all__ = (
 class CannotDisambiguateRole(commands.BadArgument):
     """Exception raised when multiple roles match the argument."""
 
-    def __init__(self, argument: str, roles: List[discord.Role]):
+    def __init__(self, argument: str, roles: list[discord.Role]):
         self.argument: str = argument
         count_roles = len(roles)
         role_mentions = " ".join(f"{role.mention}" for role in roles)
@@ -35,7 +35,11 @@ class LenientRoleConverter(commands.RoleConverter):
     Raises `CannotDisambiguateRole` if multiple roles are matched.
     """
 
-    async def convert(self, ctx: GuildContext, argument: str) -> discord.Role:
+    async def convert(self, ctx: Context, argument: str) -> discord.Role:
+        # Throw exception if we aren't in a guild.
+        if not is_guild(ctx.guild):
+            raise commands.RoleNotFound(argument)
+
         # Attempt to look-up the role as usual.
         try:
             if role := await super().convert(ctx, argument):
@@ -73,21 +77,22 @@ class LenientRoleConverter(commands.RoleConverter):
         raise commands.RoleNotFound(argument)
 
     def filter_roles(
-        self, ctx: GuildContext, argument: str, pattern: re.Pattern
-    ) -> List[discord.Role]:
+        self, ctx: Context, argument: str, pattern: re.Pattern
+    ) -> list[discord.Role]:
+        assert is_guild(ctx.guild)
         roles = list(ctx.guild.roles)
         roles.remove(ctx.guild.default_role)
         return [role for role in roles if self.match_role(ctx, argument, pattern, role)]
 
     def match_role(
-        self, ctx: GuildContext, argument: str, pattern: re.Pattern, role: discord.Role
+        self, ctx: Context, argument: str, pattern: re.Pattern, role: discord.Role
     ) -> bool:
         match = pattern.search(role.name)
         return match is not None
 
     def rate_matches(
-        self, argument: str, matches: List[discord.Role]
-    ) -> List[Tuple[float, discord.Role]]:
+        self, argument: str, matches: list[discord.Role]
+    ) -> list[tuple[float, discord.Role]]:
         return sorted(
             [
                 (difflib.SequenceMatcher(None, argument, role.name).ratio(), role)

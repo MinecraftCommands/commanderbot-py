@@ -1,6 +1,6 @@
 import unicodedata
 from dataclasses import dataclass
-from typing import Optional, Tuple, Type, TypeVar
+from typing import Optional, Type, TypeVar
 
 from commanderbot.ext.automod.automod_condition import (
     AutomodCondition,
@@ -37,7 +37,7 @@ class MessageContentContains(AutomodConditionBase):
         If enabled, the type of normalization to apply. Defaults to NFKD.
     """
 
-    contains: Tuple[str]
+    contains: tuple[str]
     count: Optional[int] = None
     ignore_case: Optional[bool] = None
     use_normalization: Optional[bool] = None

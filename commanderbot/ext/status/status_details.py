@@ -1,16 +1,12 @@
 import re
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Optional
 
 from discord.ext.commands import Bot
 from discord.utils import format_dt
 
 from commanderbot.core.utils import check_commander_bot
-from commanderbot.lib.constants import (
-    COMMANDERBOT_VERSION,
-    DISCORD_PY_VERSION,
-    PYTHON_VERSION,
-)
+from commanderbot.lib import constants
 
 
 class StatusDetails:
@@ -18,9 +14,9 @@ class StatusDetails:
         self.bot: Bot = bot
 
         # Store details about the bot
-        self.python_version: str = PYTHON_VERSION
-        self.discord_py_version: str = DISCORD_PY_VERSION
-        self.commanderbot_version: str = COMMANDERBOT_VERSION
+        self.python_version: str = constants.PYTHON_VERSION
+        self.discord_py_version: str = constants.DISCORD_PY_VERSION
+        self.commanderbot_version: str = constants.COMMANDERBOT_VERSION
 
         # Store additional bot details, if available
         self.started_at: Optional[datetime] = None
@@ -42,7 +38,7 @@ class StatusDetails:
             return f"0d {times[0]}h {times[1]}m {times[2]}s"
 
     @property
-    def fields(self) -> Dict[str, str]:
+    def fields(self) -> dict[str, str]:
         all_fields = {
             "Python version": f"`{self.python_version}`",
             "Discord.py version": f"`{self.discord_py_version}`",

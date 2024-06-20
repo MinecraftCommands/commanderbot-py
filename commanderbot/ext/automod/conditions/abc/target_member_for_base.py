@@ -7,8 +7,7 @@ from discord.utils import utcnow
 
 from commanderbot.ext.automod.automod_condition import AutomodConditionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
-from commanderbot.lib.utils import timedelta_from_field_optional
+from commanderbot.lib import JsonObject, utils
 
 ST = TypeVar("ST")
 
@@ -20,8 +19,8 @@ class TargetMemberForBase(AutomodConditionBase):
 
     @classmethod
     def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        at_least = timedelta_from_field_optional(data, "at_least")
-        at_most = timedelta_from_field_optional(data, "at_most")
+        at_least = utils.timedelta_from_field_optional(data, "at_least")
+        at_most = utils.timedelta_from_field_optional(data, "at_most")
         return cls(
             description=data.get("description"),
             at_least=at_least,

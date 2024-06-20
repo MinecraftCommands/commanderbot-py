@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Protocol
+from typing import Optional, Protocol
 
 from discord import Guild, TextChannel
 from discord.ext.commands import Context
@@ -20,7 +20,7 @@ class HelpChatStore(Protocol):
     Abstracts the data storage and persistence of the help-chat cog.
     """
 
-    async def get_help_channels(self, guild: Guild) -> List[HelpChannel]:
+    async def get_help_channels(self, guild: Guild) -> list[HelpChannel]:
         ...
 
     async def get_help_channel(

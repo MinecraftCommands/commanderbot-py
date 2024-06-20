@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Set
+from typing import Optional
 
 from discord import TextChannel, Thread
 
@@ -28,8 +28,8 @@ class ChannelTypesGuard(FromDataMixin):
         types.
     """
 
-    include: Set[str] = field(default_factory=set)
-    exclude: Set[str] = field(default_factory=set)
+    include: set[str] = field(default_factory=set)
+    exclude: set[str] = field(default_factory=set)
 
     @classmethod
     def try_from_data(cls, data):

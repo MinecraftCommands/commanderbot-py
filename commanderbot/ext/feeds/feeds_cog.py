@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from discord import Guild, Interaction, Permissions, Role
+from discord import Interaction, Permissions, Role
 from discord.app_commands import Group, describe
 from discord.ext.commands import Bot, Cog
 
@@ -12,13 +12,14 @@ from commanderbot.ext.feeds.feeds_options import FeedsOptions
 from commanderbot.ext.feeds.feeds_state import FeedsState
 from commanderbot.ext.feeds.feeds_store import FeedsStore
 from commanderbot.ext.feeds.providers import (
-    FeedType,
     FeedProviderType,
+    FeedType,
     MinecraftBedrockUpdates,
     MinecraftJavaJarUpdates,
     MinecraftJavaUpdates,
 )
-from commanderbot.lib import MessageableGuildChannel
+from commanderbot.lib import MessageableGuildChannel, is_guild
+from commanderbot.lib.app_commands import checks
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -26,7 +27,6 @@ from commanderbot.lib.cogs.database import (
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
-from commanderbot.lib.app_commands import checks
 
 
 class FeedProviderChoices(Enum):
@@ -126,7 +126,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         notification_role: Optional[Role],
         auto_pin: Optional[bool],
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].subscribe_to_feed(
             interaction, channel, feed.value, notification_role, auto_pin
         )
@@ -147,7 +147,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         notification_role: Optional[Role],
         auto_pin: Optional[bool],
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_subscription(
             interaction, channel, feed.value, notification_role, auto_pin
         )
@@ -166,7 +166,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         channel: MessageableGuildChannel,
         feed: FeedChoices,
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].unsubscribe_from_feed(
             interaction, channel, feed.value
         )
@@ -179,7 +179,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     async def cmd_feed_details(
         self, interaction: Interaction, channel: MessageableGuildChannel
     ):
-        assert isinstance(interaction.guild, Guild)
+        assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_subscription_details(
             interaction, channel
         )

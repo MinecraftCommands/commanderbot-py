@@ -1,6 +1,6 @@
 from typing import Any, Optional, Self
 
-from commanderbot.lib.data import MalformedData
+from commanderbot.lib.exceptions import MalformedData
 from commanderbot.lib.json import JsonObject
 
 __all__ = ("FromDataMixin",)

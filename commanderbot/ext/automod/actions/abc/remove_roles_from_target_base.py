@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 from discord import Guild, Member
 
@@ -10,7 +10,7 @@ from commanderbot.lib import RoleID
 
 @dataclass
 class RemoveRolesFromTargetBase(AutomodActionBase):
-    roles: Tuple[RoleID]
+    roles: tuple[RoleID]
 
     def get_target(self, event: AutomodEvent) -> Optional[Member]:
         raise NotImplementedError()

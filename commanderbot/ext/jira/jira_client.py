@@ -12,7 +12,7 @@ from commanderbot.ext.jira.jira_exceptions import (
     RequestError,
 )
 from commanderbot.ext.jira.jira_issue import JiraIssue, StatusColor
-from commanderbot.lib.constants import USER_AGENT
+from commanderbot.lib import constants
 
 
 @dataclass
@@ -28,7 +28,7 @@ class JiraClient:
     async def _request_issue_data(self, base_url: str, issue_id: str) -> dict:
         try:
             issue_url: str = f"{base_url}/rest/api/latest/issue/{issue_id}"
-            headers: dict[str, str] = {"User-Agent": USER_AGENT}
+            headers: dict[str, str] = {"User-Agent": constants.USER_AGENT}
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     issue_url, headers=headers, raise_for_status=True

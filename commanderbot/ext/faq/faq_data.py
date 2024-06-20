@@ -21,8 +21,7 @@ from commanderbot.ext.faq.faq_exceptions import (
     PrefixPatternNotSet,
 )
 from commanderbot.ext.faq.faq_store import FaqEntry
-from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID
-from commanderbot.lib.utils import dict_without_falsies
+from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID, utils
 
 TERM_SPLIT_PATTERN = re.compile(r"\W+")
 
@@ -143,9 +142,9 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        return dict_without_falsies(
+        return utils.dict_without_falsies(
             # Omit empty entries
-            faq_entries=dict_without_falsies(
+            faq_entries=utils.dict_without_falsies(
                 {key: entry.to_json() for key, entry in self.faq_entries.items()}
             ),
             prefix=self.prefix.pattern if self.prefix else None,
@@ -383,8 +382,8 @@ class FaqData(JsonSerializable, FromDataMixin):
     # @implements JsonSerializable
     def to_json(self) -> Any:
         # Omit empty guilds, as well as an empty list of guilds
-        return dict_without_falsies(
-            guilds=dict_without_falsies(
+        return utils.dict_without_falsies(
+            guilds=utils.dict_without_falsies(
                 {
                     str(guild_id): guild_data.to_json()
                     for guild_id, guild_data in self.guilds.items()

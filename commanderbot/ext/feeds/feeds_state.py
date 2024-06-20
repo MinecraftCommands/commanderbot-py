@@ -19,7 +19,7 @@ from commanderbot.ext.feeds.providers import (
     MinecraftJavaUpdateInfo,
     MinecraftJavaUpdates,
 )
-from commanderbot.lib import ChannelID, Color, MessageableGuildChannel, MessageID
+from commanderbot.lib import Color
 from commanderbot.lib.cogs import GuildPartitionedCogState
 
 

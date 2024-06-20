@@ -3,7 +3,7 @@ from typing import Optional
 
 from discord import CategoryChannel, TextChannel
 from discord.ext import commands
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Bot, Cog, Context
 from discord.utils import utcnow
 
 from commanderbot.ext.help_chat import constants
@@ -12,7 +12,7 @@ from commanderbot.ext.help_chat.help_chat_options import HelpChatOptions
 from commanderbot.ext.help_chat.help_chat_state import HelpChatState
 from commanderbot.ext.help_chat.help_chat_store import HelpChatStore
 from commanderbot.ext.help_chat.sql_store import HelpChatSQLStore
-from commanderbot.lib import GuildContext
+from commanderbot.lib import is_guild
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -49,7 +49,7 @@ class HelpChatCog(Cog, name="commanderbot.ext.help_chat"):
     bot
         The bot/client instance this cog is attached to.
     options
-        Immutable, pre-defined settings that define core cog behaviour.
+        Immutable, pre-defined settings that define core cog behavior.
     store
         Abstracts the data storage and persistence of this cog.
     state
@@ -79,45 +79,51 @@ class HelpChatCog(Cog, name="commanderbot.ext.help_chat"):
     @commands.group(name="helpchat", aliases=["hc"])
     @checks.is_administrator()
     @checks.guild_only()
-    async def cmd_helpchat(self, ctx: GuildContext):
+    async def cmd_helpchat(self, ctx: Context):
         if not ctx.invoked_subcommand:
             await ctx.send_help(self.cmd_helpchat)
 
     # @@ helpchat channels
 
     @cmd_helpchat.group(name="channels", aliases=["ch"])
-    async def cmd_helpchat_channels(self, ctx: GuildContext):
+    async def cmd_helpchat_channels(self, ctx: Context):
         if not ctx.invoked_subcommand:
             await ctx.send_help(self.cmd_helpchat_channels)
 
     @cmd_helpchat_channels.command(name="list")
-    async def cmd_helpchat_channels_list(self, ctx: GuildContext):
+    async def cmd_helpchat_channels_list(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].list_channels(ctx)
 
     @cmd_helpchat_channels.command(name="listc")
-    async def cmd_helpchat_channels_listc(self, ctx: GuildContext):
+    async def cmd_helpchat_channels_listc(self, ctx: Context):
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].list_channels_by_creation_date(ctx)
 
     @cmd_helpchat_channels.command(name="add")
     async def cmd_helpchat_channels_add(
-        self, ctx: GuildContext, *channels: TextChannel | CategoryChannel
+        self, ctx: Context, *channels: TextChannel | CategoryChannel
     ):
         if not channels:
             await ctx.send_help(self.cmd_helpchat_channels_add)
-        await self.state[ctx.guild].add_channels(ctx, channels)
+        else:
+            assert is_guild(ctx.guild)
+            await self.state[ctx.guild].add_channels(ctx, channels)
 
     @cmd_helpchat_channels.command(name="remove")
     async def cmd_helpchat_channels_remove(
-        self, ctx: GuildContext, *channels: TextChannel | CategoryChannel
+        self, ctx: Context, *channels: TextChannel | CategoryChannel
     ):
         if not channels:
             await ctx.send_help(self.cmd_helpchat_channels_remove)
-        await self.state[ctx.guild].remove_channels(ctx, channels)
+        else:
+            assert is_guild(ctx.guild)
+            await self.state[ctx.guild].remove_channels(ctx, channels)
 
     # @@ helpchat report
 
     @cmd_helpchat.group(name="report")
-    async def cmd_helpchat_report(self, ctx: GuildContext):
+    async def cmd_helpchat_report(self, ctx: Context):
         if not ctx.invoked_subcommand:
             await ctx.send_help(self.cmd_helpchat_report)
 
@@ -126,7 +132,7 @@ class HelpChatCog(Cog, name="commanderbot.ext.help_chat"):
     @cmd_helpchat_report.command(name="build")
     async def cmd_helpchat_report_build(
         self,
-        ctx: GuildContext,
+        ctx: Context,
         after: str,
         before: str = "now",
         label: Optional[str] = None,
@@ -145,6 +151,7 @@ class HelpChatCog(Cog, name="commanderbot.ext.help_chat"):
             if label is not None
             else utcnow().strftime(constants.DATE_FMT_YYYY_MM_DD_HH_MM_SS)
         )
+        assert is_guild(ctx.guild)
         await self.state[ctx.guild].build_report(
             ctx,
             after_date,

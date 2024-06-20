@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Tuple
+from typing import Any
 
 
 @dataclass
 class EventData:
     name: str
-    args: Tuple[Any, ...]
-    kwargs: Dict[str, Any]
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
 
     def format_codeblock(self) -> str:
         lines = [
