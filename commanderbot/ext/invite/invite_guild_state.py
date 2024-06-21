@@ -7,10 +7,10 @@ from discord.utils import format_dt
 
 from commanderbot.ext.invite.invite_exceptions import QueryReturnedNoResults
 from commanderbot.ext.invite.invite_store import InviteEntry, InviteStore
+from commanderbot.lib import utils
 from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.cogs.views import CogStateModal
 from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
-from commanderbot.lib.utils import async_expand
 
 
 @dataclass
@@ -40,7 +40,9 @@ class InviteGuildState(CogGuildState):
         return entry.link
 
     async def get_invite(self, interaction: Interaction, query: str):
-        if entries := await async_expand(self.store.query_invites(self.guild, query)):
+        if entries := await utils.async_expand(
+            self.store.query_invites(self.guild, query)
+        ):
             lines: list[str] = []
             for entry in entries:
                 await self.store.increment_invite_hits(entry)
@@ -61,7 +63,7 @@ class InviteGuildState(CogGuildState):
             else:
                 all_entries.append(entry)
 
-        all_tags = await async_expand(self.store.get_tags(self.guild, sort=True))
+        all_tags = await utils.async_expand(self.store.get_tags(self.guild, sort=True))
 
         # Format lines for embed description
         lines: list[str] = []
@@ -126,14 +128,16 @@ class InviteGuildState(CogGuildState):
                 try:
                     await self.store.remove_invite(self.guild, entry.key)
                     await interaction.followup.send(
-                        content=f"Removed invite: `{entry.key}`"
+                        content=f"Removed the invite `{entry.key}`"
                     )
                 except Exception as ex:
                     await interaction.delete_original_response()
                     raise ex
             case _:
                 # If the answer was no, send a response
-                await interaction.followup.send(f"Did not remove invite: `{entry.key}`")
+                await interaction.followup.send(
+                    f"Did not remove the invite `{entry.key}`"
+                )
 
     async def show_invite_details(self, interaction: Interaction, invite: str):
         # Try to get the invite
@@ -246,7 +250,7 @@ class AddInviteModal(InviteModal):
             description=self.description_field.value.strip() or None,
             user_id=interaction.user.id,
         )
-        await interaction.response.send_message(f"Added invite: `{entry.key}`")
+        await interaction.response.send_message(f"Added the invite `{entry.key}`")
 
 
 class ModifyInviteModal(InviteModal):
@@ -297,4 +301,4 @@ class ModifyInviteModal(InviteModal):
             description=self.description_field.value.strip() or None,
             user_id=interaction.user.id,
         )
-        await interaction.response.send_message(f"Modified invite: `{entry.key}`")
+        await interaction.response.send_message(f"Modified the invite `{entry.key}`")

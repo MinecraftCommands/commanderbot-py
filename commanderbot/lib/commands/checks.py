@@ -1,6 +1,6 @@
 from discord.ext import commands
 
-from commanderbot.lib.type_predicates import is_member
+from commanderbot.lib.predicates import is_member
 
 # NOTE See: https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html#checks
 

@@ -1,15 +1,15 @@
 from itertools import islice
 
+import emoji
 from discord import Interaction, Message
 from discord.app_commands import AppCommandError, Choice, Transformer
 from discord.ext.commands import BadArgument, CommandError, Context, MessageConverter
 from discord.interactions import Interaction
-from emoji import is_emoji
 
 from commanderbot.lib.color import Color
 from commanderbot.lib.constants import MAX_AUTOCOMPLETE_CHOICES
 from commanderbot.lib.exceptions import ResponsiveException
-from commanderbot.lib.utils.utils import is_custom_emoji, is_message_link
+from commanderbot.lib.predicates import is_custom_emoji, is_message_link
 
 __all__ = (
     "InvalidEmoji",
@@ -60,7 +60,7 @@ class EmojiTransformer(Transformer):
     """
 
     async def transform(self, interaction: Interaction, value: str) -> str:
-        if is_emoji(value):
+        if emoji.is_emoji(value):
             return value
         elif is_custom_emoji(value):
             return value

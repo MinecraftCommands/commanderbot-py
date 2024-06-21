@@ -16,11 +16,15 @@ from commanderbot.ext.sudo.sudo_exceptions import (
     UnknownCog,
     UnsupportedStoreExport,
 )
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
-from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
+from commanderbot.lib import (
+    ConfirmationResult,
+    constants,
+    json_dumps,
+    respond_with_confirmation,
+    utils,
+)
 from commanderbot.lib.app_commands import checks
-from commanderbot.lib.json import json_dumps
-from commanderbot.lib.utils import SizeUnit, bytes_to, pointer_size, str_to_file
+from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
 
 class SyncTypeChoices(Enum):
@@ -91,12 +95,12 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
         # Get basic info on the running process
         uname = platform.uname()
-        ptr_size: int = pointer_size()
+        ptr_size: int = constants.POINTER_SIZE_BITS
 
         architecture: str = "x86" if ptr_size == 32 else f"x{ptr_size}"
         cpu_usage: float = self.process.cpu_percent() / psutil.cpu_count()
-        memory_usage: float = bytes_to(
-            self.process.memory_full_info().uss, SizeUnit.MEGABYTE, binary=True
+        memory_usage: float = utils.bytes_to(
+            self.process.memory_full_info().uss, utils.SizeUnit.MEGABYTE, binary=True
         )
 
         # Create embed fields
@@ -178,9 +182,10 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             case JsonFileDatabaseAdapter() as db:
                 cache = await db.get_cache()
                 json_data = json_dumps(db.serializer(cache))
+                file = utils.str_to_file(json_data, f"{found_cog.qualified_name}.json")
                 await interaction.followup.send(
                     f"Exported Json store for `{found_cog.qualified_name}`",
-                    file=str_to_file(json_data, f"{found_cog.qualified_name}.json"),
+                    file=file,
                     ephemeral=True,
                 )
             case _ as db:

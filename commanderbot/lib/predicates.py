@@ -1,5 +1,10 @@
+import re
+from typing import Any, Optional
+
 from discord import (
+    AppInfo,
     CategoryChannel,
+    Client,
     DMChannel,
     ForumChannel,
     GroupChannel,
@@ -12,15 +17,23 @@ from discord import (
     User,
     VoiceChannel,
 )
+from discord.ext.commands import Bot
 from typing_extensions import TypeIs
 
 from commanderbot.lib.types import (
     ConnectableChannel,
     MessageableChannel,
     MessageableGuildChannel,
+    UserID,
 )
 
 __all__ = (
+    "is_bot",
+    "is_owner",
+    "convertable_to",
+    "is_invite_link",
+    "is_message_link",
+    "is_custom_emoji",
     "is_user",
     "is_member",
     "is_guild",
@@ -37,6 +50,57 @@ __all__ = (
     "is_connectable_channel",
     "is_partial_messagable",
 )
+
+INVITE_LINK_PATTERN = re.compile(
+    r"(?:https?://)?discord(?:app)?\.(?:com/invite|gg)/[a-zA-Z0-9]+/?"
+)
+MESSAGE_LINK_PATTERN = re.compile(
+    r"https?://(?:\w*\.)?discord(?:app)?\.com/channels/(\d+|@me)/(\d+)/(\d+)"
+)
+CUSTOM_EMOJI_PATTERN = re.compile(r"\<a?\:\w+\:\d+\>")
+
+
+def is_bot(bot: Bot, user: User | Member | UserID) -> bool:
+    if not bot.user:
+        return False
+    elif is_user(user) or is_member(user):
+        return user == bot.user
+    else:
+        return user == bot.user.id
+
+
+def is_owner(client: Client, user: User | Member) -> bool:
+    info: Optional[AppInfo] = client.application
+    if not info:
+        return False
+
+    if info.team:
+        return user in info.team.members
+    else:
+        return user == info.owner
+
+
+def is_invite_link(invite: str) -> bool:
+    """Return true if `invite` is a valid Discord invite link"""
+    return bool(INVITE_LINK_PATTERN.match(invite))
+
+
+def is_message_link(message: str) -> bool:
+    """Return true if `message` is a valid Discord message link"""
+    return bool(MESSAGE_LINK_PATTERN.match(message))
+
+
+def is_custom_emoji(emoji: str) -> bool:
+    """Return true if `emoji` is a valid custom Discord emoji"""
+    return bool(CUSTOM_EMOJI_PATTERN.match(emoji))
+
+
+def convertable_to(obj: Any, t: Any) -> bool:
+    try:
+        t(obj)
+        return True
+    except:
+        return False
 
 
 def is_user(obj: object) -> TypeIs[User]:

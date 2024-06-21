@@ -29,6 +29,7 @@ from commanderbot.lib import (
     MessageableChannel,
     TextMessage,
     TextReaction,
+    is_bot,
     is_guild,
     is_member,
     is_text_channel,
@@ -110,12 +111,12 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
 
     def _guild_state_for_message(self, message: Message) -> Optional[AutomodGuildState]:
         if (is_text_channel(message.channel) or is_thread(message.channel)) and (
-            not utils.is_bot(self.bot, message.author)
+            not is_bot(self.bot, message.author)
         ):
             return self.state[message.channel.guild]
 
     def _guild_state_for_member(self, member: Member) -> Optional[AutomodGuildState]:
-        if not utils.is_bot(self.bot, member):
+        if not is_bot(self.bot, member):
             return self.state[member.guild]
 
     def _guild_state_for_channel(
@@ -139,7 +140,7 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
         if (
             (is_text_channel(channel) or is_thread(channel))
             and is_member(user)
-            and (not utils.is_bot(self.bot, user))
+            and (not is_bot(self.bot, user))
         ):
             return self.state[channel.guild]
 
@@ -152,7 +153,7 @@ class AutomodCog(Cog, name="commanderbot.ext.automod"):
                 or is_thread(reaction.message.channel)
             )
             and is_member(actor)
-            and (not utils.is_bot(self.bot, actor))
+            and (not is_bot(self.bot, actor))
         ):
             return self.state[reaction.message.channel.guild]
 

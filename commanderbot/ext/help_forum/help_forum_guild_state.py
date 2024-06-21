@@ -20,15 +20,14 @@ from commanderbot.ext.help_forum.help_forum_exceptions import (
     UnableToResolveUnregistered,
 )
 from commanderbot.ext.help_forum.help_forum_store import HelpForum, HelpForumStore
-from commanderbot.lib import AllowedMentions, ForumTagID
-from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
-from commanderbot.lib.utils import (
-    async_schedule,
-    format_forum_tag,
-    require_forum_tag_id,
-    thread_has_forum_tag_with_id,
+from commanderbot.lib import (
+    AllowedMentions,
+    ConfirmationResult,
+    ForumTagID,
+    respond_with_confirmation,
+    utils,
 )
+from commanderbot.lib.cogs import CogGuildState
 
 
 class ThreadState(Enum):
@@ -60,8 +59,12 @@ class HelpForumGuildState(CogGuildState):
         unresolved_tag_id: ForumTagID = forum_data.unresolved_tag_id
         resolved_tag_id: ForumTagID = forum_data.resolved_tag_id
 
-        valid_unresolved_tag: ForumTag = require_forum_tag_id(forum, unresolved_tag_id)
-        valid_resolved_tag: ForumTag = require_forum_tag_id(forum, resolved_tag_id)
+        valid_unresolved_tag: ForumTag = utils.require_forum_tag_id(
+            forum, unresolved_tag_id
+        )
+        valid_resolved_tag: ForumTag = utils.require_forum_tag_id(
+            forum, resolved_tag_id
+        )
 
         # Create a new tag list from the first 4 tags that aren't a state tag
         tags: list[ForumTag] = []
@@ -105,13 +108,13 @@ class HelpForumGuildState(CogGuildState):
 
         # Ignore newly created threads if it has the resolved tag
         # This is a QoL feature for server moderators so they can create threads that will be pinned
-        if thread_has_forum_tag_with_id(thread, forum_data.resolved_tag_id):
+        if utils.thread_has_forum_tag_with_id(thread, forum_data.resolved_tag_id):
             return
 
         # Schedule the thread creation functions
         # Since `_setup_thread` has a longish delay and the rest of the functions don't depend
         # on it, we schedule all all of them instead of sequentially awaiting them
-        await async_schedule(
+        await utils.async_schedule(
             self._setup_thread(thread, forum_data),
             self._change_thread_state(
                 forum, thread, forum_data, ThreadState.UNRESOLVED
@@ -284,12 +287,14 @@ class HelpForumGuildState(CogGuildState):
         resolved_tag = forum.get_tag(forum_data.resolved_tag_id)
 
         formatted_unresolved_tag = (
-            f"{format_forum_tag(unresolved_tag)}"
+            f"{utils.format_forum_tag(unresolved_tag)}"
             if unresolved_tag
             else "**No tag set!**"
         )
         formatted_resolved_tag = (
-            f"{format_forum_tag(resolved_tag)}" if resolved_tag else "**No tag set!**"
+            f"{utils.format_forum_tag(resolved_tag)}"
+            if resolved_tag
+            else "**No tag set!**"
         )
 
         # Create embed fields
@@ -324,7 +329,7 @@ class HelpForumGuildState(CogGuildState):
             self.guild, forum, tag
         )
         await interaction.response.send_message(
-            f"Changed unresolved tag for <#{forum_data.channel_id}> to {format_forum_tag(new_tag)}"
+            f"Changed unresolved tag for <#{forum_data.channel_id}> to {utils.format_forum_tag(new_tag)}"
         )
 
     async def modify_resolved_tag(
@@ -334,5 +339,5 @@ class HelpForumGuildState(CogGuildState):
             self.guild, forum, tag
         )
         await interaction.response.send_message(
-            f"Changed resolved tag for <#{forum_data.channel_id}> to {format_forum_tag(new_tag)}"
+            f"Changed resolved tag for <#{forum_data.channel_id}> to {utils.format_forum_tag(new_tag)}"
         )

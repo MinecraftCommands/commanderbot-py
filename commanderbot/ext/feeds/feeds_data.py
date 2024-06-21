@@ -17,8 +17,8 @@ from commanderbot.lib import (
     MessageID,
     RoleID,
     UserID,
+    utils,
 )
-from commanderbot.lib.utils import dict_without_falsies
 
 
 @dataclass
@@ -72,9 +72,9 @@ class FeedsFeedData(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        return dict_without_falsies(
+        return utils.dict_without_falsies(
             # Omit empty subscriptions
-            subscribers=dict_without_falsies(
+            subscribers=utils.dict_without_falsies(
                 {
                     str(channel_id): subscription.to_json()
                     for channel_id, subscription in self.subscribers.items()
@@ -169,7 +169,7 @@ class FeedsData(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        return dict_without_falsies(
+        return utils.dict_without_falsies(
             mcje_releases=self.mcje_releases.to_json(),
             mcje_snapshots=self.mcje_snapshots.to_json(),
             mcbe_releases=self.mcbe_releases.to_json(),

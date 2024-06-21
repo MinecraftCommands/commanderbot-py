@@ -5,7 +5,7 @@ from typing import Callable, Generic, Iterable, TypeVar
 from discord import Guild
 from discord.ext.commands import Bot, Cog
 
-from commanderbot.lib.type_predicates import is_guild
+from commanderbot.lib.predicates import is_guild
 from commanderbot.lib.types import GuildID
 
 __all__ = (

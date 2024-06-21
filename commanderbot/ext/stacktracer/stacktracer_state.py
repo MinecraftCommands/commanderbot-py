@@ -8,10 +8,9 @@ from commanderbot.core.utils import get_app_command
 from commanderbot.ext.stacktracer.stacktracer_exceptions import LoggingNotConfigured
 from commanderbot.ext.stacktracer.stacktracer_guild_state import StacktracerGuildState
 from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
-from commanderbot.lib import Color, EventData, LogOptions
+from commanderbot.lib import Color, EventData, LogOptions, utils
 from commanderbot.lib.cogs import GuildPartitionedCogState
 from commanderbot.lib.app_commands import command_name
-from commanderbot.lib.utils import format_context_cause
 
 
 @dataclass
@@ -93,7 +92,7 @@ class StacktracerState(GuildPartitionedCogState[StacktracerGuildState]):
             try:
                 title = "Encountered an unhandled command error"
                 command = self._format_command(ctx)
-                cause = format_context_cause(ctx)
+                cause = utils.format_context_cause(ctx)
                 description = "\n".join(
                     [
                         f"While executing {command} for {cause}, the following error occurred:",
@@ -139,7 +138,7 @@ class StacktracerState(GuildPartitionedCogState[StacktracerGuildState]):
             try:
                 title = "Encountered an unhandled app command error"
                 command = self._format_command(interaction)
-                cause = format_context_cause(interaction)
+                cause = utils.format_context_cause(interaction)
                 description = "\n".join(
                     [
                         f"While executing {command} for {cause}, the following error occurred:",

@@ -1,5 +1,4 @@
 import asyncio
-import ctypes
 import io
 import json
 import os
@@ -20,8 +19,6 @@ from typing import (
 
 from discord import (
     AllowedMentions,
-    AppInfo,
-    Client,
     File,
     Interaction,
     Member,
@@ -29,61 +26,14 @@ from discord import (
     PartialMessageable,
     User,
 )
-from discord.ext.commands import Bot, Context
+from discord.ext.commands import Context
 
-from commanderbot.lib.type_predicates import (
-    is_member,
-    is_text_channel,
-    is_thread,
-    is_user,
-)
+from commanderbot.lib.predicates import is_text_channel, is_thread, is_user
 from commanderbot.lib.types import MessageableChannel, RoleID, UserID
 
 CHARACTER_CAP = 1900
-INVITE_LINK_PATTERN = re.compile(
-    r"(?:https?://)?discord(?:app)?\.(?:com/invite|gg)/[a-zA-Z0-9]+/?"
-)
-MESSAGE_LINK_PATTERN = re.compile(
-    r"https?://(?:\w*\.)?discord(?:app)?\.com/channels/(\d+|@me)/(\d+)/(\d+)"
-)
-CUSTOM_EMOJI_PATTERN = re.compile(r"\<a?\:\w+\:\d+\>")
 
 T = TypeVar("T")
-
-
-def is_bot(bot: Bot, user: User | Member | UserID) -> bool:
-    if not bot.user:
-        return False
-    elif is_user(user) or is_member(user):
-        return user == bot.user
-    else:
-        return user == bot.user.id
-
-
-def is_owner(client: Client, user: User | Member) -> bool:
-    info: Optional[AppInfo] = client.application
-    if not info:
-        return False
-
-    if info.team:
-        return user in info.team.members
-    else:
-        return user == info.owner
-
-
-def is_invite_link(invite: str) -> bool:
-    """Return true if `invite` is a valid Discord invite link"""
-    return bool(INVITE_LINK_PATTERN.match(invite))
-
-
-def is_message_link(message: str) -> bool:
-    """Return true if `message` is a valid Discord message link"""
-    return bool(MESSAGE_LINK_PATTERN.match(message))
-
-
-def is_custom_emoji(emoji: str) -> bool:
-    """Return true if `emoji` is a valid custom Discord emoji"""
-    return bool(CUSTOM_EMOJI_PATTERN.match(emoji))
 
 
 def member_roles_from(member: User | Member, role_ids: set[RoleID]) -> set[RoleID]:
@@ -230,35 +180,6 @@ async def send_message_or_file(
             allowed_mentions=allowed_mentions,
             **kwargs,
         )
-
-
-def is_int(value: Any):
-    """
-    Returns `True` if `value` can be casted to an int
-    """
-    try:
-        int(value)
-        return True
-    except ValueError:
-        return False
-
-
-def is_float(value: Any):
-    """
-    Returns `True` if `value` can be casted to a float
-    """
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
-
-
-def pointer_size() -> int:
-    """
-    Returns the size of a pointer (in bits) for the system that Python is running on
-    """
-    return ctypes.sizeof(ctypes.c_void_p) * 8
 
 
 class SizeUnit(Enum):

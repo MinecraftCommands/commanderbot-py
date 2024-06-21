@@ -8,7 +8,13 @@ from commanderbot.ext.faq.faq_json_store import FaqJsonStore
 from commanderbot.ext.faq.faq_options import FaqOptions
 from commanderbot.ext.faq.faq_state import FaqState
 from commanderbot.ext.faq.faq_store import FaqEntry, FaqStore
-from commanderbot.lib import constants, is_guild, is_messagable_guild_channel, utils
+from commanderbot.lib import (
+    constants,
+    is_bot,
+    is_guild,
+    is_messagable_guild_channel,
+    utils,
+)
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -115,7 +121,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
     @Cog.listener()
     async def on_message(self, message: Message):
         # Make sure the message wasn't sent by the bot
-        if utils.is_bot(self.bot, message.author):
+        if is_bot(self.bot, message.author):
             return
 
         # Make sure the message was sent in a messageable channel in a guild

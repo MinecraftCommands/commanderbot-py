@@ -6,8 +6,7 @@ from commanderbot.ext.automod.automod_condition import (
     AutomodConditionBase,
 )
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
-from commanderbot.lib.integer_range import IntegerRange
+from commanderbot.lib import IntegerRange, JsonObject
 
 ST = TypeVar("ST")
 

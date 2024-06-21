@@ -12,7 +12,7 @@ from commanderbot.lib.constants import (
 from commanderbot.lib.exceptions import ResponsiveException
 from commanderbot.lib.from_data_mixin import FromDataMixin
 from commanderbot.lib.types import ChannelID
-from commanderbot.lib.type_predicates import is_text_channel, is_thread
+from commanderbot.lib.predicates import is_text_channel, is_thread
 from commanderbot.lib.utils import (
     sanitize_stacktrace,
     send_message_or_file,

@@ -22,7 +22,7 @@ from commanderbot.ext.help_forum.help_forum_json_store import HelpForumJsonStore
 from commanderbot.ext.help_forum.help_forum_options import HelpForumOptions
 from commanderbot.ext.help_forum.help_forum_state import HelpForumState
 from commanderbot.ext.help_forum.help_forum_store import HelpForumStore
-from commanderbot.lib import is_forum_channel, is_guild, is_thread, utils
+from commanderbot.lib import is_bot, is_forum_channel, is_guild, is_thread
 from commanderbot.lib.app_commands import EmojiTransformer
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
@@ -31,6 +31,7 @@ from commanderbot.lib.cogs.database import (
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
+
 
 def _make_store(bot: Bot, cog: Cog, options: HelpForumOptions) -> HelpForumStore:
     db_options = options.database
@@ -117,7 +118,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
             return
 
         # Try resolving the thread
-        if not utils.is_bot(self.bot, message.author):
+        if not is_bot(self.bot, message.author):
             emoji = PartialEmoji.from_str(message.content)
             await self.state[forum.guild].on_resolve(forum, thread, message, emoji)
         # Try deleting the message if it was a pin message sent by the bot
@@ -129,7 +130,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         # Make sure this reaction was not added by the bot
-        if utils.is_bot(self.bot, payload.user_id):
+        if is_bot(self.bot, payload.user_id):
             return
 
         # Make sure this reaction was added to a message in a thread

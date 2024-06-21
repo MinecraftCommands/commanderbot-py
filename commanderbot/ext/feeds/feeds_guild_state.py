@@ -8,10 +8,13 @@ from commanderbot.ext.feeds.feeds_exceptions import ChannelHasNoSubscriptions
 from commanderbot.ext.feeds.feeds_options import FeedsOptions
 from commanderbot.ext.feeds.feeds_store import FeedsStore
 from commanderbot.ext.feeds.providers import FeedType
-from commanderbot.lib import MessageableGuildChannel
+from commanderbot.lib import (
+    ConfirmationResult,
+    MessageableGuildChannel,
+    respond_with_confirmation,
+    utils,
+)
 from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
-from commanderbot.lib.utils import async_expand
 
 
 @dataclass
@@ -100,7 +103,9 @@ class FeedsGuildState(CogGuildState):
     async def show_subscription_details(
         self, interaction: Interaction, channel: MessageableGuildChannel
     ):
-        subscriptions = await async_expand(self.store.get_subscriptions(channel.id))
+        subscriptions = await utils.async_expand(
+            self.store.get_subscriptions(channel.id)
+        )
         if not subscriptions:
             raise ChannelHasNoSubscriptions(channel.id)
 

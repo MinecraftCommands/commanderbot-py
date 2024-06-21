@@ -11,9 +11,7 @@ from commanderbot.ext.roles.roles_store import (
     RoleIDNotRegistered,
     RoleNotRegistered,
 )
-from commanderbot.lib import GuildID, JsonObject, RoleID
-from commanderbot.lib.role_set import RoleSet
-from commanderbot.lib.utils import dict_without_ellipsis
+from commanderbot.lib import GuildID, JsonObject, RoleID, RoleSet, utils
 
 
 # @implements RoleEntry
@@ -69,7 +67,7 @@ class RolesGuildData:
         )
 
     def to_data(self) -> JsonObject:
-        return dict_without_ellipsis(
+        return utils.dict_without_ellipsis(
             role_entries=[
                 role_entry.to_data() for role_entry in self.role_entries.values()
             ]
@@ -154,8 +152,8 @@ class RolesData:
 
     def to_data(self) -> JsonObject:
         # Omit empty guilds, as well as an empty list of guilds.
-        return dict_without_ellipsis(
-            guilds=dict_without_ellipsis(
+        return utils.dict_without_ellipsis(
+            guilds=utils.dict_without_ellipsis(
                 {
                     str(guild_id): (guild_data.to_data() or ...)
                     for guild_id, guild_data in self.guilds.items()

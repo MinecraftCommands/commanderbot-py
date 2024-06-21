@@ -25,8 +25,8 @@ from commanderbot.ext.manifest.manifest_exceptions import (
     UnableToUpdateLatestVersion,
 )
 from commanderbot.ext.manifest.manifest_version_manager import ManifestVersionManager
+from commanderbot.lib import utils
 from commanderbot.lib.app_commands import checks
-from commanderbot.lib.utils import str_to_file
 
 DEFAULT_NAME = "pack.name"
 DEFAULT_DESCRIPTION = "pack.description"
@@ -129,7 +129,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
             manifest_json: str = json.dumps(manifest.as_dict(), indent=4)
             await interaction.followup.send(
                 f"**{manifest.common_name()}**",
-                file=str_to_file(manifest_json, "manifest.json"),
+                file=utils.str_to_file(manifest_json, "manifest.json"),
             )
 
     # @@ manifests

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from discord import Member, TextChannel, Thread
 
 from commanderbot.ext.automod.automod_event import AutomodEventBase
-from commanderbot.lib.types import TextMessage, TextReaction
+from commanderbot.lib import TextMessage, TextReaction
 
 __all__ = ("ReactionRemoved",)
 
