@@ -30,7 +30,7 @@ from commanderbot.lib.types import (
 __all__ = (
     "is_bot",
     "is_owner",
-    "convertable_to",
+    "is_convertable_to",
     "is_invite_link",
     "is_message_link",
     "is_custom_emoji",
@@ -95,9 +95,9 @@ def is_custom_emoji(emoji: str) -> bool:
     return bool(CUSTOM_EMOJI_PATTERN.match(emoji))
 
 
-def convertable_to(obj: Any, t: Any) -> bool:
+def is_convertable_to(obj: Any, ty: Any) -> bool:
     try:
-        t(obj)
+        ty(obj)
         return True
     except:
         return False

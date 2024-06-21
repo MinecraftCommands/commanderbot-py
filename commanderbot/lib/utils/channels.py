@@ -2,8 +2,8 @@ from typing import Optional
 
 from discord import ForumChannel, ForumTag, Thread
 
+from commanderbot.lib.predicates import is_convertable_to
 from commanderbot.lib.types import ForumTagID
-from commanderbot.lib.predicates import convertable_to
 
 __all__ = (
     "format_forum_tag",
@@ -34,7 +34,7 @@ def try_get_forum_tag(
             return tag
         elif tag.name.lower() == tag_str.lower():
             return tag
-        elif convertable_to(tag_str, int) and tag.id == int(tag_str):
+        elif is_convertable_to(tag_str, int) and tag.id == int(tag_str):
             return tag
 
 
