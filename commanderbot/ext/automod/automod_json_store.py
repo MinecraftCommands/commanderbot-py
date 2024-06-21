@@ -6,10 +6,9 @@ from discord import Guild
 from commanderbot.ext.automod.automod_data import AutomodData
 from commanderbot.ext.automod.automod_event import AutomodEvent
 from commanderbot.ext.automod.automod_store import AutomodRule
-from commanderbot.lib import JsonObject, LogOptions, RoleSet
+from commanderbot.lib import JsonObject, LogOptions, RoleSet, utils
 from commanderbot.lib.cogs import CogStore
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
-from commanderbot.lib.utils import JsonPath, JsonPathOp
 
 
 # @implements AutomodStore
@@ -98,8 +97,8 @@ class AutomodJsonStore(CogStore):
         self,
         guild: Guild,
         name: str,
-        path: JsonPath,
-        op: JsonPathOp,
+        path: utils.JsonPath,
+        op: utils.JsonPathOp,
         data: Any,
     ) -> AutomodRule:
         cache = await self.db.get_cache()

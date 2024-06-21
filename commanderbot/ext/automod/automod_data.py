@@ -15,13 +15,8 @@ from commanderbot.lib import (
     LogOptions,
     ResponsiveException,
     RoleSet,
-)
-from commanderbot.lib.json import to_data
-from commanderbot.lib.utils import (
-    JsonPath,
-    JsonPathOp,
-    dict_without_ellipsis,
-    update_json_with_path,
+    to_data,
+    utils,
 )
 
 RulesByEventType = defaultdict[Type[AutomodEvent], set[AutomodRule]]
@@ -89,7 +84,7 @@ class AutomodGuildData:
         return guild_data
 
     def to_data(self) -> JsonObject:
-        return dict_without_ellipsis(
+        return utils.dict_without_ellipsis(
             log=self.default_log_options or ...,
             permitted_roles=self.permitted_roles or ...,
             rules=list(self.rules.values()) or ...,
@@ -175,8 +170,8 @@ class AutomodGuildData:
     def modify_rule_raw(
         self,
         name: str,
-        path: JsonPath,
-        op: JsonPathOp,
+        path: utils.JsonPath,
+        op: utils.JsonPathOp,
         data: Any,
     ) -> AutomodRule:
         # Start with the serialized form of the original rule.
@@ -187,7 +182,7 @@ class AutomodGuildData:
         new_data["modified_on"] = utcnow().isoformat()
 
         # Update the new rule data using the given changes.
-        update_json_with_path(new_data, path, op, data)
+        utils.update_json_with_path(new_data, path, op, data)
 
         # Create a new rule out of the modified data.
         new_rule = AutomodRule.from_data(new_data)
@@ -243,8 +238,8 @@ class AutomodData:
 
     def to_data(self) -> JsonObject:
         # Omit empty guilds, as well as an empty list of guilds.
-        return dict_without_ellipsis(
-            guilds=dict_without_ellipsis(
+        return utils.dict_without_ellipsis(
+            guilds=utils.dict_without_ellipsis(
                 {
                     str(guild_id): (guild_data.to_data() or ...)
                     for guild_id, guild_data in self.guilds.items()
@@ -311,8 +306,8 @@ class AutomodData:
         self,
         guild: Guild,
         name: str,
-        path: JsonPath,
-        op: JsonPathOp,
+        path: utils.JsonPath,
+        op: utils.JsonPathOp,
         data: Any,
     ) -> AutomodRule:
         return self.guilds[guild.id].modify_rule_raw(name, path, op, data)

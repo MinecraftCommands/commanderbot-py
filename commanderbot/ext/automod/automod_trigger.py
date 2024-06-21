@@ -8,7 +8,7 @@ from commanderbot.ext.automod.automod_entity import (
     deserialize_entities,
 )
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib.types import JsonObject
+from commanderbot.lib import JsonObject
 
 ST = TypeVar("ST")
 

@@ -4,7 +4,7 @@ from typing import Optional
 from discord import TextChannel, Thread
 
 from commanderbot.lib.from_data_mixin import FromDataMixin
-from commanderbot.lib.type_predicates import is_thread
+from commanderbot.lib.predicates import is_thread
 from commanderbot.lib.types import ChannelID
 
 __all__ = ("ChannelsGuard",)

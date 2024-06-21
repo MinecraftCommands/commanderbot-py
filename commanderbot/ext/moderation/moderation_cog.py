@@ -19,7 +19,7 @@ from commanderbot.ext.moderation.moderation_exceptions import (
     CannotKickBotOrSelf,
     CannotKickElevatedUsers,
 )
-from commanderbot.lib.allowed_mentions import AllowedMentions
+from commanderbot.lib import AllowedMentions
 
 KICK_EMOJI: str = "👢"
 BAN_EMOJI: str = "🔨"

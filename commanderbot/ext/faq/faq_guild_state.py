@@ -132,14 +132,14 @@ class FaqGuildState(CogGuildState):
                 try:
                     await self.store.remove_faq(self.guild, entry.key)
                     await interaction.followup.send(
-                        content=f"Removed FAQ: `{entry.key}`"
+                        content=f"Removed the FAQ `{entry.key}`"
                     )
                 except Exception as ex:
                     await interaction.delete_original_response()
                     raise ex
             case _:
                 # If the answer was no, send a response
-                await interaction.followup.send(f"Did not remove FAQ: `{entry.key}`")
+                await interaction.followup.send(f"Did not remove the FAQ `{entry.key}`")
 
     async def show_faq_details(self, interaction: Interaction, faq: str):
         # Try to get the faq
@@ -286,7 +286,7 @@ class AddFaqModal(FaqModal):
             content=self.content_field.value,
             user_id=interaction.user.id,
         )
-        await interaction.response.send_message(f"Added FAQ: `{entry.key}`")
+        await interaction.response.send_message(f"Added the FAQ `{entry.key}`")
 
 
 class ModifyFaqModal(FaqModal):
@@ -335,4 +335,4 @@ class ModifyFaqModal(FaqModal):
             content=self.content_field.value,
             user_id=interaction.user.id,
         )
-        await interaction.response.send_message(f"Modified FAQ: `{entry.key}`")
+        await interaction.response.send_message(f"Modified the FAQ `{entry.key}`")

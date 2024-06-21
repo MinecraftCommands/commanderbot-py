@@ -17,7 +17,14 @@ from commanderbot.ext.invite.invite_exceptions import (
     InviteTagMatchesExistingKey,
 )
 from commanderbot.ext.invite.invite_store import InviteEntry
-from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID, utils
+from commanderbot.lib import (
+    FromDataMixin,
+    GuildID,
+    JsonSerializable,
+    UserID,
+    is_invite_link,
+    utils,
+)
 
 
 @dataclass
@@ -172,7 +179,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
                 raise InviteTagMatchesExistingKey(tag)
 
         # Check if the invite link is valid
-        if not utils.is_invite_link(link):
+        if not is_invite_link(link):
             raise InvalidInviteLink(link)
 
         # Create and add a new invite entry
@@ -213,7 +220,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
                 raise InviteTagMatchesExistingKey(tag)
 
         # Check if the invite link is valid
-        if not utils.is_invite_link(link):
+        if not is_invite_link(link):
             raise InvalidInviteLink(link)
 
         # Modify the invite entry

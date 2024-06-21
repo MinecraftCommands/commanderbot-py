@@ -4,8 +4,13 @@ from typing import Optional, Type, TypeVar
 
 from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import AllowedMentions, ChannelID, JsonObject, MessageableChannel
-from commanderbot.lib.utils import timedelta_from_field_optional
+from commanderbot.lib import (
+    AllowedMentions,
+    ChannelID,
+    JsonObject,
+    MessageableChannel,
+    utils,
+)
 
 ST = TypeVar("ST")
 
@@ -36,7 +41,7 @@ class SendMessage(AutomodActionBase):
     @classmethod
     def from_data(cls: Type[ST], data: JsonObject) -> ST:
         allowed_mentions = AllowedMentions.from_field_optional(data, "allowed_mentions")
-        delete_after = timedelta_from_field_optional(data, "delete_after")
+        delete_after = utils.timedelta_from_field_optional(data, "delete_after")
         return cls(
             description=data.get("description"),
             content=data.get("content"),

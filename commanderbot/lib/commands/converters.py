@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from commanderbot.lib import Color
-from commanderbot.lib.type_predicates import is_guild
+from commanderbot.lib.predicates import is_guild
 
 __all__ = (
     "CannotDisambiguateRole",

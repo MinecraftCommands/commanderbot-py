@@ -2,19 +2,19 @@ from dataclasses import dataclass, field
 from logging import Logger
 from typing import Optional
 
-from discord import Message, AllowedMentions
-from discord.interactions import Interaction
+from discord import AllowedMentions, Message
+from discord.app_commands import errors as ace
 from discord.ext.commands import Context
 from discord.ext.commands import errors as ce
-from discord.app_commands import errors as ace
+from discord.interactions import Interaction
 
 from commanderbot.core.commander_bot_base import (
+    AppCommandErrorHandler,
     CommandErrorHandler,
     EventErrorHandler,
-    AppCommandErrorHandler,
 )
 from commanderbot.lib import EventData, ResponsiveException
-from commanderbot.lib.app_commands import send_or_followup, command_name
+from commanderbot.lib.app_commands import command_name, send_or_followup
 
 
 @dataclass
@@ -184,7 +184,9 @@ class ErrorHandling:
                 return True
             case ace.TransformerError():
                 await send_or_followup(
-                    interaction, f"😬 `{error.value}` is invalid for `{type(error.transformer).__name__}`", ephemeral=True
+                    interaction,
+                    f"😬 `{error.value}` is invalid for `{type(error.transformer).__name__}`",
+                    ephemeral=True,
                 )
                 return True
             case ace.MissingPermissions():

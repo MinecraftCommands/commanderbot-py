@@ -5,8 +5,7 @@ from typing import Type, TypeVar
 
 from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
 from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
-from commanderbot.lib.utils import timedelta_from_field_optional
+from commanderbot.lib import JsonObject, utils
 
 ST = TypeVar("ST")
 
@@ -26,7 +25,7 @@ class Wait(AutomodActionBase):
 
     @classmethod
     def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        delay = timedelta_from_field_optional(data, "delay")
+        delay = utils.timedelta_from_field_optional(data, "delay")
         return cls(
             description=data.get("description"),
             delay=delay,

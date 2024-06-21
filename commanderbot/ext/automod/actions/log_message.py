@@ -10,8 +10,8 @@ from commanderbot.lib import (
     JsonObject,
     MessageableChannel,
     ValueFormatter,
+    utils,
 )
-from commanderbot.lib.utils import message_to_file
 
 ST = TypeVar("ST")
 
@@ -94,7 +94,7 @@ class LogMessage(AutomodActionBase):
             content = " ".join(parts)
             allowed_mentions = self.allowed_mentions or AllowedMentions.none()
             if self.attach_message and (message := event.message):
-                message_file = message_to_file(message)
+                message_file = utils.message_to_file(message)
                 await channel.send(
                     content,
                     file=message_file,

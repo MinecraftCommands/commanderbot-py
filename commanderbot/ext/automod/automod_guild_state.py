@@ -28,22 +28,17 @@ from commanderbot.ext.automod.automod_rule import AutomodRule
 from commanderbot.ext.automod.automod_store import AutomodStore
 from commanderbot.lib import (
     Color,
+    ConfirmationResult,
     LogOptions,
     ResponsiveException,
     RoleSet,
     TextMessage,
     TextReaction,
+    confirm_with_reaction,
+    to_data,
+    utils,
 )
 from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.dialogs import ConfirmationResult, confirm_with_reaction
-from commanderbot.lib.json import to_data
-from commanderbot.lib.utils import (
-    JsonPath,
-    JsonPathOp,
-    async_expand,
-    query_json_path,
-    send_message_or_file,
-)
 
 
 @dataclass
@@ -107,7 +102,7 @@ class AutomodGuildState(CogGuildState):
     async def _do_event(self, event: AutomodEventBase):
         # Run rules in parallel so that they don't need to wait for one another. They
         # run separately so that when a rule fails it doesn't stop the others.
-        rules = await async_expand(self.store.rules_for_event(self.guild, event))
+        rules = await utils.async_expand(self.store.rules_for_event(self.guild, event))
         tasks = [self._do_event_for_rule(event, rule) for rule in rules]
         await asyncio.gather(*tasks)
 
@@ -221,9 +216,9 @@ class AutomodGuildState(CogGuildState):
 
     async def show_rules(self, ctx: Context, query: str = ""):
         if query:
-            rules = await async_expand(self.store.query_rules(self.guild, query))
+            rules = await utils.async_expand(self.store.query_rules(self.guild, query))
         else:
-            rules = await async_expand(self.store.all_rules(self.guild))
+            rules = await utils.async_expand(self.store.all_rules(self.guild))
         count_rules = len(rules)
         if count_rules > 1:
             lines = ["```"]
@@ -274,9 +269,9 @@ class AutomodGuildState(CogGuildState):
         self,
         ctx: Context,
         query: str,
-        path: Optional[JsonPath] = None,
+        path: Optional[utils.JsonPath] = None,
     ):
-        rules = await async_expand(self.store.query_rules(self.guild, query))
+        rules = await utils.async_expand(self.store.query_rules(self.guild, query))
         if rules:
             # If multiple rules were found, just use the first.
             rule = rules[0]
@@ -287,7 +282,7 @@ class AutomodGuildState(CogGuildState):
             # Take a sub-section of the data, if necessary.
             output_data = rule_data
             if path:
-                output_data = query_json_path(output_data, path)
+                output_data = utils.query_json_path(output_data, path)
 
             # Turn the data into a YAML string.
             output_yaml = yaml.safe_dump(output_data, sort_keys=False)
@@ -296,7 +291,7 @@ class AutomodGuildState(CogGuildState):
             # stuff it into a file and send it as an attachment.
             content = f"```yaml\n{output_yaml}\n```"
             file_callback = lambda: ("", output_yaml, f"{rule.name}.yaml")
-            return await send_message_or_file(
+            return await utils.send_message_or_file(
                 ctx.channel,
                 content,
                 file_callback=file_callback,
@@ -332,8 +327,8 @@ class AutomodGuildState(CogGuildState):
         self,
         ctx: Context,
         name: str,
-        path: JsonPath,
-        op: JsonPathOp,
+        path: utils.JsonPath,
+        op: utils.JsonPathOp,
         body: str,
     ):
         data = self._parse_body(body)

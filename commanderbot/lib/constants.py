@@ -1,3 +1,4 @@
+import ctypes
 import sys
 from importlib.metadata import version
 
@@ -28,3 +29,6 @@ MAX_EMBED_TITLE_LENGTH: int = 256
 MAX_EMBED_DESCRIPTION_LENGTH: int = 4096
 
 MAX_AUTOCOMPLETE_CHOICES: int = 25
+
+POINTER_SIZE_BYTES: int = ctypes.sizeof(ctypes.c_void_p)
+POINTER_SIZE_BITS: int = POINTER_SIZE_BYTES * 8
