@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 from discord.ext.commands import Bot, Context
 from discord.interactions import Interaction
@@ -15,6 +15,7 @@ from commanderbot.core.error_handling import (
     ErrorHandling,
     EventErrorHandler,
 )
+from commanderbot.core.help_command import HelpCommand
 from commanderbot.lib import AllowedMentions, EventData, Intents
 
 
@@ -39,6 +40,7 @@ class CommanderBot(Bot):
         kwargs.update(
             intents=intents,
             allowed_mentions=allowed_mentions or AllowedMentions.not_everyone(),
+            help_command=HelpCommand(),
             tree_cls=CachingCommandTree,
         )
 
@@ -112,7 +114,7 @@ class CommanderBot(Bot):
     @property
     def command_tree(self) -> CachingCommandTree:
         # A hack to get the actual app command tree type for type checkers
-        return cast(CachingCommandTree, self.tree)
+        return self.tree  # type: ignore
 
     def get_extension_options(self, ext_name: str) -> Optional[dict[str, Any]]:
         if configured_extension := self.configured_extensions.get(ext_name):
