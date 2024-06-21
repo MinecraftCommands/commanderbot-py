@@ -137,7 +137,6 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
     cmd_manifests = Group(
         name="manifests",
         description="Manage the manifest generator",
-        guild_only=True,
         default_permissions=Permissions(administrator=True),
     )
 

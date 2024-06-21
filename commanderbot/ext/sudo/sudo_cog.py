@@ -1,5 +1,5 @@
 import platform
-from enum import Enum, auto
+from enum import Enum
 from typing import Optional
 
 import psutil
@@ -28,9 +28,9 @@ from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
 
 class SyncTypeChoices(Enum):
-    sync_only = auto()
-    copy = auto()
-    remove = auto()
+    sync_only = 0
+    copy = 1
+    remove = 2
 
 
 class SudoCog(Cog, name="commanderbot.ext.sudo"):
