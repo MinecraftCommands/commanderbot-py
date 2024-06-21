@@ -3,13 +3,7 @@ from typing import Optional
 
 import aiohttp
 from discord import Activity, ActivityType, Embed, Interaction, ui
-from discord.app_commands import (
-    Group,
-    command,
-    default_permissions,
-    describe,
-    guild_only,
-)
+from discord.app_commands import Group, command, default_permissions, describe
 from discord.ext import tasks
 from discord.ext.commands import Bot, Cog
 
@@ -165,7 +159,6 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
 
     # @@ mccreload
     @command(name="mccreload", description="Reloads the query managers")
-    @guild_only()
     @default_permissions(administrator=True)
     @checks.is_owner()
     async def cmd_mccreload(self, interaction: Interaction):
