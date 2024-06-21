@@ -3,12 +3,11 @@ from datetime import datetime, timedelta
 from logging import Logger, getLogger
 from typing import Any, Optional, cast
 
-from discord.ext.commands import Context
+from discord.ext.commands import Bot, Context
 from discord.interactions import Interaction
 from discord.utils import utcnow
 
 from commanderbot.core.command_tree import CachingCommandTree
-from commanderbot.core.commander_bot_base import CommanderBotBase
 from commanderbot.core.configured_extension import ConfiguredExtension
 from commanderbot.core.error_handling import (
     AppCommandErrorHandler,
@@ -19,7 +18,7 @@ from commanderbot.core.error_handling import (
 from commanderbot.lib import AllowedMentions, EventData, Intents
 
 
-class CommanderBot(CommanderBotBase):
+class CommanderBot(Bot):
     def __init__(self, *args, **kwargs):
         # Account for options that don't belong to the discord.py Bot base.
         self._extensions_data = kwargs.pop("extensions", None)
@@ -97,42 +96,34 @@ class CommanderBot(CommanderBotBase):
 
         self.log.info(f"Finished loading extensions.")
 
-    # @implements CommanderBotBase
     @property
     def started_at(self) -> datetime:
         return self._started_at
 
-    # @implements CommanderBotBase
     @property
     def connected_since(self) -> Optional[datetime]:
         return self._connected_since
 
-    # @implements CommanderBotBase
     @property
     def uptime(self) -> Optional[timedelta]:
         if self.connected_since is not None:
             return utcnow() - self.connected_since
 
-    # @implements CommanderBotBase
     @property
     def command_tree(self) -> CachingCommandTree:
         # A hack to get the actual app command tree type for type checkers
         return cast(CachingCommandTree, self.tree)
 
-    # @implements CommanderBotBase
     def get_extension_options(self, ext_name: str) -> Optional[dict[str, Any]]:
         if configured_extension := self.configured_extensions.get(ext_name):
             return configured_extension.options
 
-    # @implements CommanderBotBase
     def add_event_error_handler(self, handler: EventErrorHandler):
         self.error_handling.add_event_error_handler(handler)
 
-    # @implements CommanderBotBase
     def add_command_error_handler(self, handler: CommandErrorHandler):
         self.error_handling.add_command_error_handler(handler)
 
-    # @implements CommanderBotBase
     def add_app_command_error_handler(self, handler: AppCommandErrorHandler):
         self.error_handling.add_app_command_error_handler(handler)
 

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from logging import Logger
-from typing import Optional
+from typing import Any, Callable, Coroutine, Optional, TypeAlias
 
 from discord import AllowedMentions, Message
 from discord.app_commands import errors as ace
@@ -8,13 +8,20 @@ from discord.ext.commands import Context
 from discord.ext.commands import errors as ce
 from discord.interactions import Interaction
 
-from commanderbot.core.commander_bot_base import (
-    AppCommandErrorHandler,
-    CommandErrorHandler,
-    EventErrorHandler,
-)
 from commanderbot.lib import EventData, ResponsiveException
 from commanderbot.lib.app_commands import command_name, send_or_followup
+
+EventErrorHandler: TypeAlias = Callable[
+    [Exception, EventData, bool], Coroutine[Any, Any, Optional[bool]]
+]
+
+CommandErrorHandler: TypeAlias = Callable[
+    [Exception, Context, bool], Coroutine[Any, Any, Optional[bool]]
+]
+
+AppCommandErrorHandler: TypeAlias = Callable[
+    [Exception, Interaction, bool], Coroutine[Any, Any, Optional[bool]]
+]
 
 
 @dataclass

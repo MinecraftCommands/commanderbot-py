@@ -5,7 +5,7 @@ from typing import Optional
 from discord.ext.commands import Bot
 from discord.utils import format_dt
 
-from commanderbot.core.utils import check_commander_bot
+from commanderbot.core.utils import is_commander_bot
 from commanderbot.lib import constants
 
 
@@ -22,10 +22,10 @@ class StatusDetails:
         self.started_at: Optional[datetime] = None
         self.last_reconnect: Optional[datetime] = None
         self.uptime: Optional[timedelta] = None
-        if cb := check_commander_bot(bot):
-            self.started_at = cb.started_at
-            self.last_reconnect = cb.connected_since
-            self.uptime = cb.uptime
+        if is_commander_bot(bot):
+            self.started_at = bot.started_at
+            self.last_reconnect = bot.connected_since
+            self.uptime = bot.uptime
 
     def _format_timedelta(self, td: Optional[timedelta]) -> Optional[str]:
         if not td:
