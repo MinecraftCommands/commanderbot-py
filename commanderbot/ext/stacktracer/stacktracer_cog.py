@@ -12,7 +12,7 @@ from discord.app_commands import (
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog, Context, GroupCog
 
-from commanderbot.core.commander_bot_base import CommanderBotBase
+from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.stacktracer.stacktracer_data import StacktracerData
 from commanderbot.ext.stacktracer.stacktracer_exceptions import (
     TestAppCommandErrors,
@@ -95,7 +95,7 @@ class StacktracerCog(
         )
 
         # Register error handlers with the bot core.
-        if isinstance(bot, CommanderBotBase):
+        if is_commander_bot(bot):
             bot.add_event_error_handler(self.handle_event_error)
             bot.add_command_error_handler(self.handle_command_error)
             bot.add_app_command_error_handler(self.handle_app_command_error)
