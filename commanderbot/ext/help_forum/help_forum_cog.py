@@ -153,19 +153,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
     # @@ COMMANDS
 
-    # Groups
-    cmd_forum = Group(
-        name="forum",
-        description="Manage help forums",
-        guild_only=True,
-        default_permissions=Permissions(administrator=True),
-    )
-    cmd_forum_modify = Group(
-        name="modify", description="Modify help forums", parent=cmd_forum
-    )
-
-    # @@ User facing commands
-
+    # @@ resolve
     @command(name="resolve", description="Resolve a post in a help forum")
     @guild_only()
     async def cmd_resolve(self, interaction: Interaction):
@@ -189,8 +177,16 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
             interaction, forum, thread
         )
 
-    # @@ forum register/deregister/details
+    # @@ forum
 
+    cmd_forum = Group(
+        name="forum",
+        description="Manage help forums",
+        guild_only=True,
+        default_permissions=Permissions(administrator=True),
+    )
+
+    # @@ forum register
     @cmd_forum.command(
         name="register", description="Register a forum channel as a help forum"
     )
@@ -213,6 +209,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
             interaction, forum, resolved_emoji, unresolved_tag, resolved_tag
         )
 
+    # @@ forum deregister
     @cmd_forum.command(
         name="deregister",
         description="Deregister a forum channel from being a help forum",
@@ -222,6 +219,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].deregister_forum_channel(interaction, forum)
 
+    # @@ forum details
     @cmd_forum.command(
         name="details", description="Show the details about a help forum"
     )
@@ -232,6 +230,11 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
     # @@ forum modify
 
+    cmd_forum_modify = Group(
+        name="modify", description="Modify help forums", parent=cmd_forum
+    )
+
+    # @@ forum modify resolved-emoji
     @cmd_forum_modify.command(
         name="resolved-emoji", description="Modify the resolved emoji for a help forum"
     )
@@ -247,6 +250,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
             interaction, forum, emoji
         )
 
+    # @@ forum modify unresolved-tag
     @cmd_forum_modify.command(
         name="unresolved-tag", description="Modify the unresolved tag for a help forum"
     )
@@ -259,6 +263,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
             interaction, forum, tag
         )
 
+    # @@ forum modify resolved-tag
     @cmd_forum_modify.command(
         name="resolved-tag", description="Modify the resolved tag for a help forum"
     )
