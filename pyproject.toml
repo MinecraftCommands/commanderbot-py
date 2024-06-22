@@ -13,7 +13,7 @@ keywords = ['discord', 'bot']
 python = "^3.11"
 
 # Core dependencies.
-"discord.py" = "^2.3.0"
+"discord.py" = "^2.4.0"
 python-dotenv = "^1.0.0"
 
 # For using newer type hints in older Python versions (For now).
