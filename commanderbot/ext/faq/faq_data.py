@@ -30,6 +30,7 @@ TERM_SPLIT_PATTERN = re.compile(r"\W+")
 class FaqEntryData(JsonSerializable, FromDataMixin):
     key: str
     aliases: set[str]
+    category: Optional[str]
     tags: set[str]
     content: str
     hits: int
@@ -47,6 +48,7 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
             return cls(
                 key=data["key"],
                 aliases=set(data.get("aliases", [])),
+                category=data.get("category"),
                 tags=set(data.get("tags", [])),
                 content=data["content"],
                 hits=data["hits"],
@@ -61,6 +63,7 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
         return {
             "key": self.key,
             "aliases": list(self.aliases),
+            "category": self.category,
             "tags": list(self.tags),
             "content": self.content,
             "hits": self.hits,
@@ -74,9 +77,12 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
         self._rebuild_match_terms()
 
     def _rebuild_match_terms(self):
-        # Build match terms from keys, aliases, and tags
+        # Build match terms from keys, aliases, category, and tags
         self.match_terms.clear()
-        for term in (self.key, *self.aliases, *self.tags):
+        term_gen = (
+            t for t in (self.key, *self.aliases, self.category, *self.tags) if t
+        )
+        for term in term_gen:
             self.match_terms.add(term)
             for word in TERM_SPLIT_PATTERN.split(term):
                 self.match_terms.add(word)
@@ -95,11 +101,13 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
     def modify(
         self,
         aliases: list[str],
+        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
     ):
         self.aliases = set(aliases)
+        self.category = category
         self.tags = set(tags)
         self.content = content
         self.modified_by_id = user_id
@@ -120,6 +128,12 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
     faq_entries: dict[str, FaqEntryData] = field(default_factory=dict)
     faq_entries_by_alias: dict[str, FaqEntryData] = field(
         init=False, default_factory=dict
+    )
+    categorized_faq_entries: defaultdict[str, list[FaqEntryData]] = field(
+        init=False, default_factory=lambda: defaultdict(list)
+    )
+    uncategorized_faq_entries: list[FaqEntryData] = field(
+        init=False, default_factory=list
     )
     prefix: Optional[re.Pattern] = None
     match: Optional[re.Pattern] = None
@@ -152,14 +166,22 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
         )
 
     def __post_init__(self):
-        self._rebuild_alias_mappings()
+        self._rebuild_mappings()
 
-    def _rebuild_alias_mappings(self):
-        # Build the list of aliases from entries
+    def _rebuild_mappings(self):
         self.faq_entries_by_alias.clear()
+        self.categorized_faq_entries.clear()
+        self.uncategorized_faq_entries.clear()
         for entry in self.faq_entries.values():
+            # Build the dict of aliases to entries
             for alias in entry.aliases:
                 self.faq_entries_by_alias[alias] = entry
+
+            # Categorize entries
+            if entry.category:
+                self.categorized_faq_entries[entry.category].append(entry)
+            else:
+                self.uncategorized_faq_entries.append(entry)
 
     def _is_faq_key_available(self, key: str) -> bool:
         return key not in self.faq_entries.keys()
@@ -192,6 +214,7 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
         self,
         key: str,
         aliases: list[str],
+        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
@@ -222,6 +245,7 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
         entry = FaqEntryData(
             key,
             set(aliases),
+            category,
             set(tags),
             content,
             0,
@@ -231,13 +255,14 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
             utcnow(),
         )
         self.faq_entries[key] = entry
-        self._rebuild_alias_mappings()
+        self._rebuild_mappings()
         return entry
 
     def modify_faq(
         self,
         key: str,
         aliases: list[str],
+        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
@@ -261,8 +286,8 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
                 raise FaqAliasMatchesExistingKey(alias)
 
         # Modify the faq entry
-        entry.modify(aliases, tags, content, user_id)
-        self._rebuild_alias_mappings()
+        entry.modify(aliases, category, tags, content, user_id)
+        self._rebuild_mappings()
         return entry
 
     def remove_faq(self, key: str) -> FaqEntryData:
@@ -271,7 +296,7 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
 
         # Remove entry
         del self.faq_entries[key]
-        self._rebuild_alias_mappings()
+        self._rebuild_mappings()
         return entry
 
     def query_faq(self, query: str) -> Optional[FaqEntryData]:
@@ -417,11 +442,14 @@ class FaqData(JsonSerializable, FromDataMixin):
         guild: Guild,
         key: str,
         aliases: list[str],
+        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
     ) -> FaqEntry:
-        return self.guilds[guild.id].add_faq(key, aliases, tags, content, user_id)
+        return self.guilds[guild.id].add_faq(
+            key, aliases, category, tags, content, user_id
+        )
 
     # @implements FaqStore
     async def modify_faq(
@@ -429,11 +457,14 @@ class FaqData(JsonSerializable, FromDataMixin):
         guild: Guild,
         key: str,
         aliases: list[str],
+        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
     ) -> FaqEntry:
-        return self.guilds[guild.id].modify_faq(key, aliases, tags, content, user_id)
+        return self.guilds[guild.id].modify_faq(
+            key, aliases, category, tags, content, user_id
+        )
 
     # @implements FaqStore
     async def increment_faq_hits(self, entry: FaqEntry):
@@ -481,9 +512,7 @@ class FaqData(JsonSerializable, FromDataMixin):
         cap: Optional[int] = None,
     ) -> AsyncIterable[FaqEntry]:
         entries = self.guilds[guild.id].all_faqs_matching(faq_filter, case_sensitive)
-        maybe_sorted_entries = (
-            sorted(entries, key=lambda entry: entry.key) if sort else entries
-        )
+        maybe_sorted_entries = sorted(entries, key=lambda e: e.key) if sort else entries
         for entry in islice(maybe_sorted_entries, cap):
             yield entry
 
@@ -510,6 +539,31 @@ class FaqData(JsonSerializable, FromDataMixin):
         maybe_sorted_items = sorted(items, key=item_cmp) if sort else items
         for item in islice(maybe_sorted_items, cap):
             yield item
+
+    # @implements FaqStore
+    async def get_categorized_faqs(
+        self, guild: Guild, *, sort=False
+    ) -> AsyncIterable[tuple[str, list[FaqEntry]]]:
+        categorized = self.guilds[guild.id].categorized_faq_entries
+        maybe_sorted_categorized = (
+            sorted(categorized.items()) if sort else categorized.items()
+        )
+        for category, entries in maybe_sorted_categorized:
+            maybe_sorted_entries = (
+                sorted(entries, key=lambda e: e.key) if sort else entries
+            )
+            yield (category, maybe_sorted_entries)  # type: ignore
+
+    # @implements FaqStore
+    async def get_uncategorized_faqs(
+        self, guild: Guild, *, sort=False
+    ) -> AsyncIterable[FaqEntry]:
+        uncategorized = self.guilds[guild.id].uncategorized_faq_entries
+        maybe_sorted_uncategorized = (
+            sorted(uncategorized, key=lambda e: e.key) if sort else uncategorized
+        )
+        for entry in maybe_sorted_uncategorized:
+            yield entry
 
     # @implements FaqStore
     async def set_prefix_pattern(self, guild: Guild, prefix: str) -> re.Pattern:
