@@ -92,7 +92,7 @@ class FaqGuildState(CogGuildState):
         )
 
     async def list_faqs(self, interaction: Interaction):
-        # Get faqs
+        # Get categorized and uncategorized faqs
         categorized = await utils.async_expand(
             self.store.get_categorized_faqs(self.guild, sort=True)
         )
@@ -100,23 +100,25 @@ class FaqGuildState(CogGuildState):
             self.store.get_uncategorized_faqs(self.guild, sort=True)
         )
 
-        # Create embed description
-        has_any_faqs = bool(categorized or uncategorized)
+        # Add categorized faqs to lines
         lines: list[str] = []
         num_entries: int = 0
-        if has_any_faqs:
+        if categorized:
             for category, entries in categorized:
                 lines.append(f"**{category}**")
                 lines.append(", ".join((f"`{e.key}`" for e in entries)))
                 num_entries += len(entries)
 
+        # Add uncategorized faqs to lines
+        if uncategorized:
             lines.append(f"**Uncategorized**")
             lines.append(", ".join((f"`{e.key}`" for e in uncategorized)))
             num_entries += len(uncategorized)
 
+        # Create faq list embed
         embed = Embed(
             title="Available FAQs",
-            description="\n".join(lines) if has_any_faqs else "**None!**",
+            description="\n".join(lines) or "**None!**",
             color=0x00ACED,
         )
         embed.set_footer(text=f"FAQs: {num_entries}")
