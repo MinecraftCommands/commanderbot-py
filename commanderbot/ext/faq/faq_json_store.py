@@ -51,12 +51,15 @@ class FaqJsonStore(CogStore):
         guild: Guild,
         key: str,
         aliases: list[str],
+        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
     ) -> FaqEntry:
         cache = await self.db.get_cache()
-        entry = await cache.add_faq(guild, key, aliases, tags, content, user_id)
+        entry = await cache.add_faq(
+            guild, key, aliases, category, tags, content, user_id
+        )
         await self.db.dirty()
         return entry
 
@@ -66,12 +69,15 @@ class FaqJsonStore(CogStore):
         guild: Guild,
         key: str,
         aliases: list[str],
+        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
     ) -> FaqEntry:
         cache = await self.db.get_cache()
-        entry = await cache.modify_faq(guild, key, aliases, tags, content, user_id)
+        entry = await cache.modify_faq(
+            guild, key, aliases, category, tags, content, user_id
+        )
         await self.db.dirty()
         return entry
 
@@ -155,6 +161,22 @@ class FaqJsonStore(CogStore):
             cap=cap,
         ):
             yield item
+
+    # @implements FaqStore
+    async def get_categorized_faqs(
+        self, guild: Guild, *, sort=False
+    ) -> AsyncIterable[tuple[str, list[FaqEntry]]]:
+        cache = await self.db.get_cache()
+        async for categorized_entries in cache.get_categorized_faqs(guild, sort=sort):
+            yield categorized_entries
+
+    # @implements FaqStore
+    async def get_uncategorized_faqs(
+        self, guild: Guild, *, sort=False
+    ) -> AsyncIterable[FaqEntry]:
+        cache = await self.db.get_cache()
+        async for entry in cache.get_uncategorized_faqs(guild, sort=sort):
+            yield entry
 
     # @implements FaqStore
     async def set_prefix_pattern(self, guild: Guild, prefix: str) -> re.Pattern:

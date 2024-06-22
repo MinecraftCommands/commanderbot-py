@@ -92,19 +92,34 @@ class FaqGuildState(CogGuildState):
         )
 
     async def list_faqs(self, interaction: Interaction):
-        # Get all faqs and format them
-        entries: list[FaqEntry] = await utils.async_expand(
-            self.store.get_faqs(self.guild, sort=True)
+        # Get faqs
+        categorized = await utils.async_expand(
+            self.store.get_categorized_faqs(self.guild, sort=True)
         )
-        formatted_entries: str = ", ".join((f"`{entry.key}`" for entry in entries))
+        uncategorized = await utils.async_expand(
+            self.store.get_uncategorized_faqs(self.guild, sort=True)
+        )
 
-        # Create faq list embed
+        # Create embed description
+        has_any_faqs = bool(categorized or uncategorized)
+        lines: list[str] = []
+        num_entries: int = 0
+        if has_any_faqs:
+            for category, entries in categorized:
+                lines.append(f"**{category}**")
+                lines.append(", ".join((f"`{e.key}`" for e in entries)))
+                num_entries += len(entries)
+
+            lines.append(f"**Uncategorized**")
+            lines.append(", ".join((f"`{e.key}`" for e in uncategorized)))
+            num_entries += len(uncategorized)
+
         embed = Embed(
             title="Available FAQs",
-            description=formatted_entries or "**None!**",
+            description="\n".join(lines) if has_any_faqs else "**None!**",
             color=0x00ACED,
         )
-        embed.set_footer(text=f"FAQs: {len(entries)}")
+        embed.set_footer(text=f"FAQs: {num_entries}")
 
         await interaction.response.send_message(embed=embed)
 
@@ -152,6 +167,9 @@ class FaqGuildState(CogGuildState):
         formatted_aliases: str = (
             f", ".join((f"`{alias}`" for alias in entry.sorted_aliases)) or "**None!**"
         )
+        formatted_category: str = (
+            f"`{entry.category}`" if entry.category else "**None!**"
+        )
         formatted_tags: str = (
             f", ".join((f"`{tag}`" for tag in entry.sorted_tags)) or "**None!**"
         )
@@ -164,6 +182,7 @@ class FaqGuildState(CogGuildState):
         )
         embed.add_field(name="Key", value=f"`{entry.key}`", inline=False)
         embed.add_field(name="Aliases", value=formatted_aliases, inline=False)
+        embed.add_field(name="Category", value=formatted_category, inline=False)
         embed.add_field(name="Tags", value=formatted_tags, inline=False)
         embed.add_field(name="Hits", value=f"`{entry.hits}`")
         embed.add_field(
@@ -258,6 +277,12 @@ class AddFaqModal(FaqModal):
             placeholder="A comma separated list of aliases. Ex: foo, bar, baz",
             required=False,
         )
+        self.category_field = TextInput(
+            label="Category (Used for /faq list)",
+            style=TextStyle.short,
+            placeholder="Ex: Programming",
+            required=False,
+        )
         self.tags_field = TextInput(
             label="Tags (Used for FAQ suggestions)",
             style=TextStyle.short,
@@ -274,6 +299,7 @@ class AddFaqModal(FaqModal):
 
         self.add_item(self.key_field)
         self.add_item(self.aliases_field)
+        self.add_item(self.category_field)
         self.add_item(self.tags_field)
         self.add_item(self.content_field)
 
@@ -282,6 +308,7 @@ class AddFaqModal(FaqModal):
             guild=self.state.guild,
             key=self.key_field.value.strip(),
             aliases=self.aliases_from_str(self.aliases_field.value),
+            category=self.category_field.value.strip() or None,
             tags=self.tags_from_str(self.tags_field.value),
             content=self.content_field.value,
             user_id=interaction.user.id,
@@ -306,6 +333,13 @@ class ModifyFaqModal(FaqModal):
             default=self.aliases_to_str(entry.sorted_aliases),
             required=False,
         )
+        self.category_field = TextInput(
+            label="Category (Used for /faq list)",
+            style=TextStyle.short,
+            placeholder="Ex: Programming",
+            default=entry.category,
+            required=False,
+        )
         self.tags_field = TextInput(
             label="Tags (Used for FAQ suggestions)",
             style=TextStyle.short,
@@ -323,6 +357,7 @@ class ModifyFaqModal(FaqModal):
         )
 
         self.add_item(self.aliases_field)
+        self.add_item(self.category_field)
         self.add_item(self.tags_field)
         self.add_item(self.content_field)
 
@@ -331,6 +366,7 @@ class ModifyFaqModal(FaqModal):
             guild=self.state.guild,
             key=self.faq_key,
             aliases=self.aliases_from_str(self.aliases_field.value),
+            category=self.category_field.value.strip() or None,
             tags=self.tags_from_str(self.tags_field.value),
             content=self.content_field.value,
             user_id=interaction.user.id,
