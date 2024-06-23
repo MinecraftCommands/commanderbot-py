@@ -320,12 +320,14 @@ class AddFaqModal(FaqModal):
 
 class ModifyFaqModal(FaqModal):
     def __init__(self, interaction: Interaction, state: FaqGuildState, entry: FaqEntry):
+        # Get the faq key and also limit the modal title to 45 characters
         self.faq_key: str = entry.key
+        title: str = f"Modifying FAQ: {entry.key}"
+        if len(title) > constants.MAX_MODAL_TITLE_LENGTH:
+            title = f"{title[:42]}..."
+
         super().__init__(
-            interaction,
-            state,
-            title=f"Modifying FAQ: {self.faq_key}",
-            custom_id="commanderbot_ext:faq.modify",
+            interaction, state, title=title, custom_id="commanderbot_ext:faq.modify"
         )
 
         self.aliases_field = TextInput(

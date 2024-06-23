@@ -7,7 +7,7 @@ from discord.utils import format_dt
 
 from commanderbot.ext.invite.invite_exceptions import QueryReturnedNoResults
 from commanderbot.ext.invite.invite_store import InviteEntry, InviteStore
-from commanderbot.lib import utils
+from commanderbot.lib import constants, utils
 from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.cogs.views import CogStateModal
 from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
@@ -257,12 +257,14 @@ class ModifyInviteModal(InviteModal):
     def __init__(
         self, interaction: Interaction, state: InviteGuildState, entry: InviteEntry
     ):
+        # Get the invite key and also limit the modal title to 45 characters
         self.invite_key: str = entry.key
+        title: str = f"Modifying invite: {entry.key}"
+        if len(title) > constants.MAX_MODAL_TITLE_LENGTH:
+            title = f"{title[:42]}..."
+
         super().__init__(
-            interaction,
-            state,
-            title=f"Modifying invite: {entry.key}",
-            custom_id="commanderbot_ext:invite.modify",
+            interaction, state, title=title, custom_id="commanderbot_ext:invite.modify"
         )
 
         self.tags_field = TextInput(

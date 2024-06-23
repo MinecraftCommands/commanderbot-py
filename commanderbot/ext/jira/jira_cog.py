@@ -9,6 +9,7 @@ from discord.ext.commands import Bot, Cog
 from commanderbot.ext.jira.jira_client import JiraClient, JiraQuery
 from commanderbot.ext.jira.jira_exceptions import InvalidIssueFormat
 from commanderbot.ext.jira.jira_issue import JiraIssue
+from commanderbot.lib import constants
 
 JIRA_URL_PATTERN = re.compile(r"^(https?://[^/]+).*?(\w+)-(\d+)")
 JIRA_ISSUE_ID_PATTERN = re.compile(r"^(\w+)-(\d+)")
@@ -67,7 +68,7 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
 
         # Create embed title and limit it to 256 characters
         title: str = f"[{issue.issue_id}] {issue.summary}"
-        if len(title) > 256:
+        if len(title) > constants.MAX_EMBED_TITLE_LENGTH:
             title = f"{title[:253]}..."
 
         # Create issue embed
