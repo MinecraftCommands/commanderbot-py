@@ -256,7 +256,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         await interaction.followup.send("Cleared the bot's avatar", ephemeral=True)
 
     # @@ sudo avatar show
-    @cmd_sudo_avatar.command(name="show", description="Snow the bot's avatar")
+    @cmd_sudo_avatar.command(name="show", description="Show the bot's avatar")
     @checks.is_owner()
     async def cmd_sudo_avatar_show(self, interaction: Interaction):
         # Respond with a defer since fetching the avatar may take a while
