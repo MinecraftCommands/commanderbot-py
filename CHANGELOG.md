@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Added a way to export a cog's database
   - Added a way to display info about the bot
   - Added a way to shutdown the bot
+  - Added a may to manage the bot's avatar
+  - Added a way to change the bot's banner
 - `help_forum`:
   - A cog that acts as a wrapper around a forum channel
   - Forum threads can have two states: unresolved and resolved
@@ -53,6 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - `invite`: Ported to slash commands
 - `faq`: Ported to slash commands
+  - Faq entries have a new category field
 - `jira`:
   - Ported to slash commands
   - Querying `jira` issues using a URL as the argument will now ignore the base URL stored in the `jira` cog and instead get it from the argument
@@ -72,6 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Ported to slash commands
   - Adjusted the format of the presence status set by `mccq`
   - Changed syntax highlighting to `hs`
+  - Added a new help command
 - `status`: Ported to slash commands
 - `ping`: Ported to slash commands
 - Reworked how cogs with a database are created
