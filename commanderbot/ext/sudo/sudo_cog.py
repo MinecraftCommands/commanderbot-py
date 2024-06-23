@@ -3,13 +3,18 @@ from enum import Enum
 from typing import Optional
 
 import psutil
-from discord import AppInfo, Embed, Interaction, Object, Permissions
+from discord import AppInfo, Asset, Attachment, Embed, Interaction, Object, Permissions
 from discord.app_commands import AppCommand, Choice, Group, autocomplete, describe
 from discord.ext.commands import Bot, Cog
 
+from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.sudo.sudo_data import CogWithStore
 from commanderbot.ext.sudo.sudo_exceptions import (
+    BotHasNoAvatar,
+    BotHasNoBanner,
     CogHasNoStore,
+    ErrorChangingBotAvatar,
+    ErrorChangingBotBanner,
     GlobalSyncError,
     GuildIDNotFound,
     GuildSyncError,
@@ -55,6 +60,18 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
                     choices.append(Choice(name=name, value=name))
 
         return choices
+
+    async def _require_avatar(self, bot: Bot) -> Asset:
+        assert is_commander_bot(bot)
+        if avatar := await bot.get_avatar():
+            return avatar
+        raise BotHasNoAvatar
+
+    async def _require_banner(self, bot: Bot) -> Asset:
+        assert is_commander_bot(bot)
+        if banner := await bot.get_banner():
+            return banner
+        raise BotHasNoBanner
 
     # @@ COMMANDS
 
@@ -190,6 +207,126 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
                 )
             case _ as db:
                 raise UnsupportedStoreExport(db)
+
+    # @@ sudo avatar
+
+    cmd_sudo_avatar = Group(
+        name="avatar", description="Manage the bot's avatar", parent=cmd_sudo
+    )
+
+    # @@ sudo avatar set
+    @cmd_sudo_avatar.command(name="set", description="Set the bot's avatar")
+    @describe(file="The new avatar")
+    @checks.is_owner()
+    async def cmd_sudo_avatar_set(self, interaction: Interaction, file: Attachment):
+        # Respond with a defer since uploading the file may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Set the new avatar
+        try:
+            assert is_commander_bot(self.bot)
+            await self.bot.set_avatar(file)
+        except Exception as ex:
+            raise ErrorChangingBotAvatar(str(ex))
+
+        # Show the new avatar
+        avatar: Asset = await self._require_avatar(self.bot)
+        await interaction.followup.send(
+            f"Set the bot's avatar to:\n{avatar.url}", ephemeral=True
+        )
+
+    # @@ sudo avatar clear
+    @cmd_sudo_avatar.command(name="clear", description="Clear the bot's avatar")
+    @checks.is_owner()
+    async def cmd_sudo_avatar_clear(self, interaction: Interaction):
+        # Respond with a defer since clearing the avatar may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # The bot must have an avatar
+        await self._require_avatar(self.bot)
+
+        # Clear the avatar
+        try:
+            assert is_commander_bot(self.bot)
+            await self.bot.set_avatar(None)
+        except Exception as ex:
+            raise ErrorChangingBotAvatar(str(ex))
+
+        # Send a response that the avatar has been cleared
+        await interaction.followup.send("Cleared the bot's avatar", ephemeral=True)
+
+    # @@ sudo avatar show
+    @cmd_sudo_avatar.command(name="show", description="Snow the bot's avatar")
+    @checks.is_owner()
+    async def cmd_sudo_avatar_show(self, interaction: Interaction):
+        # Respond with a defer since fetching the avatar may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Show the current avatar
+        avatar: Asset = await self._require_avatar(self.bot)
+        await interaction.followup.send(
+            f"The bot's current avatar is:\n{avatar.url}", ephemeral=True
+        )
+
+    # @@ sudo banner
+
+    cmd_sudo_banner = Group(
+        name="banner", description="Manage the bot's banner", parent=cmd_sudo
+    )
+
+    # @@ sudo banner set
+    @cmd_sudo_banner.command(name="set", description="Set the bot's banner")
+    @describe(file="The new banner")
+    @checks.is_owner()
+    async def cmd_sudo_banner_set(self, interaction: Interaction, file: Attachment):
+        # Respond with a defer since uploading the file may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Set the new banner
+        try:
+            assert is_commander_bot(self.bot)
+            await self.bot.set_banner(file)
+        except Exception as ex:
+            raise ErrorChangingBotBanner(str(ex))
+
+        # Show the new banner
+        banner: Asset = await self._require_banner(self.bot)
+        await interaction.followup.send(
+            f"Set the bot's banner to:\n{banner.url}", ephemeral=True
+        )
+
+    # @@ sudo banner clear
+    @cmd_sudo_banner.command(name="clear", description="Clear the bot's banner")
+    @checks.is_owner()
+    async def cmd_sudo_banner_clear(self, interaction: Interaction):
+        # Respond with a defer since clearing the banner may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # The bot must have a banner
+        await self._require_banner(self.bot)
+
+        # Clear the
+        try:
+            assert is_commander_bot(self.bot)
+            await self.bot.set_banner(None)
+        except Exception as ex:
+            raise ErrorChangingBotBanner(str(ex))
+
+        # Send a response that the banner has been cleared
+        await interaction.followup.send("Cleared the bot's banner", ephemeral=True)
+
+    # @@ sudo banner show
+    @cmd_sudo_banner.command(name="show", description="Show the bot's banner")
+    @checks.is_owner()
+    async def cmd_sudo_banner_show(self, interaction: Interaction):
+        # Respond with a defer since fetching the banner may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Show the current banner
+        banner: Asset = await self._require_banner(self.bot)
+        await interaction.followup.send(
+            f"The bot's current banner is:\n{banner.url}", ephemeral=True
+        )
 
     # @@ sudo sync
 

@@ -3,10 +3,12 @@ from datetime import datetime, timedelta
 from logging import Logger, getLogger
 from typing import Any, Optional
 
+from discord import Asset, Attachment, User
 from discord.ext.commands import Bot, Context
 from discord.interactions import Interaction
 from discord.utils import utcnow
 
+from commanderbot.core.exceptions import NotLoggedIn
 from commanderbot.core.command_tree import CachingCommandTree
 from commanderbot.core.configured_extension import ConfiguredExtension
 from commanderbot.core.error_handling import (
@@ -128,6 +130,54 @@ class CommanderBot(Bot):
 
     def add_app_command_error_handler(self, handler: AppCommandErrorHandler):
         self.error_handling.add_app_command_error_handler(handler)
+
+    async def set_avatar(self, new_avatar: Optional[bytes | Attachment]):
+        # Throw exception if the bot isn't logged in
+        if not self.user:
+            raise NotLoggedIn
+
+        # Read the attachment if necessary or just store the byte array
+        data: Optional[bytes] = None
+        if isinstance(new_avatar, Attachment):
+            data = await new_avatar.read()
+        else:
+            data = new_avatar
+
+        # Set the new avatar
+        await self.user.edit(avatar=data)
+
+    async def get_avatar(self) -> Optional[Asset]:
+        # Throw exception if the bot isn't logged in
+        if not self.user:
+            raise NotLoggedIn
+
+        # Get the bot user and get its avatar
+        user: User = await self.fetch_user(self.user.id)
+        return user.avatar
+
+    async def set_banner(self, new_banner: Optional[bytes | Attachment]):
+        # Throw exception if the bot isn't logged in
+        if not self.user:
+            raise NotLoggedIn
+
+        # Read the attachment if necessary or just store the byte array
+        data: Optional[bytes] = None
+        if isinstance(new_banner, Attachment):
+            data = await new_banner.read()
+        else:
+            data = new_banner
+
+        # Set the new banner
+        await self.user.edit(banner=data)
+
+    async def get_banner(self) -> Optional[Asset]:
+        # Throw exception if the bot isn't logged in
+        if not self.user:
+            raise NotLoggedIn
+
+        # Get the bot user and get its banner
+        user: User = await self.fetch_user(self.user.id)
+        return user.banner
 
     # @overrides Bot
     async def setup_hook(self):
