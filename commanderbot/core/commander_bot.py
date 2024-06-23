@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from logging import Logger, getLogger
 from typing import Any, Optional
 
-from discord import Asset, Attachment, User
+from discord import AppInfo, Asset, Attachment, User
 from discord.ext.commands import Bot, Context
 from discord.interactions import Interaction
 from discord.utils import utcnow
@@ -178,6 +178,14 @@ class CommanderBot(Bot):
         # Get the bot user and get its banner
         user: User = await self.fetch_user(self.user.id)
         return user.banner
+
+    async def set_description(self, new_description: Optional[str]):
+        app: AppInfo = await self.application_info()
+        await app.edit(description=new_description)
+
+    async def get_description(self) -> Optional[str]:
+        app: AppInfo = await self.application_info()
+        return app.description or None
 
     # @overrides Bot
     async def setup_hook(self):
