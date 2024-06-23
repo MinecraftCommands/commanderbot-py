@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, tuple, Type, TypeVar
+from typing import Optional, Type, TypeVar
 
 from commanderbot.ext.automod.automod_condition import (
     AutomodCondition,
