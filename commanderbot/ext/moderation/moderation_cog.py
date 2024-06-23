@@ -1,6 +1,6 @@
 from typing import Optional
 
-from discord import Interaction, InteractionMessage, Member, Permissions
+from discord import Embed, Interaction, InteractionMessage, Member, Permissions
 from discord.app_commands import (
     choices,
     command,
@@ -19,7 +19,6 @@ from commanderbot.ext.moderation.moderation_exceptions import (
     CannotKickBotOrSelf,
     CannotKickElevatedUsers,
 )
-from commanderbot.lib import AllowedMentions
 
 KICK_EMOJI: str = "👢"
 BAN_EMOJI: str = "🔨"
@@ -59,28 +58,35 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
             raise CannotKickElevatedUsers
 
         # Send the kick response and retrieve it so we can reference it later
-        kick_msg: str = f"Kicked {user.mention}"
-        kick_reason_msg: str = f"for:\n> {reason}"
-        await interaction.response.send_message(
-            f"{kick_msg} {kick_reason_msg}" if reason else kick_msg,
-            allowed_mentions=AllowedMentions.none(),
+        channel_kick_embed = Embed(
+            description=f"### {KICK_EMOJI} Kicked {user.mention}", color=0x00ACED
         )
+        channel_kick_embed.add_field(
+            name="Reason", value=reason if reason else "No reason given"
+        )
+
+        await interaction.response.send_message(embed=channel_kick_embed)
         response: InteractionMessage = await interaction.original_response()
 
         # Attempt to DM if a reason was included
         # We do this before kicking in case this is the only mutual server
         if reason:
             try:
-                await user.send(
-                    f"{KICK_EMOJI} You were kicked from **{interaction.guild}** for:\n> {reason}",
+                guild_name: str = interaction.guild.name  # type: ignore
+                dm_kick_embed = Embed(
+                    description=f"### {KICK_EMOJI} You were kicked from {guild_name}",
+                    color=0x00ACED,
                 )
+                dm_kick_embed.add_field(name="Reason", value=reason)
+
+                await user.send(embed=dm_kick_embed)
                 await response.add_reaction(MESSAGE_SENT_EMOJI)
             except:
                 pass
 
         # Actually kick the user
         try:
-            await user.kick(reason=reason if reason else "None provided")
+            await user.kick(reason=reason if reason else "No reason given")
             await response.add_reaction(KICK_EMOJI)
         except:
             await response.add_reaction(ERROR_EMOJI)
@@ -121,21 +127,28 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
             raise CannotBanElevatedUsers
 
         # Send the ban response and retrieve it so we can reference it later
-        ban_msg: str = f"Banned {user.mention}"
-        ban_reason_msg: str = f"for:\n> {reason}"
-        await interaction.response.send_message(
-            f"{ban_msg} {ban_reason_msg}" if reason else ban_msg,
-            allowed_mentions=AllowedMentions.none(),
+        channel_ban_embed = Embed(
+            description=f"### {BAN_EMOJI} Banned {user.mention}", color=0x00ACED
         )
+        channel_ban_embed.add_field(
+            name="Reason", value=reason if reason else "No reason given"
+        )
+
+        await interaction.response.send_message(embed=channel_ban_embed)
         response: InteractionMessage = await interaction.original_response()
 
         # Attempt to DM if a reason was included
         # We do this before banning in case this is the only mutual server
         if reason:
             try:
-                await user.send(
-                    f"{BAN_EMOJI} You were banned from **{interaction.guild}** for:\n> {reason}",
+                guild_name: str = interaction.guild.name  # type: ignore
+                dm_ban_embed = Embed(
+                    description=f"### {BAN_EMOJI} You were banned from {guild_name}",
+                    color=0x00ACED,
                 )
+                dm_ban_embed.add_field(name="Reason", value=reason)
+
+                await user.send(embed=dm_ban_embed)
                 await response.add_reaction(MESSAGE_SENT_EMOJI)
             except:
                 pass
@@ -144,7 +157,7 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         try:
             await user.ban(
                 delete_message_seconds=delete_message_history or 0,
-                reason=reason if reason else "None provided",
+                reason=reason if reason else "No reason given",
             )
             await response.add_reaction(BAN_EMOJI)
         except:
