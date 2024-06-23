@@ -305,7 +305,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # The bot must have a banner
         await self._require_banner(self.bot)
 
-        # Clear the
+        # Clear the banner
         try:
             assert is_commander_bot(self.bot)
             await self.bot.set_banner(None)
