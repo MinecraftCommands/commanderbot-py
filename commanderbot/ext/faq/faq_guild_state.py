@@ -184,15 +184,15 @@ class FaqGuildState(CogGuildState):
         )
         embed.add_field(name="Key", value=f"`{entry.key}`", inline=False)
         embed.add_field(name="Aliases", value=formatted_aliases, inline=False)
-        embed.add_field(name="Category key", value=formatted_category_key, inline=False)
         embed.add_field(name="Tags", value=formatted_tags, inline=False)
+        embed.add_field(name="Category Key", value=formatted_category_key, inline=False)
         embed.add_field(name="Hits", value=f"`{entry.hits}`")
         embed.add_field(
-            name="Added by",
+            name="Added By",
             value=f"<@{entry.added_by_id}> ({format_dt(entry.added_on, style='R')})",
         )
         embed.add_field(
-            name="Modified by",
+            name="Modified By",
             value=f"<@{entry.modified_by_id}> ({format_dt(entry.modified_on, style='R')})",
         )
 
