@@ -164,11 +164,11 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         # Create embed
         embed = Embed(title=f"Status for {self.qualified_name}", color=0x00ACED)
         embed.add_field(name="Version URL", value=url, inline=False)
-        embed.add_field(name="Previous request", value=prev_request_ts)
-        embed.add_field(name="Next request", value=next_request_ts)
-        embed.add_field(name="Previous status code", value=prev_status_code)
+        embed.add_field(name="Previous Request", value=prev_request_ts)
+        embed.add_field(name="Next Request", value=next_request_ts)
+        embed.add_field(name="Previous Status Code", value=prev_status_code)
         embed.add_field(
-            name="Latest min engine version",
+            name="Latest `min_engine_version`",
             value=f"`{self.version_manager.latest_version}`",
         )
 

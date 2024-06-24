@@ -40,16 +40,16 @@ class StatusDetails:
     @property
     def fields(self) -> dict[str, str]:
         all_fields = {
-            "Python version": f"`{self.python_version}`",
-            "Discord.py version": f"`{self.discord_py_version}`",
-            "CommanderBot version": f"`{self.commanderbot_version}`",
+            "Python Version": f"`{self.python_version}`",
+            "Discord.py Version": f"`{self.discord_py_version}`",
+            "CommanderBot Version": f"`{self.commanderbot_version}`",
         }
 
         if dt := self.started_at:
             all_fields["Started"] = format_dt(dt, style="R")
 
         if dt := self.last_reconnect:
-            all_fields["Last reconnect"] = format_dt(dt, style="R")
+            all_fields["Last Reconnect"] = format_dt(dt, style="R")
 
         if td := self.uptime:
             all_fields["Uptime"] = f"`{self._format_timedelta(td)}`"
