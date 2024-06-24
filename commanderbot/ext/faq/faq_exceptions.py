@@ -8,7 +8,7 @@ class FaqException(ResponsiveException):
 class FaqKeyAlreadyExists(FaqException):
     def __init__(self, key: str):
         self.key: str = key
-        super().__init__(f"🤷 FAQ key `{self.key}` already exists")
+        super().__init__(f"😬 FAQ key `{self.key}` already exists")
 
 
 class FaqKeyMatchesExistingAlias(FaqException):
@@ -40,6 +40,12 @@ class FaqDoesNotExist(FaqException):
         super().__init__(f"😬 FAQ `{self.key}` does not exist")
 
 
+class FaqAlreadyUncategorized(FaqException):
+    def __init__(self, key: str):
+        self.key: str = key
+        super().__init__(f"😬 FAQ `{self.key}` is already uncategorized")
+
+
 class QueryReturnedNoResults(FaqException):
     def __init__(self, query: str, *suggestions: str):
         self.query: str = query
@@ -49,6 +55,18 @@ class QueryReturnedNoResults(FaqException):
             if self.suggestions
             else f"😔 Could not find any FAQs matching `{self.query}`"
         )
+
+
+class CategoryKeyAlreadyExists(FaqException):
+    def __init__(self, key: str):
+        self.key: str = key
+        super().__init__(f"😬 Category key `{self.key}` already exists")
+
+
+class CategoryDoesNotExist(FaqException):
+    def __init__(self, key: str):
+        self.key: str = key
+        super().__init__(f"😬 Category `{self.key}` does not exist")
 
 
 class InvalidPrefixPattern(FaqException):

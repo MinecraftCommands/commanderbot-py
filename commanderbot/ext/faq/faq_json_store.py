@@ -5,7 +5,7 @@ from typing import AsyncIterable, Optional
 from discord import Guild
 
 from commanderbot.ext.faq.faq_data import FaqData
-from commanderbot.ext.faq.faq_store import FaqEntry
+from commanderbot.ext.faq.faq_store import CategoryEntry, FaqEntry
 from commanderbot.lib import UserID
 from commanderbot.lib.cogs import CogStore
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
@@ -24,6 +24,11 @@ class FaqJsonStore(CogStore):
     async def require_faq(self, guild: Guild, key: str) -> FaqEntry:
         cache = await self.db.get_cache()
         return await cache.require_faq(guild, key)
+
+    # @implements FaqStore
+    async def require_category(self, guild: Guild, key: str) -> CategoryEntry:
+        cache = await self.db.get_cache()
+        return await cache.require_category(guild, key)
 
     # @implements FaqStore
     async def require_prefix_pattern(self, guild: Guild) -> re.Pattern:
@@ -51,15 +56,12 @@ class FaqJsonStore(CogStore):
         guild: Guild,
         key: str,
         aliases: list[str],
-        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
     ) -> FaqEntry:
         cache = await self.db.get_cache()
-        entry = await cache.add_faq(
-            guild, key, aliases, category, tags, content, user_id
-        )
+        entry = await cache.add_faq(guild, key, aliases, tags, content, user_id)
         await self.db.dirty()
         return entry
 
@@ -69,15 +71,12 @@ class FaqJsonStore(CogStore):
         guild: Guild,
         key: str,
         aliases: list[str],
-        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
     ) -> FaqEntry:
         cache = await self.db.get_cache()
-        entry = await cache.modify_faq(
-            guild, key, aliases, category, tags, content, user_id
-        )
+        entry = await cache.modify_faq(guild, key, aliases, tags, content, user_id)
         await self.db.dirty()
         return entry
 
@@ -161,6 +160,65 @@ class FaqJsonStore(CogStore):
             cap=cap,
         ):
             yield item
+
+    # @implements FaqStore
+    async def add_category(self, guild: Guild, key: str, display: str) -> CategoryEntry:
+        cache = await self.db.get_cache()
+        category = await cache.add_category(guild, key, display)
+        await self.db.dirty()
+        return category
+
+    # @implements FaqStore
+    async def modify_category(
+        self, guild: Guild, key: str, display: str
+    ) -> CategoryEntry:
+        cache = await self.db.get_cache()
+        category = await cache.modify_category(guild, key, display)
+        await self.db.dirty()
+        return category
+
+    # @implements FaqStore
+    async def remove_category(self, guild: Guild, key: str) -> CategoryEntry:
+        cache = await self.db.get_cache()
+        category = await cache.remove_category(guild, key)
+        await self.db.dirty()
+        return category
+
+    # @implements FaqStore
+    async def categorize(
+        self, guild: Guild, faq_key: str, category_key: str
+    ) -> FaqEntry:
+        cache = await self.db.get_cache()
+        entry = await cache.categorize(guild, faq_key, category_key)
+        await self.db.dirty()
+        return entry
+
+    # @implements FaqStore
+    async def uncategorize(self, guild: Guild, faq_key: str) -> FaqEntry:
+        cache = await self.db.get_cache()
+        entry = await cache.uncategorize(guild, faq_key)
+        await self.db.dirty()
+        return entry
+
+    # @implements FaqStore
+    async def get_categories(
+        self,
+        guild: Guild,
+        *,
+        category_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None
+    ) -> AsyncIterable[CategoryEntry]:
+        cache = await self.db.get_cache()
+        async for category in cache.get_categories(
+            guild,
+            category_filter=category_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
+        ):
+            yield category
 
     # @implements FaqStore
     async def get_categorized_faqs(

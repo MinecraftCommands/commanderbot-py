@@ -10,7 +10,7 @@ from commanderbot.lib import UserID
 class FaqEntry(Protocol):
     key: str
     aliases: set[str]
-    category: Optional[str]
+    category_key: Optional[str]
     tags: set[str]
     content: str
     hits: int
@@ -28,7 +28,6 @@ class FaqEntry(Protocol):
     def modify(
         self,
         aliases: list[str],
-        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
@@ -37,12 +36,19 @@ class FaqEntry(Protocol):
     def matches_query(self, query: str) -> bool: ...
 
 
+class CategoryEntry(Protocol):
+    key: str
+    display: str
+
+
 class FaqStore(Protocol):
     """
     Abstracts the data storage and persistence of the faq cog
     """
 
     async def require_faq(self, guild: Guild, key: str) -> FaqEntry: ...
+
+    async def require_category(self, guild: Guild, key: str) -> CategoryEntry: ...
 
     async def require_prefix_pattern(self, guild: Guild) -> re.Pattern: ...
 
@@ -57,7 +63,6 @@ class FaqStore(Protocol):
         guild: Guild,
         key: str,
         aliases: list[str],
-        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
@@ -68,7 +73,6 @@ class FaqStore(Protocol):
         guild: Guild,
         key: str,
         aliases: list[str],
-        category: Optional[str],
         tags: list[str],
         content: str,
         user_id: UserID,
@@ -112,6 +116,32 @@ class FaqStore(Protocol):
         sort: bool = False,
         cap: Optional[int] = None
     ) -> AsyncIterable[FaqEntry | tuple[str, FaqEntry]]: ...
+
+    async def add_category(
+        self, guild: Guild, key: str, display: str
+    ) -> CategoryEntry: ...
+
+    async def modify_category(
+        self, guild: Guild, key: str, display: str
+    ) -> CategoryEntry: ...
+
+    async def remove_category(self, guild: Guild, key: str) -> CategoryEntry: ...
+
+    async def categorize(
+        self, guild: Guild, faq_key: str, category_key: str
+    ) -> FaqEntry: ...
+
+    async def uncategorize(self, guild: Guild, faq_key: str) -> FaqEntry: ...
+
+    def get_categories(
+        self,
+        guild: Guild,
+        *,
+        category_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None
+    ) -> AsyncIterable[CategoryEntry]: ...
 
     def get_categorized_faqs(
         self, guild: Guild, *, sort=False
