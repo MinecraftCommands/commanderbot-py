@@ -138,7 +138,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         # Create a list of autocomplete choices and return them
         choices: list[Choice] = []
         for category in categories:
-            choices.append(Choice(name=f"📦 {category.key}", value=category.key))
+            choices.append(Choice(name=f"📁 {category.key}", value=category.key))
 
         return choices
 
