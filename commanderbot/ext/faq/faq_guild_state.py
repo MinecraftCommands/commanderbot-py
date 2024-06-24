@@ -8,7 +8,7 @@ from discord.utils import format_dt
 
 from commanderbot.ext.faq.faq_exceptions import QueryReturnedNoResults
 from commanderbot.ext.faq.faq_options import FaqOptions
-from commanderbot.ext.faq.faq_store import FaqEntry, FaqStore
+from commanderbot.ext.faq.faq_store import CategoryEntry, FaqEntry, FaqStore
 from commanderbot.lib import (
     ConfirmationResult,
     constants,
@@ -101,19 +101,19 @@ class FaqGuildState(CogGuildState):
         )
 
         # Add categorized faqs to lines
+        total_faqs: int = 0
         lines: list[str] = []
-        num_entries: int = 0
         if categorized:
             for category, entries in categorized:
                 lines.append(f"**{category}**")
                 lines.append(", ".join((f"`{e.key}`" for e in entries)))
-                num_entries += len(entries)
+                total_faqs += len(entries)
 
         # Add uncategorized faqs to lines
         if uncategorized:
             lines.append(f"**Uncategorized**")
             lines.append(", ".join((f"`{e.key}`" for e in uncategorized)))
-            num_entries += len(uncategorized)
+            total_faqs += len(uncategorized)
 
         # Create faq list embed
         embed = Embed(
@@ -121,7 +121,7 @@ class FaqGuildState(CogGuildState):
             description="\n".join(lines) or "**None!**",
             color=0x00ACED,
         )
-        embed.set_footer(text=f"FAQs: {num_entries}")
+        embed.set_footer(text=f"FAQs: {total_faqs}")
 
         await interaction.response.send_message(embed=embed)
 
@@ -169,8 +169,8 @@ class FaqGuildState(CogGuildState):
         formatted_aliases: str = (
             f", ".join((f"`{alias}`" for alias in entry.sorted_aliases)) or "**None!**"
         )
-        formatted_category: str = (
-            f"`{entry.category}`" if entry.category else "**None!**"
+        formatted_category_key: str = (
+            f"`{entry.category_key}`" if entry.category_key else "**None!**"
         )
         formatted_tags: str = (
             f", ".join((f"`{tag}`" for tag in entry.sorted_tags)) or "**None!**"
@@ -184,19 +184,94 @@ class FaqGuildState(CogGuildState):
         )
         embed.add_field(name="Key", value=f"`{entry.key}`", inline=False)
         embed.add_field(name="Aliases", value=formatted_aliases, inline=False)
-        embed.add_field(name="Category", value=formatted_category, inline=False)
+        embed.add_field(name="Category key", value=formatted_category_key, inline=False)
         embed.add_field(name="Tags", value=formatted_tags, inline=False)
         embed.add_field(name="Hits", value=f"`{entry.hits}`")
         embed.add_field(
-            name="Added By",
+            name="Added by",
             value=f"<@{entry.added_by_id}> ({format_dt(entry.added_on, style='R')})",
         )
         embed.add_field(
-            name="Modified By",
+            name="Modified by",
             value=f"<@{entry.modified_by_id}> ({format_dt(entry.modified_on, style='R')})",
         )
 
         await interaction.response.send_message(embed=embed)
+
+    async def add_category(self, interaction: Interaction, key: str, display: str):
+        category: CategoryEntry = await self.store.add_category(
+            self.guild, key, display
+        )
+        await interaction.response.send_message(f"Added the category `{category.key}`")
+
+    async def modify_category(self, interaction: Interaction, key: str, display: str):
+        category: CategoryEntry = await self.store.modify_category(
+            self.guild, key, display
+        )
+        await interaction.response.send_message(
+            f"Modified the category `{category.key}`"
+        )
+
+    async def list_categories(self, interaction: Interaction):
+        # Get all categories
+        total_categories: int = 0
+        lines: list[str] = []
+        async for category in self.store.get_categories(self.guild, sort=True):
+            lines.append(f"`{category.key}` **{category.display}**")
+            total_categories += 1
+
+        # Create category list embed
+        embed = Embed(
+            title="Available categories",
+            description="\n".join(lines) or "**None!**",
+            color=0x00ACED,
+        )
+        embed.set_footer(text=f"Categories: {total_categories}")
+
+        await interaction.response.send_message(embed=embed)
+
+    async def remove_category(self, interaction: Interaction, key: str):
+        # Try to get the category
+        category: CategoryEntry = await self.store.require_category(self.guild, key)
+
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove the category `{category.key}`?",
+            timeout=10.0,
+        )
+
+        match result:
+            case ConfirmationResult.YES:
+                # If the answer was yes, attempt to remove the category and send a response
+                try:
+                    await self.store.remove_category(self.guild, category.key)
+                    await interaction.followup.send(
+                        content=f"Removed the category `{category.key}`"
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ex
+            case _:
+                # If the answer was no, send a response
+                await interaction.followup.send(
+                    f"Did not remove the category `{category.key}`"
+                )
+
+    async def categorize(
+        self, interaction: Interaction, faq_key: str, category_key: str
+    ):
+        entry: FaqEntry = await self.store.categorize(self.guild, faq_key, category_key)
+        assert entry.category_key
+        await interaction.response.send_message(
+            f"Set the category of the FAQ `{entry.key}` to `{entry.category_key}`"
+        )
+
+    async def uncategorize(self, interaction: Interaction, faq_key: str):
+        entry: FaqEntry = await self.store.uncategorize(self.guild, faq_key)
+        await interaction.response.send_message(
+            f"Removed the category from the FAQ `{entry.key}`"
+        )
 
     async def set_prefix_pattern(self, interaction: Interaction, prefix: str):
         pattern: re.Pattern = await self.store.set_prefix_pattern(self.guild, prefix)
@@ -279,12 +354,6 @@ class AddFaqModal(FaqModal):
             placeholder="A comma separated list of aliases. Ex: foo, bar, baz",
             required=False,
         )
-        self.category_field = TextInput(
-            label="Category (Used for /faq list)",
-            style=TextStyle.short,
-            placeholder="Ex: Programming",
-            required=False,
-        )
         self.tags_field = TextInput(
             label="Tags (Used for FAQ suggestions)",
             style=TextStyle.short,
@@ -301,7 +370,6 @@ class AddFaqModal(FaqModal):
 
         self.add_item(self.key_field)
         self.add_item(self.aliases_field)
-        self.add_item(self.category_field)
         self.add_item(self.tags_field)
         self.add_item(self.content_field)
 
@@ -310,7 +378,6 @@ class AddFaqModal(FaqModal):
             guild=self.state.guild,
             key=self.key_field.value.strip(),
             aliases=self.aliases_from_str(self.aliases_field.value),
-            category=self.category_field.value.strip() or None,
             tags=self.tags_from_str(self.tags_field.value),
             content=self.content_field.value,
             user_id=interaction.user.id,
@@ -337,13 +404,6 @@ class ModifyFaqModal(FaqModal):
             default=self.aliases_to_str(entry.sorted_aliases),
             required=False,
         )
-        self.category_field = TextInput(
-            label="Category (Used for /faq list)",
-            style=TextStyle.short,
-            placeholder="Ex: Programming",
-            default=entry.category,
-            required=False,
-        )
         self.tags_field = TextInput(
             label="Tags (Used for FAQ suggestions)",
             style=TextStyle.short,
@@ -361,7 +421,6 @@ class ModifyFaqModal(FaqModal):
         )
 
         self.add_item(self.aliases_field)
-        self.add_item(self.category_field)
         self.add_item(self.tags_field)
         self.add_item(self.content_field)
 
@@ -370,7 +429,6 @@ class ModifyFaqModal(FaqModal):
             guild=self.state.guild,
             key=self.faq_key,
             aliases=self.aliases_from_str(self.aliases_field.value),
-            category=self.category_field.value.strip() or None,
             tags=self.tags_from_str(self.tags_field.value),
             content=self.content_field.value,
             user_id=interaction.user.id,

@@ -7,7 +7,7 @@ from commanderbot.ext.faq.faq_guild_state import FaqGuildState
 from commanderbot.ext.faq.faq_json_store import FaqJsonStore
 from commanderbot.ext.faq.faq_options import FaqOptions
 from commanderbot.ext.faq.faq_state import FaqState
-from commanderbot.ext.faq.faq_store import FaqEntry, FaqStore
+from commanderbot.ext.faq.faq_store import CategoryEntry, FaqEntry, FaqStore
 from commanderbot.lib import (
     constants,
     is_bot,
@@ -117,6 +117,31 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
                 choices.append(Choice(name=f"💬 {item.key}", value=item.key))
         return choices
 
+    async def category_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        """
+        An autocomplete callback that will return any categories that match `value`
+        """
+
+        # Get all categories filtered by `value`
+        assert is_guild(interaction.guild)
+        categories: list[CategoryEntry] = await utils.async_expand(
+            self.store.get_categories(
+                interaction.guild,
+                category_filter=value,
+                sort=True,
+                cap=constants.MAX_AUTOCOMPLETE_CHOICES,
+            )
+        )
+
+        # Create a list of autocomplete choices and return them
+        choices: list[Choice] = []
+        for category in categories:
+            choices.append(Choice(name=f"📦 {category.key}", value=category.key))
+
+        return choices
+
     # @@ LISTENERS
     @Cog.listener()
     async def on_message(self, message: Message):
@@ -188,6 +213,74 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
     async def cmd_faqs_details(self, interaction: Interaction, faq: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_faq_details(interaction, faq)
+
+    # @@ faqs category
+
+    cmd_faqs_category = Group(
+        name="category", description="Manage categories", parent=cmd_faqs
+    )
+
+    # @@ faqs category add
+    @cmd_faqs_category.command(name="add", description="Add a new category")
+    @describe(
+        key="The key for the category",
+        display="The display for the category (Shown to users in /faq list)",
+    )
+    async def cmd_faqs_category_add(
+        self, interaction: Interaction, key: str, display: str
+    ):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].add_category(interaction, key, display)
+
+    # @@ faqs category modify
+    @cmd_faqs_category.command(name="modify", description="Modify a category")
+    @describe(
+        category="The category to modify",
+        display="The new display for the category (Shown to users in /faq list)",
+    )
+    @autocomplete(category=category_autocomplete)
+    async def cmd_faqs_category_modify(
+        self, interaction: Interaction, category: str, display: str
+    ):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].modify_category(
+            interaction, category, display
+        )
+
+    # @@ faqs category
+    @cmd_faqs_category.command(name="list", description="List available categories")
+    async def cmd_faqs_category_list(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].list_categories(interaction)
+
+    # @@ faqs category remove
+    @cmd_faqs_category.command(name="remove", description="Remove a category")
+    @describe(category="The category to remove")
+    @autocomplete(category=category_autocomplete)
+    async def cmd_faqs_category_remove(self, interaction: Interaction, category: str):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].remove_category(interaction, category)
+
+    # @@ faqs categorize
+    @cmd_faqs.command(name="categorize", description="Categorize a FAQ")
+    @describe(
+        faq="The FAQ to categorize",
+        category="The category to add the FAQ to",
+    )
+    @autocomplete(faq=faq_autocomplete, category=category_autocomplete)
+    async def cmd_faqs_categorize(
+        self, interaction: Interaction, faq: str, category: str
+    ):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].categorize(interaction, faq, category)
+
+    # @@ faqs uncategorize
+    @cmd_faqs.command(name="uncategorize", description="Uncategorize a FAQ")
+    @describe(faq="The FAQ to uncategorize")
+    @autocomplete(faq=faq_autocomplete)
+    async def cmd_faqs_uncategorize(self, interaction: Interaction, faq: str):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].uncategorize(interaction, faq)
 
     # @@ faqs prefix-pattern
 
