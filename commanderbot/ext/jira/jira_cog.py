@@ -3,7 +3,13 @@ from logging import Logger, getLogger
 from typing import Optional
 
 from discord import Embed, Interaction, ui
-from discord.app_commands import Transform, Transformer, command, describe
+from discord.app_commands import (
+    Transform,
+    Transformer,
+    command,
+    describe,
+    allowed_installs
+)
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.jira.jira_client import JiraClient, JiraQuery
@@ -51,6 +57,7 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
 
     @command(name="jira", description="Query a Jira issue")
     @describe(query="The issue ID or URL to query")
+    @allowed_installs(guilds=True, users=True)
     async def cmd_jira(
         self,
         interaction: Interaction,
