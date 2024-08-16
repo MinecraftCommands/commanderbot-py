@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import AsyncIterable, Optional
 
+from discord import ChannelType
+
 from commanderbot.ext.feeds.feeds_data import FeedsData
 from commanderbot.ext.feeds.feeds_store import FeedsSubscription
 from commanderbot.ext.feeds.providers import FeedType
@@ -22,6 +24,7 @@ class FeedsJsonStore(CogStore):
     async def subscribe(
         self,
         channel_id: ChannelID,
+        channel_type: ChannelType,
         feed: FeedType,
         notification_role_id: Optional[RoleID],
         auto_pin: bool,
@@ -29,7 +32,7 @@ class FeedsJsonStore(CogStore):
     ) -> FeedsSubscription:
         cache = await self.db.get_cache()
         subscription = await cache.subscribe(
-            channel_id, feed, notification_role_id, auto_pin, user_id
+            channel_id, channel_type, feed, notification_role_id, auto_pin, user_id
         )
         await self.db.dirty()
         return subscription
