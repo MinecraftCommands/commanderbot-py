@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Embed, Interaction, Message, ui
+from discord import ChannelType, Embed, Interaction, Message, ui
 from discord.utils import format_dt
 
 from commanderbot.ext.feeds.feeds_guild_state import FeedsGuildState
@@ -19,7 +19,7 @@ from commanderbot.ext.feeds.providers import (
     MinecraftJavaUpdateInfo,
     MinecraftJavaUpdates,
 )
-from commanderbot.lib import Color
+from commanderbot.lib import Color, is_messagable_guild_channel
 from commanderbot.lib.cogs import GuildPartitionedCogState
 
 
@@ -94,7 +94,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
                 content = f"{role_mention} {notification_message}"
 
             # Get the channel
-            channel = self.bot.get_partial_messageable(subscriber.channel_id)
+            channel = self.bot.get_partial_messageable(
+                subscriber.channel_id, type=subscriber.channel_type
+            )
 
             # Send the embed
             msg: Optional[Message] = None
@@ -103,24 +105,35 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             except:
                 pass
 
-            # Skip the rest of this iteration if auto pinning isn't enabled
-            if not subscriber.auto_pin:
+            # Skip the rest of this iteration if we didn't get a message object
+            if not msg:
                 continue
 
-            # Remove the old pin
-            if subscriber.current_pin_id:
+            # Try to automatically publish the message in news channels and news threads
+            if subscriber.channel_type in (ChannelType.news, ChannelType.news_thread):
                 try:
-                    await channel.get_partial_message(subscriber.current_pin_id).unpin()
+                    await msg.publish()
                 except:
                     pass
 
-            # Add the new pin
-            if msg:
-                try:
-                    await msg.pin()
-                    await self.store.update_current_pin(subscriber, msg.id)
-                except:
-                    pass
+            # Automatically pin the message if auto pinning is enabled
+            if subscriber.auto_pin:
+                # Remove the old pin
+                if subscriber.current_pin_id:
+                    try:
+                        await channel.get_partial_message(
+                            subscriber.current_pin_id
+                        ).unpin()
+                    except:
+                        pass
+
+                # Add the new pin
+                if msg:
+                    try:
+                        await msg.pin()
+                        await self.store.update_current_pin(subscriber, msg.id)
+                    except:
+                        pass
 
     def _create_mcje_update_buttons(
         self, update_info: MinecraftJavaUpdateInfo
