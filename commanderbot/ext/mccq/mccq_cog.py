@@ -3,7 +3,13 @@ from typing import Optional
 
 import aiohttp
 from discord import Activity, ActivityType, Embed, Interaction, ui
-from discord.app_commands import Group, command, default_permissions, describe
+from discord.app_commands import (
+    Group,
+    command,
+    default_permissions,
+    describe,
+    AppInstallationType,
+)
 from discord.ext import tasks
 from discord.ext.commands import Bot, Cog
 
@@ -167,7 +173,11 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
 
     # @@ mcc
 
-    cmd_mcc = Group(name="mcc", description="Query a Minecraft command")
+    cmd_mcc = Group(
+        name="mcc",
+        description="Query a Minecraft command",
+        allowed_installs=AppInstallationType(guild=True, user=True),
+    )
 
     # @@ mcc help
     @cmd_mcc.command(name="help", description="Show the query syntax")
