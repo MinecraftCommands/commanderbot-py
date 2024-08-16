@@ -43,6 +43,7 @@ class FeedsGuildState(CogGuildState):
     ):
         subscription = await self.store.subscribe(
             channel_id=channel.id,
+            channel_type=channel.type,
             feed=feed,
             notification_role_id=notification_role.id if notification_role else None,
             auto_pin=bool(auto_pin),

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterable, Optional, Self
 
+from discord import ChannelType
 from discord.utils import utcnow
 
 from commanderbot.ext.feeds.feeds_exceptions import (
@@ -24,6 +25,7 @@ from commanderbot.lib import (
 @dataclass
 class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
     channel_id: ChannelID
+    channel_type: ChannelType
     notification_role_id: Optional[RoleID]
     auto_pin: bool
     current_pin_id: Optional[MessageID]
@@ -36,6 +38,7 @@ class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
         if isinstance(data, dict):
             return cls(
                 channel_id=data["channel_id"],
+                channel_type=ChannelType[data["channel_type"]],
                 notification_role_id=data.get("notification_role_id"),
                 auto_pin=data["auto_pin"],
                 current_pin_id=data.get("current_pin_id"),
@@ -47,6 +50,7 @@ class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
     def to_json(self) -> Any:
         return {
             "channel_id": self.channel_id,
+            "channel_type": self.channel_type.name,
             "notification_role_id": self.notification_role_id,
             "auto_pin": self.auto_pin,
             "current_pin_id": self.current_pin_id,
@@ -95,6 +99,7 @@ class FeedsFeedData(JsonSerializable, FromDataMixin):
     def subscribe(
         self,
         channel_id: ChannelID,
+        channel_type: ChannelType,
         notification_role_id: Optional[RoleID],
         auto_pin: bool,
         user_id: UserID,
@@ -105,7 +110,13 @@ class FeedsFeedData(JsonSerializable, FromDataMixin):
 
         # Create and add a new subscription
         subscription = FeedsSubscriptionData(
-            channel_id, notification_role_id, auto_pin, None, user_id, utcnow()
+            channel_id,
+            channel_type,
+            notification_role_id,
+            auto_pin,
+            None,
+            user_id,
+            utcnow(),
         )
         self.subscribers[channel_id] = subscription
         return subscription
@@ -199,6 +210,7 @@ class FeedsData(JsonSerializable, FromDataMixin):
     async def subscribe(
         self,
         channel_id: ChannelID,
+        channel_type: ChannelType,
         feed: FeedType,
         notification_role_id: Optional[RoleID],
         auto_pin: bool,
@@ -206,7 +218,7 @@ class FeedsData(JsonSerializable, FromDataMixin):
     ) -> FeedsSubscription:
         feed_data = self._get_feed(feed)
         subscription = feed_data.subscribe(
-            channel_id, notification_role_id, auto_pin, user_id
+            channel_id, channel_type, notification_role_id, auto_pin, user_id
         )
         return subscription
 

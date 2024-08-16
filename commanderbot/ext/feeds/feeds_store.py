@@ -1,12 +1,15 @@
 from datetime import datetime
 from typing import AsyncIterable, Optional, Protocol
 
+from discord import ChannelType
+
 from commanderbot.ext.feeds.providers import FeedType
 from commanderbot.lib import ChannelID, MessageID, RoleID, UserID
 
 
 class FeedsSubscription(Protocol):
     channel_id: ChannelID
+    channel_type: ChannelType
     notification_role_id: Optional[RoleID]
     auto_pin: bool
     current_pin_id: Optional[MessageID]
@@ -18,6 +21,7 @@ class FeedsStore(Protocol):
     async def subscribe(
         self,
         channel_id: ChannelID,
+        channel_type: ChannelType,
         feed: FeedType,
         notification_role_id: Optional[RoleID],
         auto_pin: bool,
