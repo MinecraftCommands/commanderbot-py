@@ -13,6 +13,7 @@ from discord.app_commands import (
     command,
     describe,
     rename,
+    allowed_installs,
 )
 from discord.ext.commands import Bot, Cog
 from discord.utils import format_dt
@@ -81,7 +82,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         self, interaction: Interaction, value: str
     ) -> list[Choice[str]]:
         """
-        An autocomplete callback that alawys returns the latest version
+        An autocomplete callback that always returns the latest version
         from the manifest version manager
         """
         latest_version: str = str(self.version_manager.latest_version)
@@ -99,6 +100,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
     )
     @rename(manifest_type="type")
     @autocomplete(min_engine_version=min_engine_version_autocomplete)
+    @allowed_installs(guilds=True, users=True)
     async def cmd_manifest(
         self,
         interaction: Interaction,

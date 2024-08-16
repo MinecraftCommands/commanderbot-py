@@ -121,6 +121,10 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         )
 
         # Create embed fields
+
+        # TODO: Add stats for user app installs!
+        installs_field = f"Guilds: `{app.approximate_guild_count}`"
+
         commands_field = (
             f"Total: `{len(self.bot.commands)}`",
             f"Prefix: `{self.bot.command_prefix}`",
@@ -147,6 +151,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             "Message Content": message_content_enabled,
             "Guild Members": guild_members_enabled,
             "Presence": presence_enabled,
+            "Installs": installs_field,
             "Commands": "\n".join(commands_field),
             "App Commands": "\n".join(app_commands_field),
             "System": "\n".join(system_field),
@@ -165,7 +170,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # @@ sudo shutdown
-    @cmd_sudo.command(name="shutdown", description="Shut down the bot")
+    @cmd_sudo.command(name="shutdown", description="Shutdown the bot")
     @checks.is_owner()
     async def cmd_sudo_shutdown(self, interaction: Interaction):
         result = await respond_with_confirmation(
