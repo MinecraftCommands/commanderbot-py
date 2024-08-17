@@ -121,9 +121,10 @@ class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, s
     @tasks.loop(minutes=2)
     async def _on_poll(self):
         # Populate the cache on the first time we poll and immediately return
-        if not self.prev_status_code:
+        if not self._is_initialized:
             self._log.info("Building version cache...")
             await self._fetch_latest_versions()
+            self._is_initialized = True
             self._log.info(
                 f"Finished building version cache (Initial size: {len(self._cache)})"
             )

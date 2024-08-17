@@ -101,6 +101,7 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
                     for raw_changelog in changelogs.get("entries", [])
                 )
                 for changelog in changelog_gen:
+                    # If this is a new changelog, cache it and add it to the returned array
                     if changelog.id not in self._cache:
                         self._cache.add(changelog.id)
                         new_changelogs.append(changelog)
@@ -110,9 +111,10 @@ class MinecraftJavaUpdates(FeedProviderBase[MinecraftJavaUpdatesOptions, str]):
     @tasks.loop(minutes=2)
     async def _on_poll(self):
         # Populate the cache on the first time we poll and immediately return
-        if not self.prev_status_code:
+        if not self._is_initialized:
             self._log.info("Building changelog cache...")
             await self._fetch_latest_changelogs()
+            self._is_initialized = True
             self._log.info(
                 f"Finished building changelog cache (Initial size: {len(self._cache)})"
             )
