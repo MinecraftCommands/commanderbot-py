@@ -59,7 +59,7 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
     @command(name="jira", description="Query a Jira issue")
     @describe(query="The issue ID or URL to query")
     @allowed_installs(guilds=True, users=True)
-    @allowed_contexts(guilds=True, private_channels=True)
+    @allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_jira(
         self,
         interaction: Interaction,
