@@ -40,6 +40,7 @@ class FeedProviderBase(Generic[OptionsType, CacheType], ABC):
 
         self._log: Logger = getLogger(logger_name)
         self._cache: set[CacheType] = set()
+        self._is_initialized: bool = False
 
     @classmethod
     @abstractmethod
