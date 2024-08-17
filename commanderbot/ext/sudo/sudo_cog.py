@@ -4,7 +4,7 @@ from typing import Optional
 
 import psutil
 from discord import AppInfo, Asset, Attachment, Embed, Interaction, Object, Permissions
-from discord.app_commands import AppCommand, Choice, Group, autocomplete, describe
+from discord.app_commands import AppCommand, AppCommandContext, Choice, Group, autocomplete, describe
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.core.utils import is_commander_bot
@@ -81,6 +81,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         name="sudo",
         description="Commands for bot maintainers",
         default_permissions=Permissions(administrator=True),
+        allowed_contexts=AppCommandContext(guild=True, private_channel=True),
     )
 
     # @@ sudo appinfo

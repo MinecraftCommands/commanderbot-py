@@ -1,5 +1,5 @@
 from discord import Embed, Interaction
-from discord.app_commands import command
+from discord.app_commands import allowed_contexts, command
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.status.status_details import StatusDetails
@@ -10,6 +10,7 @@ class StatusCog(Cog, name="commanderbot.ext.status"):
         self.bot: Bot = bot
 
     @command(name="status", description="Shows the status of the bot")
+    @allowed_contexts(guilds=True, private_channels=True)
     async def cmd_status(self, interaction: Interaction):
         status_details = StatusDetails(self.bot)
 

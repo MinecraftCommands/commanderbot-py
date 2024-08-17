@@ -4,11 +4,13 @@ from typing import Optional
 import aiohttp
 from discord import Activity, ActivityType, Embed, Interaction, ui
 from discord.app_commands import (
+    AppCommandContext,
+    AppInstallationType,
     Group,
+    allowed_contexts,
     command,
     default_permissions,
     describe,
-    AppInstallationType,
 )
 from discord.ext import tasks
 from discord.ext.commands import Bot, Cog
@@ -166,6 +168,7 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
     # @@ mccreload
     @command(name="mccreload", description="Reloads the query managers")
     @default_permissions(administrator=True)
+    @allowed_contexts(guilds=True, private_channels=True)
     @checks.is_owner()
     async def cmd_mccreload(self, interaction: Interaction):
         self._reload_query_managers()
@@ -177,6 +180,7 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
         name="mcc",
         description="Query a Minecraft command",
         allowed_installs=AppInstallationType(guild=True, user=True),
+        allowed_contexts=AppCommandContext(guild=True, private_channel=True),
     )
 
     # @@ mcc help
