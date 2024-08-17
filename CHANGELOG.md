@@ -58,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Faq entries have a new category field
 - `jira`:
   - Ported to slash commands
+  - Made user installable
   - Querying `jira` issues using a URL as the argument will now ignore the base URL stored in the `jira` cog and instead get it from the argument
   - Fixed an issue where the embed's status colors weren't being applied
 - `quote`:
@@ -66,13 +67,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `kick`:
   - Ported to slash commands
   - The command is now unable to kick members with elevated permissions
-- `manifest`: Ported to slash commands
+- `manifest`:
+  - Ported to slash commands
+  - Made user installable
 - `stacktracer`:
   - Ported to slash commands
   - Errors now use an embed
 - `automod`: Errors now use an embed
 - `mccq`:
   - Ported to slash commands
+  - Made user installable
   - Adjusted the format of the presence status set by `mccq`
   - Changed syntax highlighting to `hs`
   - Added a new help command
