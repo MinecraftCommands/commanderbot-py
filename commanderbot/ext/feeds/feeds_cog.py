@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional
 
 from discord import Interaction, Permissions, Role
-from discord.app_commands import AppCommandContext, Group, describe
+from discord.app_commands import Group, describe
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.feeds.feeds_data import FeedsData
@@ -190,7 +190,6 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
         name="feeds",
         description="Manage feed providers",
         default_permissions=Permissions(administrator=True),
-        allowed_contexts=AppCommandContext(guild=True, private_channel=True),
     )
 
     # @@ feeds status

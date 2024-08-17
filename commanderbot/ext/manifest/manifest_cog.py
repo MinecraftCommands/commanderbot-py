@@ -5,7 +5,6 @@ from typing import Optional
 
 from discord import Embed, Interaction, Permissions
 from discord.app_commands import (
-    AppCommandContext,
     Choice,
     Group,
     Transform,
@@ -103,7 +102,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
     @rename(manifest_type="type")
     @autocomplete(min_engine_version=min_engine_version_autocomplete)
     @allowed_installs(guilds=True, users=True)
-    @allowed_contexts(guilds=True, private_channels=True)
+    @allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_manifest(
         self,
         interaction: Interaction,
@@ -143,7 +142,6 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         name="manifests",
         description="Manage the manifest generator",
         default_permissions=Permissions(administrator=True),
-        allowed_contexts=AppCommandContext(guild=True, private_channel=True),
     )
 
     # @@ manifests status
