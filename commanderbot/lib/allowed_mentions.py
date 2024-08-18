@@ -14,15 +14,19 @@ class AllowedMentions(discord.AllowedMentions, JsonSerializable, FromDataMixin):
 
     @classmethod
     def not_everyone(cls) -> Self:
-        return cls(everyone=False)
+        return cls(everyone=False, users=True, roles=True, replied_user=True)
 
     @classmethod
     def only_replies(cls) -> Self:
-        return cls(everyone=False, users=False, roles=False)
+        return cls(everyone=False, users=False, roles=False, replied_user=True)
 
     @classmethod
     def only_users(cls) -> Self:
-        return cls(everyone=False, roles=False, replied_user=False)
+        return cls(everyone=False, users=True, roles=False, replied_user=False)
+
+    @classmethod
+    def only_roles(cls) -> Self:
+        return cls(everyone=False, users=False, roles=True, replied_user=False)
 
     # @overrides FromDataMixin
     @classmethod
