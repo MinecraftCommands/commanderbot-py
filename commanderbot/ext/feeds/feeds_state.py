@@ -19,7 +19,7 @@ from commanderbot.ext.feeds.providers import (
     MinecraftJavaUpdateInfo,
     MinecraftJavaUpdates,
 )
-from commanderbot.lib import Color, is_messagable_guild_channel
+from commanderbot.lib import Color
 from commanderbot.lib.cogs import GuildPartitionedCogState
 
 
@@ -90,8 +90,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
             # Format the notification message
             content: Optional[str] = None
             if notification_message and subscriber.notification_role_id:
-                role_mention = f"<@&{subscriber.notification_role_id}>"
-                content = f"{role_mention} {notification_message}"
+                content = (
+                    f"<@&{subscriber.notification_role_id}> {notification_message}"
+                )
 
             # Get the channel
             channel = self.bot.get_partial_messageable(
