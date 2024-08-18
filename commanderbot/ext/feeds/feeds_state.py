@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from typing import Optional
 
@@ -6,7 +7,7 @@ from discord.utils import format_dt
 
 from commanderbot.ext.feeds.feeds_guild_state import FeedsGuildState
 from commanderbot.ext.feeds.feeds_options import FeedsOptions
-from commanderbot.ext.feeds.feeds_store import FeedsStore
+from commanderbot.ext.feeds.feeds_store import FeedsStore, FeedsSubscription
 from commanderbot.ext.feeds.providers import (
     FeedProviderBase,
     FeedProviderOptionsBase,
@@ -86,55 +87,65 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         view: Optional[ui.View] = None,
         notification_message: Optional[str] = None,
     ):
-        async for subscriber in self.store.subscribers(feed):
-            # Format the notification message
-            content: Optional[str] = None
-            if notification_message and subscriber.notification_role_id:
-                content = (
-                    f"<@&{subscriber.notification_role_id}> {notification_message}"
+        async with asyncio.TaskGroup() as tg:
+            async for subscriber in self.store.subscribers(feed):
+                tg.create_task(
+                    self._send_to_subscriber(
+                        subscriber, embed, view, notification_message
+                    )
                 )
 
-            # Get the channel
-            channel = self.bot.get_partial_messageable(
-                subscriber.channel_id, type=subscriber.channel_type
-            )
+    async def _send_to_subscriber(
+        self,
+        subscriber: FeedsSubscription,
+        embed: Embed,
+        view: Optional[ui.View],
+        notification_message: Optional[str],
+    ):
+        # Format the notification message
+        content: Optional[str] = None
+        if notification_message and subscriber.notification_role_id:
+            content = f"<@&{subscriber.notification_role_id}> {notification_message}"
 
-            # Send the embed
-            msg: Optional[Message] = None
+        # Get the channel
+        channel = self.bot.get_partial_messageable(
+            subscriber.channel_id, type=subscriber.channel_type
+        )
+
+        # Send the embed
+        msg: Optional[Message] = None
+        try:
+            msg = await channel.send(content=content, embed=embed, view=view)  # type: ignore
+        except:
+            pass
+
+        # Return early if we didn't get a message object
+        if not msg:
+            return
+
+        # Try to automatically publish the message in news channels and news threads
+        if subscriber.channel_type in (ChannelType.news, ChannelType.news_thread):
             try:
-                msg = await channel.send(content=content, embed=embed, view=view)  # type: ignore
+                await msg.publish()
             except:
                 pass
 
-            # Skip the rest of this iteration if we didn't get a message object
-            if not msg:
-                continue
-
-            # Try to automatically publish the message in news channels and news threads
-            if subscriber.channel_type in (ChannelType.news, ChannelType.news_thread):
+        # Automatically pin the message if auto pinning is enabled
+        if subscriber.auto_pin:
+            # Remove the old pin
+            if subscriber.current_pin_id:
                 try:
-                    await msg.publish()
+                    await channel.get_partial_message(subscriber.current_pin_id).unpin()
                 except:
                     pass
 
-            # Automatically pin the message if auto pinning is enabled
-            if subscriber.auto_pin:
-                # Remove the old pin
-                if subscriber.current_pin_id:
-                    try:
-                        await channel.get_partial_message(
-                            subscriber.current_pin_id
-                        ).unpin()
-                    except:
-                        pass
-
-                # Add the new pin
-                if msg:
-                    try:
-                        await msg.pin()
-                        await self.store.update_current_pin(subscriber, msg.id)
-                    except:
-                        pass
+            # Add the new pin
+            if msg:
+                try:
+                    await msg.pin()
+                    await self.store.update_current_pin(subscriber, msg.id)
+                except:
+                    pass
 
     def _create_mcje_update_buttons(
         self, update_info: MinecraftJavaUpdateInfo
