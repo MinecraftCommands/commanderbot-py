@@ -92,6 +92,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
         owner: str = app.team.name if app.team else f"{app.owner.mention} ({app.owner})"
         has_app_commands: str = "✅" if app.flags.app_commands_badge else "❌"
+        public_bot: str = "✅" if app.bot_public else "❌"
         message_content_enabled: str = "❌"
         if app.flags.gateway_message_content:
             message_content_enabled = "✅"
@@ -123,7 +124,10 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Create embed fields
 
         # TODO: Add stats for user app installs!
-        installs_field = f"Guilds: `{app.approximate_guild_count}`"
+        installs_field = (
+            f"Public Bot: {public_bot}",
+            f"Guilds: `{app.approximate_guild_count}`",
+        )
 
         commands_field = (
             f"Total: `{len(self.bot.commands)}`",
@@ -151,7 +155,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             "Message Content": message_content_enabled,
             "Guild Members": guild_members_enabled,
             "Presence": presence_enabled,
-            "Installs": installs_field,
+            "Installs": "\n".join(installs_field),
             "Commands": "\n".join(commands_field),
             "App Commands": "\n".join(app_commands_field),
             "System": "\n".join(system_field),
