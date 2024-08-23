@@ -2,13 +2,14 @@
 
 A collection of utilities and extensions for discord.py bots.
 
+[![uv-badge]](https://github.com/astral-sh/uv/)
 [![package-badge]](https://pypi.python.org/pypi/commanderbot/)
 [![version-badge]](https://pypi.python.org/pypi/commanderbot/)
 
 ## Requirements
 
-- Python 3.11+
-- discord.py 2.3+
+- Python 3.12+
+- discord.py 2.4+
 
 ## Running your bot
 
@@ -18,11 +19,10 @@ You will need the following:
 
 1. Your own [Discord Application](https://discordapp.com/developers/applications) with a bot token.
 2. A [configuration file](#configuring-your-bot) for the bot.
-3. A Python 3.11+ environment.
+3. A Python 3.12+ environment.
    - It is recommended to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html) for this.
-   - You can use [pyenv](https://github.com/pyenv/pyenv) to build and run Python 3.11.
-4. If you have [poetry](https://python-poetry.org/), you can `poetry install` instead of using `pip`. (Just make sure that dev dependencies are also installed.) Otherwise, you may use `pip`:
-   - Run `pip install commanderbot` to install the bot core package.
+   - You can use [pyenv](https://github.com/pyenv/pyenv) to build and run Python 3.12.
+4. Run `pip install commanderbot` to install the bot core package.
 
 The first thing you should do is check the CLI help menu:
 
@@ -67,5 +67,6 @@ The current set of configuration options is limited. Following is an example con
 }
 ```
 
-[package-badge]: https://img.shields.io/pypi/v/commanderbot.svg
-[version-badge]: https://img.shields.io/pypi/pyversions/commanderbot.svg
+[uv-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=flat-square
+[package-badge]: https://img.shields.io/pypi/v/commanderbot.svg?style=flat-square
+[version-badge]: https://img.shields.io/pypi/pyversions/commanderbot.svg?style=flat-square
