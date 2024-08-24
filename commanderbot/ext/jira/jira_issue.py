@@ -53,12 +53,12 @@ class JiraIssue:
     @property
     def fields(self) -> dict:
         return {
-            "Reported by": self.reporter,
-            "Assigned to": self.assignee,
+            "Reported By": self.reporter,
+            "Assigned To": self.assignee,
             "Created": format_dt(self.created, style="R"),
             "Updated": format_dt(self.updated, style="R"),
-            "Since version": self.since_version,
-            "Fix version": self.fix_version,
+            "Since Version": self.since_version,
+            "Fix Version": self.fix_version,
             "Status": self.status,
             "Resolution": self.resolution,
             "Votes": self.votes,
