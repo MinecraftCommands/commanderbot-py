@@ -67,9 +67,7 @@ async def async_expand(it: AsyncIterable[T]) -> list[T]:
     return [value async for value in it]
 
 
-async def async_schedule(
-    *coroutines: Coroutine[Any, Any, Any] | Generator[Any, Any, Any]
-):
+async def async_schedule(*coroutines: Coroutine[Any, Any, Any]):
     """
     Schedules a variable number of `Coroutine`s to run.
 
