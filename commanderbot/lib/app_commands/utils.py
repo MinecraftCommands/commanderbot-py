@@ -10,7 +10,7 @@ async def send_or_followup(
     content,
     *,
     allowed_mentions: Optional[AllowedMentions] = None,
-    ephemeral=False
+    ephemeral=False,
 ):
     """
     Respond to an interaction using `Interaction.response.send_message()`.
@@ -43,7 +43,7 @@ def is_deferred(interaction: Interaction) -> bool:
     """
     Returns `True` if the interaction response was deferred.
     """
-    return interaction.response.type in {
+    return interaction.response.type in (
         InteractionResponseType.deferred_channel_message,
         InteractionResponseType.deferred_message_update,
-    }
+    )
