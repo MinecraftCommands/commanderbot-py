@@ -24,6 +24,7 @@ from commanderbot.lib import (
 @dataclass
 class HelpForumForumData(JsonSerializable, FromDataMixin):
     channel_id: ChannelID
+    unresolved_emoji: str
     resolved_emoji: str
     unresolved_tag_id: ForumTagID
     resolved_tag_id: ForumTagID
@@ -36,6 +37,7 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
         if isinstance(data, dict):
             return cls(
                 channel_id=data["channel_id"],
+                unresolved_emoji=data["unresolved_emoji"],
                 resolved_emoji=data["resolved_emoji"],
                 unresolved_tag_id=data["unresolved_tag_id"],
                 resolved_tag_id=data["resolved_tag_id"],
@@ -47,12 +49,17 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
     def to_json(self) -> Any:
         return {
             "channel_id": self.channel_id,
+            "unresolved_emoji": self.unresolved_emoji,
             "resolved_emoji": self.resolved_emoji,
             "unresolved_tag_id": self.unresolved_tag_id,
             "resolved_tag_id": self.resolved_tag_id,
             "threads_created": self.threads_created,
             "resolutions": self.resolutions,
         }
+
+    @property
+    def partial_unresolved_emoji(self) -> PartialEmoji:
+        return PartialEmoji.from_str(self.unresolved_emoji)
 
     @property
     def partial_resolved_emoji(self) -> PartialEmoji:
@@ -122,6 +129,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
     def register_forum_channel(
         self,
         forum: ForumChannel,
+        unresolved_emoji: str,
         resolved_emoji: str,
         unresolved_tag: str,
         resolved_tag: str,
@@ -137,6 +145,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         # Create and add a new help forum
         forum_data = HelpForumForumData(
             channel_id=forum.id,
+            unresolved_emoji=unresolved_emoji,
             resolved_emoji=resolved_emoji,
             unresolved_tag_id=valid_unresolved_tag.id,
             resolved_tag_id=valid_resolved_tag.id,
@@ -155,6 +164,14 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         # Remove it
         del self.help_forums[forum_data.channel_id]
         # Return it
+        return forum_data
+
+    def modify_unresolved_emoji(
+        self, forum: ForumChannel, emoji: str
+    ) -> HelpForumForumData:
+        # Modify unresolved emoji for a help forum
+        forum_data = self.require_help_forum(forum)
+        forum_data.unresolved_emoji = emoji
         return forum_data
 
     def modify_resolved_emoji(
@@ -234,12 +251,13 @@ class HelpForumData(JsonSerializable, FromDataMixin):
         self,
         guild: Guild,
         forum: ForumChannel,
+        unresolved_emoji: str,
         resolved_emoji: str,
         unresolved_tag: str,
         resolved_tag: str,
     ) -> HelpForum:
         return self.guilds[guild.id].register_forum_channel(
-            forum, resolved_emoji, unresolved_tag, resolved_tag
+            forum, unresolved_emoji, resolved_emoji, unresolved_tag, resolved_tag
         )
 
     # @implements HelpForumStore
@@ -255,6 +273,13 @@ class HelpForumData(JsonSerializable, FromDataMixin):
     # @implements HelpForumStore
     async def increment_resolutions(self, help_forum: HelpForum):
         help_forum.resolutions += 1
+
+    # @implements HelpForumStore
+    async def modify_unresolved_emoji(
+        self, guild: Guild, forum: ForumChannel, emoji: str
+    ) -> HelpForum:
+        return self.guilds[guild.id].modify_unresolved_emoji(forum, emoji)
+
 
     # @implements HelpForumStore
     async def modify_resolved_emoji(

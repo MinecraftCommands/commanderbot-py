@@ -7,6 +7,7 @@ from commanderbot.lib import ChannelID, ForumTagID
 
 class HelpForum(Protocol):
     channel_id: ChannelID
+    unresolved_emoji: str
     resolved_emoji: str
     unresolved_tag_id: ForumTagID
     resolved_tag_id: ForumTagID
@@ -14,16 +15,16 @@ class HelpForum(Protocol):
     resolutions: int
 
     @property
-    def partial_resolved_emoji(self) -> PartialEmoji:
-        ...
+    def partial_unresolved_emoji(self) -> PartialEmoji: ...
 
     @property
-    def thread_state_tags(self) -> tuple[ForumTagID, ForumTagID]:
-        ...
+    def partial_resolved_emoji(self) -> PartialEmoji: ...
 
     @property
-    def ratio(self) -> tuple[int, int]:
-        ...
+    def thread_state_tags(self) -> tuple[ForumTagID, ForumTagID]: ...
+
+    @property
+    def ratio(self) -> tuple[int, int]: ...
 
 
 class HelpForumStore(Protocol):
@@ -31,46 +32,44 @@ class HelpForumStore(Protocol):
     Abstracts the data storage and persistence of the help forum cog
     """
 
-    async def require_help_forum(self, guild: Guild, forum: ForumChannel) -> HelpForum:
-        ...
+    async def require_help_forum(
+        self, guild: Guild, forum: ForumChannel
+    ) -> HelpForum: ...
 
     async def get_help_forum(
         self, guild: Guild, forum: ForumChannel
-    ) -> Optional[HelpForum]:
-        ...
+    ) -> Optional[HelpForum]: ...
 
     async def register_forum_channel(
         self,
         guild: Guild,
         forum: ForumChannel,
+        unresolved_emoji: str,
         resolved_emoji: str,
         unresolved_tag: str,
         resolved_tag: str,
-    ) -> HelpForum:
-        ...
+    ) -> HelpForum: ...
 
     async def deregister_forum_channel(
         self, guild: Guild, forum: ForumChannel
-    ) -> HelpForum:
-        ...
+    ) -> HelpForum: ...
 
-    async def increment_threads_created(self, help_forum: HelpForum):
-        ...
+    async def increment_threads_created(self, help_forum: HelpForum): ...
 
-    async def increment_resolutions(self, help_forum: HelpForum):
-        ...
+    async def increment_resolutions(self, help_forum: HelpForum): ...
+
+    async def modify_unresolved_emoji(
+        self, guild: Guild, forum: ForumChannel, emoji: str
+    ) -> HelpForum: ...
 
     async def modify_resolved_emoji(
         self, guild: Guild, forum: ForumChannel, emoji: str
-    ) -> HelpForum:
-        ...
+    ) -> HelpForum: ...
 
     async def modify_unresolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> tuple[HelpForum, ForumTag]:
-        ...
+    ) -> tuple[HelpForum, ForumTag]: ...
 
     async def modify_resolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
-    ) -> tuple[HelpForum, ForumTag]:
-        ...
+    ) -> tuple[HelpForum, ForumTag]: ...
