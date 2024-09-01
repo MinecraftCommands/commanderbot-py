@@ -119,8 +119,7 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
         # Try resolving the thread
         if not is_bot(self.bot, message.author):
-            emoji = PartialEmoji.from_str(message.content)
-            await self.state[forum.guild].on_resolve(forum, thread, message, emoji)
+            await self.state[forum.guild].on_resolve_message(forum, thread, message)
         # Try deleting the message if it was a pin message sent by the bot
         elif message.type == MessageType.pins_add:
             await self.state[forum.guild].on_bot_pin_starter_message(
@@ -142,14 +141,20 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         if thread.flags.pinned:
             return
 
+        # Ignore reactions to the thread starter message
+        # The starter message ID and the Thread ID are the same
+        if payload.message_id == thread.id:
+            return
+
         # Make sure this thread is in a forum channel
         forum = thread.parent
         if not is_forum_channel(forum):
             return
 
         message = thread.get_partial_message(payload.message_id)
-        emoji = payload.emoji
-        await self.state[forum.guild].on_resolve(forum, thread, message, emoji)
+        await self.state[forum.guild].on_resolve_reaction(
+            forum, thread, message, payload.emoji, payload.user_id
+        )
 
     # @@ COMMANDS
 
@@ -192,7 +197,8 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     )
     @describe(
         forum="The forum channel to register",
-        resolved_emoji="The emoji that's used for resolving posts",
+        unresolved_emoji="The emoji that's used for unresolved posts",
+        resolved_emoji="The emoji that's used for resolved posts (Also used to resolve posts)",
         unresolved_tag="The tag for unresolved posts",
         resolved_tag="The tag for resolved posts",
     )
@@ -200,13 +206,19 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         self,
         interaction: Interaction,
         forum: ForumChannel,
+        unresolved_emoji: Transform[str, EmojiTransformer],
         resolved_emoji: Transform[str, EmojiTransformer],
         unresolved_tag: str,
         resolved_tag: str,
     ):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].register_forum_channel(
-            interaction, forum, resolved_emoji, unresolved_tag, resolved_tag
+            interaction,
+            forum,
+            unresolved_emoji,
+            resolved_emoji,
+            unresolved_tag,
+            resolved_tag,
         )
 
     # @@ forum deregister
@@ -233,6 +245,23 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     cmd_forum_modify = Group(
         name="modify", description="Modify help forums", parent=cmd_forum
     )
+
+    # @@ forum modify unresolved-emoji
+    @cmd_forum_modify.command(
+        name="unresolved-emoji",
+        description="Modify the unresolved emoji for a help forum",
+    )
+    @describe(forum="The help forum to modify", emoji="The new emoji")
+    async def cmd_forum_modify_unresolved_emoji(
+        self,
+        interaction: Interaction,
+        forum: ForumChannel,
+        emoji: Transform[str, EmojiTransformer],
+    ):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].modify_unresolved_emoji(
+            interaction, forum, emoji
+        )
 
     # @@ forum modify resolved-emoji
     @cmd_forum_modify.command(
