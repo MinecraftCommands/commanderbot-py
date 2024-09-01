@@ -2,7 +2,7 @@ from typing import Optional
 
 from discord import AllowedMentions, Interaction, InteractionResponseType
 
-__all__ = ("send_or_followup", "command_name", "is_deferred")
+__all__ = ("send_or_followup", "command_name", "is_deferred", "is_user_app")
 
 
 async def send_or_followup(
@@ -47,3 +47,10 @@ def is_deferred(interaction: Interaction) -> bool:
         InteractionResponseType.deferred_channel_message,
         InteractionResponseType.deferred_message_update,
     )
+
+
+def is_user_app(interacion: Interaction) -> bool:
+    """
+    Returns `True` if the interaction is for a user app.
+    """
+    return interacion.is_user_integration() and not interacion.is_guild_integration()

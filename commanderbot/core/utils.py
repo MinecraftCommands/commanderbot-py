@@ -10,19 +10,19 @@ from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.lib import AppCommandID, GuildID
 
 
-def is_commander_bot(bot: Bot) -> TypeIs[CommanderBot]:
-    return isinstance(bot, CommanderBot)
+def is_commander_bot(obj: object) -> TypeIs[CommanderBot]:
+    return isinstance(obj, CommanderBot)
 
 
-def get_commander_bot(bot: Bot) -> Optional[CommanderBot]:
-    if is_commander_bot(bot):
-        return bot
+def get_commander_bot(obj: object) -> Optional[CommanderBot]:
+    if is_commander_bot(obj):
+        return obj
 
 
-def require_commander_bot(bot: Bot) -> CommanderBot:
-    if is_commander_bot(bot):
-        return bot
-    raise TypeError("Bot is not an instance of CommanderBot")
+def require_commander_bot(obj: object) -> CommanderBot:
+    if is_commander_bot(obj):
+        return obj
+    raise TypeError("'obj' is not an instance of 'CommanderBot'")
 
 
 async def add_configured_cog(bot: Bot, ext_name: str, cog_class: Type[Cog]):
