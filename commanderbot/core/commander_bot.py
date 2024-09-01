@@ -8,7 +8,6 @@ from discord.ext.commands import Bot, Context
 from discord.interactions import Interaction
 from discord.utils import utcnow
 
-from commanderbot.core.exceptions import NotLoggedIn
 from commanderbot.core.command_tree import CachingCommandTree
 from commanderbot.core.configured_extension import ConfiguredExtension
 from commanderbot.core.error_handling import (
@@ -17,6 +16,7 @@ from commanderbot.core.error_handling import (
     ErrorHandling,
     EventErrorHandler,
 )
+from commanderbot.core.exceptions import NotLoggedIn
 from commanderbot.core.help_command import HelpCommand
 from commanderbot.lib import AllowedMentions, EventData, Intents
 
@@ -72,9 +72,6 @@ class CommanderBot(Bot):
         self.configured_extensions: dict[str, ConfiguredExtension] = {}
 
     async def _configure_extensions(self, extensions_data: list):
-        if not isinstance(extensions_data, list):
-            raise ValueError(f"Invalid extensions: {extensions_data}")
-
         self.log.info(f"Processing {len(extensions_data)} extensions...")
 
         all_extensions: list[ConfiguredExtension] = [
