@@ -24,6 +24,7 @@ from commanderbot.lib import (
     AllowedMentions,
     ConfirmationResult,
     ForumTagID,
+    UserID,
     respond_with_confirmation,
     utils,
 )
@@ -143,8 +144,9 @@ class HelpForumGuildState(CogGuildState):
             title="Thanks for asking your question",
             description="\n".join(
                 (
-                    f"• When your question has been answered, please resolve your post.",
-                    f"• You can resolve your post by using {resolve_cmd}, reacting to a message with {resolved_emoji}, or sending {resolved_emoji} as a message.",
+                    f"- When your question has been answered, please resolve your post.",
+                    f"- You can resolve your post by using {resolve_cmd}, reacting to a message with {resolved_emoji}, or sending {resolved_emoji} as a message.",
+                    f"- Once your post has been resolved, any further messages or reactions will unresolve it.",
                 )
             ),
             color=0x00ACED,
@@ -181,15 +183,16 @@ class HelpForumGuildState(CogGuildState):
             forum, thread, forum_data, ThreadState.UNRESOLVED
         )
 
-    async def on_resolve(
-        self,
-        forum: ForumChannel,
-        thread: Thread,
-        message: Message | PartialMessage,
-        emoji: PartialEmoji,
+        # Send unresolved message
+        await thread.send(
+            f"{forum_data.partial_unresolved_emoji} This post has been unresolved!"
+        )
+
+    async def on_resolve_message(
+        self, forum: ForumChannel, thread: Thread, message: Message
     ):
         """
-        If `forum` is a help forum, set the thread state to resolved if `emoji` matches the resolved emoji
+        If `forum` is a help forum, set the thread state to resolved if `message` contains just the resolved emoji
         """
 
         # Get help forum data
@@ -197,16 +200,68 @@ class HelpForumGuildState(CogGuildState):
         if not forum_data:
             return
 
-        if emoji == forum_data.partial_resolved_emoji:
-            await message.add_reaction(forum_data.partial_resolved_emoji)
+        # Return early if the emoji isn't the resolved emoji
+        emoji = PartialEmoji.from_str(message.content)
+        if emoji != forum_data.partial_resolved_emoji:
+            return
 
-            # Change the thread state to 'resolved'
-            await self._change_thread_state(
-                forum, thread, forum_data, ThreadState.RESOLVED
-            )
+        # Send resolved message
+        await thread.send(
+            "\n".join(
+                (
+                    f"{forum_data.partial_resolved_emoji} {message.author.mention} resolved this post!",
+                    f"-# Any further messages or reactions will unresolve this post",
+                )
+            ),
+            allowed_mentions=AllowedMentions.none(),
+        )
 
-            # Increment resolutions
-            await self.store.increment_resolutions(forum_data)
+        # Change the thread state to 'resolved'
+        await self._change_thread_state(forum, thread, forum_data, ThreadState.RESOLVED)
+
+        # Increment resolutions
+        await self.store.increment_resolutions(forum_data)
+
+    async def on_resolve_reaction(
+        self,
+        forum: ForumChannel,
+        thread: Thread,
+        message: PartialMessage,
+        emoji: PartialEmoji,
+        user_id: UserID,
+    ):
+        """
+        If `forum` is a help forum, set the thread state to resolved if `emoji` is the resolved emoji
+        """
+
+        # Get help forum data
+        forum_data = await self._get_help_forum(forum)
+        if not forum_data:
+            return
+
+        # Return early if the emoji isn't the resolved emoji
+        if emoji != forum_data.partial_resolved_emoji:
+            return
+
+        # React to message with resolved emoji
+        await message.add_reaction(forum_data.partial_resolved_emoji)
+
+        # Send resolved message
+        await thread.send(
+            "\n".join(
+                (
+                    f"{forum_data.partial_resolved_emoji} <@{user_id}> resolved this post!",
+                    f"-# Any further messages or reactions will unresolve this post",
+                )
+            ),
+            allowed_mentions=AllowedMentions.none(),
+        )
+
+        # Change the thread state to 'resolved'
+        await self._change_thread_state(forum, thread, forum_data, ThreadState.RESOLVED)
+
+        # Increment resolutions
+        await self.store.increment_resolutions(forum_data)
 
     async def on_resolve_command(
         self, interaction: Interaction, forum: ForumChannel, thread: Thread
@@ -221,9 +276,13 @@ class HelpForumGuildState(CogGuildState):
             raise UnableToResolveUnregistered(forum.id)
 
         # Send resolved message
-        emoji: PartialEmoji = forum_data.partial_resolved_emoji
         await interaction.followup.send(
-            f"{emoji} {interaction.user.mention} resolved the post",
+            "\n".join(
+                (
+                    f"{forum_data.partial_resolved_emoji} {interaction.user.mention} resolved this post!",
+                    f"-# Any further messages or reactions will unresolve this post",
+                )
+            ),
             allowed_mentions=AllowedMentions.none(),
         )
 
@@ -237,12 +296,18 @@ class HelpForumGuildState(CogGuildState):
         self,
         interaction: Interaction,
         forum: ForumChannel,
+        unresolved_emoji: str,
         resolved_emoji: str,
         unresolved_tag: str,
         resolved_tag: str,
     ):
         forum_data = await self.store.register_forum_channel(
-            self.guild, forum, resolved_emoji, unresolved_tag, resolved_tag
+            self.guild,
+            forum,
+            unresolved_emoji,
+            resolved_emoji,
+            unresolved_tag,
+            resolved_tag,
         )
         await interaction.response.send_message(
             f"Registered <#{forum_data.channel_id}> as a help forum"
@@ -299,6 +364,7 @@ class HelpForumGuildState(CogGuildState):
 
         # Create embed fields
         fields: dict = {
+            "Unresolved Emoji": forum_data.unresolved_emoji,
             "Resolved Emoji": forum_data.resolved_emoji,
             "Unresolved Tag": formatted_unresolved_tag,
             "Resolved Tag": formatted_resolved_tag,
@@ -313,6 +379,14 @@ class HelpForumGuildState(CogGuildState):
             embed.add_field(name=k, value=v)
 
         await interaction.response.send_message(embed=embed)
+
+    async def modify_unresolved_emoji(
+        self, interaction: Interaction, forum: ForumChannel, emoji: str
+    ):
+        forum_data = await self.store.modify_unresolved_emoji(self.guild, forum, emoji)
+        await interaction.response.send_message(
+            f"Changed the unresolved emoji for <#{forum_data.channel_id}> to {forum_data.unresolved_emoji}"
+        )
 
     async def modify_resolved_emoji(
         self, interaction: Interaction, forum: ForumChannel, emoji: str
