@@ -34,13 +34,14 @@ class HelpForumJsonStore(CogStore):
         self,
         guild: Guild,
         forum: ForumChannel,
+        unresolved_emoji: str,
         resolved_emoji: str,
         unresolved_tag: str,
         resolved_tag: str,
     ) -> HelpForum:
         cache = await self.db.get_cache()
         help_forum = await cache.register_forum_channel(
-            guild, forum, resolved_emoji, unresolved_tag, resolved_tag
+            guild, forum, unresolved_emoji, resolved_emoji, unresolved_tag, resolved_tag
         )
         await self.db.dirty()
         return help_forum
@@ -67,6 +68,15 @@ class HelpForumJsonStore(CogStore):
         await self.db.dirty()
 
     # @implements HelpForumStore
+    async def modify_unresolved_emoji(
+        self, guild: Guild, forum: ForumChannel, emoji: str
+    ) -> HelpForum:
+        cache = await self.db.get_cache()
+        help_forum = await cache.modify_unresolved_emoji(guild, forum, emoji)
+        await self.db.dirty()
+        return help_forum
+
+    # @implements HelpForumStore
     async def modify_resolved_emoji(
         self, guild: Guild, forum: ForumChannel, emoji: str
     ) -> HelpForum:
@@ -80,15 +90,15 @@ class HelpForumJsonStore(CogStore):
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
         cache = await self.db.get_cache()
-        help_forum, new_tag = await cache.modify_unresolved_tag(guild, forum, tag)
+        result = await cache.modify_unresolved_tag(guild, forum, tag)
         await self.db.dirty()
-        return (help_forum, new_tag)
+        return result
 
     # @implements HelpForumStore
     async def modify_resolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
         cache = await self.db.get_cache()
-        help_forum, new_tag = await cache.modify_resolved_tag(guild, forum, tag)
+        result = await cache.modify_resolved_tag(guild, forum, tag)
         await self.db.dirty()
-        return (help_forum, new_tag)
+        return result
