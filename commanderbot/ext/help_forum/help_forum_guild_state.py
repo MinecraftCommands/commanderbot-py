@@ -146,7 +146,7 @@ class HelpForumGuildState(CogGuildState):
                 (
                     f"- When your question has been answered, please resolve your post.",
                     f"- You can resolve your post by using {resolve_cmd}, reacting to a message with {resolved_emoji}, or sending {resolved_emoji} as a message.",
-                    f"- Once your post has been resolved, any further messages or reactions will unresolve it.",
+                    f"- Once your post has been resolved, any additional messages or reactions will unresolve it.",
                 )
             ),
             color=0x00ACED,
@@ -185,7 +185,7 @@ class HelpForumGuildState(CogGuildState):
 
         # Send unresolved message
         await thread.send(
-            f"{forum_data.partial_unresolved_emoji} This post has been unresolved!"
+            f"{forum_data.partial_unresolved_emoji} This post has been unresolved"
         )
 
     async def on_resolve_message(
@@ -209,8 +209,8 @@ class HelpForumGuildState(CogGuildState):
         await thread.send(
             "\n".join(
                 (
-                    f"{forum_data.partial_resolved_emoji} {message.author.mention} resolved this post!",
-                    f"-# Any further messages or reactions will unresolve this post",
+                    f"{forum_data.partial_resolved_emoji} {message.author.mention} resolved this post",
+                    f"-# Any additional messages or reactions will unresolve this post",
                 )
             ),
             allowed_mentions=AllowedMentions.none(),
@@ -247,13 +247,14 @@ class HelpForumGuildState(CogGuildState):
         await message.add_reaction(forum_data.partial_resolved_emoji)
 
         # Send resolved message
-        await thread.send(
+        await message.reply(
             "\n".join(
                 (
-                    f"{forum_data.partial_resolved_emoji} <@{user_id}> resolved this post!",
-                    f"-# Any further messages or reactions will unresolve this post",
+                    f"{forum_data.partial_resolved_emoji} <@{user_id}> resolved this post",
+                    f"-# Any additional messages or reactions will unresolve this post",
                 )
             ),
+            mention_author=False,
             allowed_mentions=AllowedMentions.none(),
         )
 
@@ -279,8 +280,8 @@ class HelpForumGuildState(CogGuildState):
         await interaction.followup.send(
             "\n".join(
                 (
-                    f"{forum_data.partial_resolved_emoji} {interaction.user.mention} resolved this post!",
-                    f"-# Any further messages or reactions will unresolve this post",
+                    f"{forum_data.partial_resolved_emoji} {interaction.user.mention} resolved this post",
+                    f"-# Any additional messages or reactions will unresolve this post",
                 )
             ),
             allowed_mentions=AllowedMentions.none(),
