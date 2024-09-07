@@ -2,7 +2,6 @@ from discord import (
     ForumChannel,
     Interaction,
     Message,
-    PartialEmoji,
     Permissions,
     RawReactionActionEvent,
     RawThreadUpdateEvent,
@@ -182,7 +181,6 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
             raise UnableToResolvePinned
 
         assert is_guild(interaction.guild)
-        await interaction.response.defer()
         await self.state[interaction.guild].on_resolve_command(
             interaction, forum, thread
         )
