@@ -277,7 +277,7 @@ class HelpForumGuildState(CogGuildState):
             raise UnableToResolveUnregistered(forum.id)
 
         # Send resolved message
-        await interaction.followup.send(
+        await interaction.response.send_message(
             "\n".join(
                 (
                     f"{forum_data.partial_resolved_emoji} {interaction.user.mention} resolved this post",
