@@ -90,13 +90,13 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         if not is_thread(thread):
             return
 
-        # Ignored pinned threads
-        if thread.flags.pinned:
-            return
-
         # Make sure this thread is in a forum channel
         forum = thread.parent
         if not is_forum_channel(forum):
+            return
+
+        # Ignored pinned threads
+        if thread.flags.pinned:
             return
 
         await self.state[forum.guild].on_unresolve(forum, thread)
@@ -108,13 +108,18 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         if not is_thread(thread):
             return
 
+        # Make sure this thread is in a forum channel
+        forum = thread.parent
+        if not is_forum_channel(forum):
+            return
+
         # Ignore pinned threads
         if thread.flags.pinned:
             return
 
-        # Make sure this thread is in a forum channel
-        forum = thread.parent
-        if not is_forum_channel(forum):
+        # Ignore messages that are the thread starter message
+        # The starter message ID and the Thread ID are the same
+        if message.id == thread.id:
             return
 
         # Try resolving the thread
@@ -137,6 +142,11 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         if not is_thread(thread):
             return
 
+        # Make sure this thread is in a forum channel
+        forum = thread.parent
+        if not is_forum_channel(forum):
+            return
+
         # Ignore pinned threads
         if thread.flags.pinned:
             return
@@ -144,11 +154,6 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
         # Ignore reactions to the thread starter message
         # The starter message ID and the Thread ID are the same
         if payload.message_id == thread.id:
-            return
-
-        # Make sure this thread is in a forum channel
-        forum = thread.parent
-        if not is_forum_channel(forum):
             return
 
         message = thread.get_partial_message(payload.message_id)
