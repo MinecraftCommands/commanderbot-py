@@ -1,8 +1,8 @@
 [project]
 name = "commanderbot"
 description = "A collection of utilities and extensions for discord.py bots."
-version = "0.20.0a28"
-requires-python = ">=3.12,<3.13"
+version = "0.20.0a29"
+requires-python = ">=3.13,<3.14"
 authors = [
     { name = "Ersatz", email = "ersatz0077@gmail.com" },
     { name = "Arcensoth", email = "arcensoth@gmail.com" },
@@ -20,10 +20,8 @@ classifiers = [
 dependencies = [
     # Core dependencies.
     "discord-py>=2.4.0",
+    "audioop-lts>=0.2.1",   # Needed until Discord.py releases an update that includes it.
     "python-dotenv>=1.0.0",
-
-    # For using newer type hints in older Python versions (For now).
-    "typing-extensions>=4.12.0",
 
     # These are used for logging.
     "colorama>=0.4.0",
