@@ -1,7 +1,6 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Self
+
 from discord import Member, Role
 
 from commanderbot.ext.roles.roles_store import RolesStore
@@ -44,7 +43,7 @@ class JoinableRolesResult(RolesResult):
         store: RolesStore,
         member: Member,
         roles: list[Role],
-    ) -> JoinableRolesResult:
+    ) -> Self:
         # A role is joinable if:
         # 1. it is registered; and
         # 2. it is configured as joinable; and
@@ -65,7 +64,7 @@ class JoinableRolesResult(RolesResult):
                 already_in.append(role)
                 continue
             joinable.append(role)
-        return JoinableRolesResult(
+        return cls(
             member=member,
             joinable=joinable,
             not_registered=not_registered,
@@ -94,7 +93,9 @@ class JoinableRolesResult(RolesResult):
             lines.append(f"🤔 You're already in {already_in_mentions}.")
         if self.not_registered:
             not_registered_mentions = self._join_mentions(self.not_registered)
-            lines.append(f"❌ These roles aren't registered: {not_registered_mentions}.")
+            lines.append(
+                f"❌ These roles aren't registered: {not_registered_mentions}."
+            )
         return lines
 
 
@@ -111,7 +112,7 @@ class LeavableRolesResult(RolesResult):
         store: RolesStore,
         member: Member,
         roles: list[Role],
-    ) -> LeavableRolesResult:
+    ) -> Self:
         # A role is leavable if:
         # 1. it is registered; and
         # 2. it is configured as leavable; and
@@ -132,7 +133,7 @@ class LeavableRolesResult(RolesResult):
                 not_in.append(role)
                 continue
             leavable.append(role)
-        return LeavableRolesResult(
+        return cls(
             member=member,
             leavable=leavable,
             not_registered=not_registered,
@@ -161,7 +162,9 @@ class LeavableRolesResult(RolesResult):
             lines.append(f"🤔 You're not in {not_in_mentions}.")
         if self.not_registered:
             not_registered_mentions = self._join_mentions(self.not_registered)
-            lines.append(f"❌ These roles aren't registered: {not_registered_mentions}.")
+            lines.append(
+                f"❌ These roles aren't registered: {not_registered_mentions}."
+            )
         return lines
 
 
@@ -179,7 +182,7 @@ class AddableRolesResult(RolesResult):
         target_user: Member,
         roles: list[Role],
         acting_user: Member,
-    ) -> AddableRolesResult:
+    ) -> Self:
         # A role is addable if:
         # 1. it is registered; and
         # 2. the member does not already have it.
@@ -194,7 +197,7 @@ class AddableRolesResult(RolesResult):
                 already_in.append(role)
                 continue
             addable.append(role)
-        return AddableRolesResult(
+        return cls(
             target=target_user,
             actor=acting_user,
             addable=addable,
@@ -226,7 +229,9 @@ class AddableRolesResult(RolesResult):
             )
         if self.not_registered:
             not_registered_mentions = self._join_mentions(self.not_registered)
-            lines.append(f"❌ These roles aren't registered: {not_registered_mentions}.")
+            lines.append(
+                f"❌ These roles aren't registered: {not_registered_mentions}."
+            )
         return lines
 
 
@@ -244,7 +249,7 @@ class RemovableRolesResult(RolesResult):
         target_user: Member,
         roles: list[Role],
         acting_user: Member,
-    ) -> RemovableRolesResult:
+    ) -> Self:
         # A role is removable if:
         # 1. it is registered; and
         # 2. the member has it.
@@ -259,7 +264,7 @@ class RemovableRolesResult(RolesResult):
                 not_in.append(role)
                 continue
             removable.append(role)
-        return RemovableRolesResult(
+        return cls(
             target=target_user,
             actor=acting_user,
             removable=removable,
@@ -290,5 +295,7 @@ class RemovableRolesResult(RolesResult):
             lines.append(f"🤷 {self.target.mention} is not in {not_in_mentions}.")
         if self.not_registered:
             not_registered_mentions = self._join_mentions(self.not_registered)
-            lines.append(f"❌ These roles aren't registered: {not_registered_mentions}.")
+            lines.append(
+                f"❌ These roles aren't registered: {not_registered_mentions}."
+            )
         return lines

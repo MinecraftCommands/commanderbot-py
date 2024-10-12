@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Self
 
 from discord.utils import utcnow
 
@@ -62,12 +60,12 @@ class AutomodRule:
     conditions: list[AutomodCondition]
     actions: list[AutomodAction]
 
-    @staticmethod
-    def from_data(data: JsonObject) -> AutomodRule:
+    @classmethod
+    def from_data(cls, data: JsonObject) -> Self:
         now = utcnow()
         added_on = utils.datetime_from_field_optional(data, "added_on") or now
         modified_on = utils.datetime_from_field_optional(data, "modified_on") or now
-        return AutomodRule(
+        return cls(
             name=data["name"],
             added_on=added_on,
             modified_on=modified_on,

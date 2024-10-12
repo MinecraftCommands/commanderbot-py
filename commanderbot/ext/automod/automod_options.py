@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Self
 
 from commanderbot.lib.cogs.database import (
     DatabaseOptions,
@@ -14,7 +12,7 @@ from commanderbot.lib.cogs.database import (
 class AutomodOptions:
     database: DatabaseOptions = field(default_factory=InMemoryDatabaseOptions)
 
-    @staticmethod
-    def from_dict(options: dict[str, Any]) -> AutomodOptions:
+    @classmethod
+    def from_dict(cls, options: dict[str, Any]) -> Self:
         database_options = make_database_options(options.get("database"))
-        return AutomodOptions(database=database_options)
+        return cls(database=database_options)
