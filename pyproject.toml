@@ -13,14 +13,14 @@ readme = { file = "README.md", content-type = "text/markdown" }
 keywords = ["discord", "bot"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
 ]
 
 dependencies = [
     # Core dependencies.
     "discord-py>=2.4.0",
-    "audioop-lts>=0.2.1",   # Needed until Discord.py releases an update that includes it.
+    "audioop-lts>=0.2.0",   # Needed until Discord.py releases an update that includes it.
     "python-dotenv>=1.0.0",
 
     # These are used for logging.
