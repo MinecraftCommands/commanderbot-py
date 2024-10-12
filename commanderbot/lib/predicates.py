@@ -1,5 +1,5 @@
 import re
-from typing import Any, Optional
+from typing import Any, Optional, TypeIs
 
 from discord import (
     AppInfo,
@@ -18,7 +18,6 @@ from discord import (
     VoiceChannel,
 )
 from discord.ext.commands import Bot
-from typing_extensions import TypeIs
 
 from commanderbot.lib.types import (
     ConnectableChannel,

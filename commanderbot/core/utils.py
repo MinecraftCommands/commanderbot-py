@@ -1,10 +1,9 @@
-from typing import Optional, Type
+from typing import Optional, Type, TypeIs
 
 from discord import Interaction
 from discord.abc import Snowflake
 from discord.app_commands import AppCommand
 from discord.ext.commands import Bot, Cog
-from typing_extensions import TypeIs
 
 from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.lib import AppCommandID, GuildID
