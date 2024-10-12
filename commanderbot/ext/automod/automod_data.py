@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterable, Iterable, Optional, Type
+from typing import Any, AsyncIterable, Iterable, Optional, Self, Type
 
 from discord import Guild
 from discord.utils import utcnow
@@ -70,11 +68,11 @@ class AutomodGuildData:
         init=False, default_factory=lambda: defaultdict(lambda: set())
     )
 
-    @staticmethod
-    def from_data(data: JsonObject) -> AutomodGuildData:
+    @classmethod
+    def from_data(cls, data: JsonObject) -> Self:
         default_log_options = LogOptions.from_field_optional(data, "log")
         permitted_roles = RoleSet.from_field_optional(data, "permitted_roles")
-        guild_data = AutomodGuildData(
+        guild_data = cls(
             default_log_options=default_log_options,
             permitted_roles=permitted_roles,
         )
@@ -225,8 +223,8 @@ class AutomodData:
         default_factory=_guilds_defaultdict_factory
     )
 
-    @staticmethod
-    def from_data(data: JsonObject) -> AutomodData:
+    @classmethod
+    def from_data(cls, data: JsonObject) -> Self:
         guilds = _guilds_defaultdict_factory()
         guilds.update(
             {
@@ -234,7 +232,7 @@ class AutomodData:
                 for guild_id, raw_guild_data in data.get("guilds", {}).items()
             }
         )
-        return AutomodData(guilds=guilds)
+        return cls(guilds=guilds)
 
     def to_data(self) -> JsonObject:
         # Omit empty guilds, as well as an empty list of guilds.
