@@ -74,11 +74,9 @@ def run():
         else:
             bot_token = input("Enter bot token: ")
 
-    config["sync_tree"] = parsed_args.synctree
-
     log.warning("Running bot...")
 
-    bot = CommanderBot(**config)
+    bot = CommanderBot(**config, sync_tree=parsed_args.synctree)
 
     bot.run(bot_token)
 
