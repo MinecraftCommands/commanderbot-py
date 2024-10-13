@@ -69,9 +69,7 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
         max_changelog_entries: int,
         max_changelog_age: int,
     ):
-        super().__init__(
-            url=url, logger_name="commanderbot.ext.feeds.minecraft_bedrock_updates"
-        )
+        super().__init__(url=url, logger_name=__name__)
         self.release_section_id: int = release_section_id
         self.preview_section_id: int = preview_section_id
         self._max_changelog_entries: int = max_changelog_entries

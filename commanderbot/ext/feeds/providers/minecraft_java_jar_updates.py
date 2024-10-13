@@ -51,9 +51,7 @@ class MinecraftJavaJarUpdatesOptions(FeedProviderOptionsBase):
 @dataclass
 class MinecraftJavaJarUpdates(FeedProviderBase[MinecraftJavaJarUpdatesOptions, str]):
     def __init__(self, url: str):
-        super().__init__(
-            url=url, logger_name="commanderbot.ext.feeds.minecraft_java_jar_updates"
-        )
+        super().__init__(url=url, logger_name=__name__)
 
         self.release_handler: Optional[FeedHandler[MinecraftJavaJarUpdateInfo]] = None
         self.snapshot_handler: Optional[FeedHandler[MinecraftJavaJarUpdateInfo]] = None
