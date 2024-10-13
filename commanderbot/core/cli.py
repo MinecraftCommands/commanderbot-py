@@ -1,19 +1,21 @@
 import argparse
-import json
 import os
-from logging import getLogger
+from logging import Logger, getLogger
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 from commanderbot.core.commander_bot import CommanderBot
+from commanderbot.core.config import Config
 from commanderbot.core.logging import setup_logging
 
 __all__ = ("run",)
 
 
 def run():
+    # Create argument parser and parse arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("config", help="Configuration file")
+    arg_parser.add_argument("config", help="Configuration file", type=Path)
     arg_parser.add_argument(
         "--token",
         help="Bot token (prefer using the BOT_TOKEN environment variable)",
@@ -21,11 +23,13 @@ def run():
     arg_parser.add_argument(
         "--tokenfile",
         help="Bot token file (prefer using the BOT_TOKEN environment variable)",
+        type=Path,
     )
     arg_parser.add_argument(
         "--envfile",
         help="The .env file to load environment variables from (defaults to .env)",
         default=".env",
+        type=Path,
     )
     arg_parser.add_argument(
         "--synctree",
@@ -35,26 +39,19 @@ def run():
     arg_parser.add_argument("--log", help="Log level", default="WARNING")
     parsed_args = arg_parser.parse_args()
 
+    # Setup logging and load environment variables
     setup_logging(parsed_args.log, detailed=True)
+    load_dotenv(parsed_args.envfile)
 
-    log = getLogger(__name__)
-
+    log: Logger = getLogger(__name__)
     log.info("Hello!")
-
     log.info(f"Log level: {parsed_args.log}")
+
+    # Read config file
     log.info(f"Configuration file: {parsed_args.config}")
+    config = Config.from_file(parsed_args.config)  # type: ignore
 
-    log.debug("Parsing configuration file...")
-
-    config = json.load(open(parsed_args.config))
-
-    log.debug("Successfully parsed configuration file!")
-
-    log.info(f"Number of configuration keys: {len(config)}")
-
-    envfile = parsed_args.envfile
-    load_dotenv(envfile)
-
+    # Get bot token
     bot_token = os.environ.get("BOT_TOKEN", None)
 
     if not bot_token:
@@ -76,8 +73,7 @@ def run():
 
     log.warning("Running bot...")
 
-    bot = CommanderBot(**config, sync_tree=parsed_args.synctree)
-
+    bot = CommanderBot(config, parsed_args.synctree)
     bot.run(bot_token)
 
     log.warning("Bot has shut down.")

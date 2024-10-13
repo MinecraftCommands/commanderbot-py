@@ -1,15 +1,17 @@
+import importlib
+import importlib.util
 import sys
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 from discord import AppInfo, Asset, Attachment, User
-from discord.ext.commands import Bot, Context
+from discord.ext.commands import Bot, Context, Cog
 from discord.interactions import Interaction
 from discord.utils import utcnow
 
 from commanderbot.core.command_tree import CachingCommandTree
-from commanderbot.core.configured_extension import ConfiguredExtension
+from commanderbot.core.config import Config
 from commanderbot.core.error_handling import (
     AppCommandErrorHandler,
     CommandErrorHandler,
@@ -18,36 +20,23 @@ from commanderbot.core.error_handling import (
 )
 from commanderbot.core.exceptions import NotLoggedIn
 from commanderbot.core.help_command import HelpCommand
-from commanderbot.lib import AllowedMentions, EventData, Intents
+from commanderbot.lib import EventData
 
 
 class CommanderBot(Bot):
-    def __init__(self, *args, **kwargs):
-        # Account for options that don't belong to the discord.py Bot base.
-        self._extensions_data = kwargs.pop("extensions", None)
-        self._sync_tree_on_login = kwargs.pop("sync_tree", False)
+    def __init__(self, config: Config, sync_tree_on_login: bool = False):
+        # Store the config and if the command tree should sync on login
+        self.config: Config = config
+        self._sync_tree_on_login: bool = sync_tree_on_login
 
-        # Account for options that need further processing.
-        intents = Intents.default()
-        if i := Intents.from_field_optional(kwargs, "intents"):
-            intents = Intents.default() & i
-        if i := Intents.from_field_optional(kwargs, "privileged_intents"):
-            intents |= Intents.privileged() & i
-
-        allowed_mentions = AllowedMentions.from_field_optional(
-            kwargs, "allowed_mentions"
-        )
-
-        # Update kwargs after options have been further processed.
-        kwargs.update(
-            intents=intents,
-            allowed_mentions=allowed_mentions or AllowedMentions.not_everyone(),
+        # Initialize discord.py Bot base.
+        super().__init__(
+            command_prefix=config.command_prefix,
+            intents=config.intents,
+            allowed_mentions=config.allowed_mentions,
             help_command=HelpCommand(),
             tree_cls=CachingCommandTree,
         )
-
-        # Initialize discord.py Bot base.
-        super().__init__(*args, **kwargs)
 
         # Grab our own logger instance.
         self.log: Logger = getLogger("CommanderBot")
@@ -59,43 +48,6 @@ class CommanderBot(Bot):
         # Create an error handling component.
         self.error_handling = ErrorHandling(log=self.log)
         self.tree.on_error = self.on_app_command_error
-
-        # Warn about a lack of configured intents.
-        if intents is None:
-            self.log.warning(
-                f"No intents configured; using default flags: {self.intents.value}"
-            )
-        else:
-            self.log.info(f"Using intents flags: {self.intents.value}")
-
-        # Configure extensions.
-        self.configured_extensions: dict[str, ConfiguredExtension] = {}
-
-    async def _configure_extensions(self, extensions_data: list):
-        self.log.info(f"Processing {len(extensions_data)} extensions...")
-
-        all_extensions: list[ConfiguredExtension] = [
-            ConfiguredExtension.from_data(entry) for entry in extensions_data
-        ]
-
-        self.configured_extensions = {}
-        for ext in all_extensions:
-            self.configured_extensions[ext.name] = ext
-
-        enabled_extensions: list[ConfiguredExtension] = [
-            ext for ext in all_extensions if not ext.disabled
-        ]
-
-        self.log.info(f"Loading {len(enabled_extensions)} enabled extensions...")
-
-        for ext in enabled_extensions:
-            self.log.info(f"[->] {ext.name}")
-            try:
-                await self.load_extension(ext.name)
-            except:
-                self.log.exception(f"Failed to load extension: {ext.name}")
-
-        self.log.info(f"Finished loading extensions.")
 
     @property
     def started_at(self) -> datetime:
@@ -115,10 +67,6 @@ class CommanderBot(Bot):
         # A hack to get the actual app command tree type for type checkers
         return self.tree  # type: ignore
 
-    def get_extension_options(self, ext_name: str) -> Optional[dict[str, Any]]:
-        if configured_extension := self.configured_extensions.get(ext_name):
-            return configured_extension.options
-
     def add_event_error_handler(self, handler: EventErrorHandler):
         self.error_handling.add_event_error_handler(handler)
 
@@ -127,6 +75,15 @@ class CommanderBot(Bot):
 
     def add_app_command_error_handler(self, handler: AppCommandErrorHandler):
         self.error_handling.add_app_command_error_handler(handler)
+
+    async def add_configured_cog(self, ext_name: str, cog_class: Type[Cog]):
+        cog: Optional[Cog] = None
+        if options := self.config.get_extension_options(ext_name):
+            cog = cog_class(self, **options)
+        else:
+            cog = cog_class(self)
+
+        await self.add_cog(cog)
 
     async def set_avatar(self, new_avatar: Optional[bytes | Attachment]):
         # Throw exception if the bot isn't logged in
@@ -185,12 +142,55 @@ class CommanderBot(Bot):
         return app.description or None
 
     # @overrides Bot
+    async def load_extension(self, name: str, *, package: Optional[str] = None):
+        try:
+            name = importlib.util.resolve_name(name, package)
+
+            self.log.info(f"[--->] {name}")
+
+            self.config.enable_extension(name)
+            await super().load_extension(name)
+        except Exception as ex:
+            self.log.exception(f"Failed to load extension: {name}")
+            raise ex
+
+    # @overrides Bot
+    async def unload_extension(self, name: str, *, package: Optional[str] = None):
+        try:
+            name = importlib.util.resolve_name(name, package)
+
+            self.log.info(f"[-x->] {name}")
+
+            self.config.disable_extension(name)
+            await super().unload_extension(name)
+        except Exception as ex:
+            self.log.exception(f"Failed to unload extension: {name}")
+            raise ex
+
+    # @overrides Bot
+    async def reload_extension(self, name: str, *, package: Optional[str] = None):
+        try:
+            name = importlib.util.resolve_name(name, package)
+
+            self.log.info(f"[-o->] {name}")
+
+            self.config.require_extension(name)
+            await super().reload_extension(name)
+        except Exception as ex:
+            self.log.exception(f"Failed to reload extension: {name}")
+            raise ex
+
+    # @overrides Bot
     async def setup_hook(self):
-        # Configure extensions.
-        if self._extensions_data:
-            await self._configure_extensions(self._extensions_data)
-        else:
-            self.log.warning("No extensions configured.")
+        # Load extensions
+        self.log.info(
+            f"Loading {len(self.config.enabled_extensions)} enabled extensions..."
+        )
+
+        for ext in self.config.enabled_extensions:
+            await self.load_extension(ext.name)
+
+        self.log.info(f"Finished loading extensions.")
 
         # Sync global app commands and build the command cache.
         # We only build the guild command cache since `sync()` will build the global command cache.
