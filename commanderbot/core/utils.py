@@ -1,9 +1,9 @@
-from typing import Optional, Type, TypeIs
+from typing import Optional, TypeIs
 
 from discord import Interaction
 from discord.abc import Snowflake
 from discord.app_commands import AppCommand
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Bot
 
 from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.lib import AppCommandID, GuildID
@@ -22,16 +22,6 @@ def require_commander_bot(obj: object) -> CommanderBot:
     if is_commander_bot(obj):
         return obj
     raise TypeError("'obj' is not an instance of 'CommanderBot'")
-
-
-async def add_configured_cog(bot: Bot, ext_name: str, cog_class: Type[Cog]):
-    cog = None
-    if is_commander_bot(bot):
-        if options := bot.get_extension_options(ext_name):
-            cog = cog_class(bot, **options)
-    if not cog:
-        cog = cog_class(bot)
-    await bot.add_cog(cog)
 
 
 def get_app_command(
