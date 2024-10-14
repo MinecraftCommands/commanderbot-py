@@ -75,20 +75,11 @@ class Config(FromDataMixin):
 
     @classmethod
     def from_file(cls, path: Path) -> Self:
-        log: Logger = getLogger(__name__)
-        log.debug("Parsing configuration file...")
-
-        # Read the config file
         raw_config: JsonObject = {}
         with open(path) as file:
             raw_config = json.load(file)
 
-        # Create the config object
-        config = cls.from_data(raw_config)
-
-        log.debug("Successfully parsed configuration file!")
-
-        return config
+        return cls.from_data(raw_config)
 
     def __post_init__(self):
         self._rebuild_extension_states()
