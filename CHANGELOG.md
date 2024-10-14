@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added a confirmation dialog that uses buttons
 - `sudo`:
   - Added a way to sync slash commands globally or to a specific guild
+  - Added a way to load/unload/reload extensions
   - Added a way to export a cog's database
   - Added a way to display info about the bot
   - Added a way to shutdown the bot
@@ -83,6 +84,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `status`: Ported to slash commands
 - `ping`: Ported to slash commands
 - Reworked how cogs with a database are created
+- Added a `Config` class to make deserializing the config easier
+- `ConfiguredExtension` now has a `required` option
+  - It doesn't affect loading/unloading/reloading extensions, but you're free to choose how to handle this attribute in your code
 - Separated privileged intents and regular intents in the bot config
   - `Intents.default()` is fine most of the time and specifying privileged intents shouldn't require you to specify *every* intent you need
 
