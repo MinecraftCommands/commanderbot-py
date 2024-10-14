@@ -49,7 +49,9 @@ def run():
 
     # Read config file
     log.info(f"Configuration file: {parsed_args.config}")
+    log.debug("Parsing configuration file...")
     config = Config.from_file(parsed_args.config)  # type: ignore
+    log.debug("Successfully parsed configuration file!")
 
     # Get bot token
     bot_token = os.environ.get("BOT_TOKEN", None)

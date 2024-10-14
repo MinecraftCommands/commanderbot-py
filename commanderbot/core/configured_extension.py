@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from typing import Any, Optional, Self
 
 from commanderbot.lib import FromDataMixin
+from commanderbot.lib.types import JsonObject
 
 
 @dataclass
 class ConfiguredExtension(FromDataMixin):
     name: str
     disabled: bool = False
-    options: Optional[dict[str, Any]] = None
+    options: Optional[JsonObject] = None
 
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
