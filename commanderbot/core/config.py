@@ -7,7 +7,7 @@ from typing import Any, Optional, Self
 import discord
 
 from commanderbot.core.configured_extension import ConfiguredExtension
-from commanderbot.core.exceptions import ExtensionNotInConfig
+from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
 from commanderbot.lib import AllowedMentions, FromDataMixin, Intents
 from commanderbot.lib.types import JsonObject
 
@@ -98,6 +98,12 @@ class Config(FromDataMixin):
         if ext := self.extensions.get(name):
             return ext
         raise ExtensionNotInConfig(name)
+
+    def require_optional_extension(self, name: str) -> ConfiguredExtension:
+        ext: ConfiguredExtension = self.require_extension(name)
+        if not ext.required:
+            return ext
+        raise ExtensionIsRequired(name)
 
     def enable_extension(self, name: str):
         ext: ConfiguredExtension = self.require_extension(name)
