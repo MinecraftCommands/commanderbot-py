@@ -1,13 +1,19 @@
-from discord.ext.commands import ExtensionError
+class ConfigException(Exception):
+    pass
+
+
+class ExtensionNotInConfig(ConfigException):
+    def __init__(self, name: str):
+        super().__init__(f"Extension {name} is not in the config.")
+
+
+class ExtensionIsRequired(ConfigException):
+    def __init__(self, name: str):
+        super().__init__(f"Extension {name} is a required extension.")
 
 
 class CommanderBotException(Exception):
     pass
-
-
-class ExtensionNotInConfig(CommanderBotException, ExtensionError):
-    def __init__(self, name: str) -> None:
-        super().__init__(f"Extension {name!r} is not in the config.", name=name)
 
 
 class NotLoggedIn(CommanderBotException):
