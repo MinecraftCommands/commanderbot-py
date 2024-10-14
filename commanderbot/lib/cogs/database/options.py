@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Self
+
+from commanderbot.lib.types import JsonObject
 
 __all__ = (
     "DatabaseOptions",
@@ -31,9 +33,9 @@ class JsonFileDatabaseOptions(DatabaseOptions):
     no_init: Optional[bool] = None
     indent: Optional[int] = None
 
-    @staticmethod
-    def from_dict(options: dict[str, Any]) -> "JsonFileDatabaseOptions":
-        return JsonFileDatabaseOptions(
+    @classmethod
+    def from_dict(cls, options: JsonObject) -> Self:
+        return cls(
             path=Path(options["path"]),
             no_init=options.get("no_init"),
             indent=options.get("indent"),
@@ -45,16 +47,16 @@ class SQLiteDatabaseOptions(DatabaseOptions):
     path: Optional[Path]
     no_init: Optional[bool] = None
 
-    @staticmethod
-    def from_dict(options: dict[str, Any]) -> "SQLiteDatabaseOptions":
-        return SQLiteDatabaseOptions(
+    @classmethod
+    def from_dict(cls, options: JsonObject) -> Self:
+        return cls(
             path=Path(options["path"]),
             no_init=options.get("no_init"),
         )
 
-    @staticmethod
-    def in_memory() -> "SQLiteDatabaseOptions":
-        return SQLiteDatabaseOptions(path=None)
+    @classmethod
+    def in_memory(cls) -> Self:
+        return cls(path=None)
 
 
 class InvalidDatabaseOptions(Exception):
