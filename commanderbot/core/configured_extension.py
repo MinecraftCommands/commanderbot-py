@@ -7,16 +7,37 @@ from commanderbot.lib.types import JsonObject
 
 @dataclass
 class ConfiguredExtension(FromDataMixin):
+    """
+    Represents an extension with an optional config.
+
+    Attributes
+    ----------
+    name: :class:`str`
+        The name of this extension (Should be the same as its import path).
+    required: :class:`bool`
+        Whether this extension is required or not. It doesn't affect loading/unloading/reloading this extension,
+        but you're free to choose how to handle this attribute in your code. Defaults to `False`.
+    disabled: :class:`bool`
+        Whether this extension is disabled or not. Defaults to `False`.
+    options: :class:`Optional[JsonObject]`
+        Options for this extension. Defaults to `None`.
+    """
+
     name: str
+    required: bool = False
     disabled: bool = False
     options: Optional[JsonObject] = None
 
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, str):
+            # Extensions starting with a `$` are required.
+            if data.startswith("$"):
+                return cls(name=data[1:], required=True)
             # Extensions starting with a `!` are disabled.
-            disabled = data.startswith("!")
-            name = data[1:] if disabled else data
-            return cls(name=name, disabled=disabled)
+            elif data.startswith("!"):
+                return cls(name=data[1:], disabled=True)
+            else:
+                return cls(name=data)
         elif isinstance(data, dict):
             return cls(**data)
