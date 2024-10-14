@@ -1,4 +1,3 @@
-import importlib
 import importlib.util
 import sys
 from datetime import datetime, timedelta
@@ -6,12 +5,13 @@ from logging import Logger, getLogger
 from typing import Any, Optional, Type
 
 from discord import AppInfo, Asset, Attachment, User
-from discord.ext.commands import Bot, Context, Cog
+from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
 from discord.interactions import Interaction
 from discord.utils import utcnow
 
 from commanderbot.core.command_tree import CachingCommandTree
 from commanderbot.core.config import Config
+from commanderbot.core.configured_extension import ConfiguredExtension
 from commanderbot.core.error_handling import (
     AppCommandErrorHandler,
     CommandErrorHandler,
@@ -141,15 +141,23 @@ class CommanderBot(Bot):
         app: AppInfo = await self.application_info()
         return app.description or None
 
+    def _resolve_extension_name(self, name: str, package: Optional[str]) -> str:
+        try:
+            return importlib.util.resolve_name(name, package)
+        except ImportError:
+            raise ExtensionNotFound(name)
+
     # @overrides Bot
     async def load_extension(self, name: str, *, package: Optional[str] = None):
         try:
-            name = importlib.util.resolve_name(name, package)
+            # Resolve the extension name and get the extension.
+            resolved_name: str = self._resolve_extension_name(name, package)
+            ext: ConfiguredExtension = self.config.require_extension(resolved_name)
 
-            self.log.info(f"[--->] {name}")
-
-            self.config.enable_extension(name)
-            await super().load_extension(name)
+            # Load extension and enable it in the config.
+            self.log.info(f"[--->] {ext.name}")
+            await super().load_extension(ext.name)
+            self.config.enable_extension(ext.name)
         except Exception as ex:
             self.log.exception(f"Failed to load extension: {name}")
             raise ex
@@ -157,12 +165,14 @@ class CommanderBot(Bot):
     # @overrides Bot
     async def unload_extension(self, name: str, *, package: Optional[str] = None):
         try:
-            name = importlib.util.resolve_name(name, package)
+            # Resolve the extension name and get the extension
+            resolved_name: str = self._resolve_extension_name(name, package)
+            ext: ConfiguredExtension = self.config.require_extension(resolved_name)
 
-            self.log.info(f"[-x->] {name}")
-
-            self.config.disable_extension(name)
+            # Unload extension and disable it in the config
+            self.log.info(f"[-x->] {ext.name}")
             await super().unload_extension(name)
+            self.config.disable_extension(name)
         except Exception as ex:
             self.log.exception(f"Failed to unload extension: {name}")
             raise ex
@@ -170,12 +180,13 @@ class CommanderBot(Bot):
     # @overrides Bot
     async def reload_extension(self, name: str, *, package: Optional[str] = None):
         try:
-            name = importlib.util.resolve_name(name, package)
+            # Resolve the extension name and get the extension
+            resolved_name: str = self._resolve_extension_name(name, package)
+            ext: ConfiguredExtension = self.config.require_extension(resolved_name)
 
-            self.log.info(f"[-o->] {name}")
-
-            self.config.require_extension(name)
-            await super().reload_extension(name)
+            # Reload extension
+            self.log.info(f"[-o->] {ext.name}")
+            await super().reload_extension(ext.name)
         except Exception as ex:
             self.log.exception(f"Failed to reload extension: {name}")
             raise ex
