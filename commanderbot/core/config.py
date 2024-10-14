@@ -95,7 +95,6 @@ class Config(FromDataMixin):
                 self.enabled_extensions.append(ext)
 
     def require_extension(self, name: str) -> ConfiguredExtension:
-        # Try to get the extension config, otherwise raise an exception
         if ext := self.extensions.get(name):
             return ext
         raise ExtensionNotInConfig(name)
