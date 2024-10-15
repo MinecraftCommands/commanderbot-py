@@ -350,7 +350,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Respond with a defer since exporting the config might take a while
         await interaction.response.defer(ephemeral=True)
 
-        # turn the config into Json
+        # Turn the config into Json
         assert is_commander_bot(self.bot)
         json_data: str = json_dumps(self.bot.config.to_json())
         file = utils.str_to_file(json_data, "config.json")
