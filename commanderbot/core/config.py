@@ -14,7 +14,6 @@ from commanderbot.lib import (
     utils,
 )
 from commanderbot.lib.types import JsonObject
-from commanderbot.lib.utils.utils import dict_without_falsies
 
 
 @dataclass
@@ -45,7 +44,7 @@ class Config(JsonSerializable, FromDataMixin):
             # Process intents
             intents = Intents.default()
             if i := Intents.from_field_optional(data, "intents"):
-                intents |= Intents.default() & i
+                intents = Intents.default() & i
             if i := Intents.from_field_optional(data, "privileged_intents"):
                 intents |= Intents.privileged() & i
 
@@ -81,14 +80,22 @@ class Config(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
+        # Get intents
+        intents: Optional[Intents] = Intents.default() & self.intents
+        privileged_intents: Intents = Intents.privileged() & self.intents
+
+        # `intents` is technically an optional field in the config and defaults to `Intents.default()`.
+        # So don't include it if it's value is the same as `Intents.default()`.
+        if intents == Intents.default():
+            intents = None
+
+        # Create the Json
         return utils.dict_without_falsies(
             command_prefix=self.command_prefix,
-            intents=utils.dict_without_falsies(
-                (Intents.default() & self.intents).to_json()
+            intents=(
+                utils.dict_without_falsies(intents.to_json()) if intents else None
             ),
-            privileged_intents=utils.dict_without_falsies(
-                (Intents.privileged() & self.intents).to_json()
-            ),
+            privileged_intents=utils.dict_without_falsies(privileged_intents.to_json()),
             allowed_mentions=utils.dict_without_falsies(
                 self.allowed_mentions.to_json()
             ),
