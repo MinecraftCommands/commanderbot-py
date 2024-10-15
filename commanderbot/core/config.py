@@ -45,7 +45,7 @@ class Config(JsonSerializable, FromDataMixin):
             # Process intents
             intents = Intents.default()
             if i := Intents.from_field_optional(data, "intents"):
-                intents = Intents.default() & i
+                intents |= Intents.default() & i
             if i := Intents.from_field_optional(data, "privileged_intents"):
                 intents |= Intents.privileged() & i
 
@@ -83,11 +83,11 @@ class Config(JsonSerializable, FromDataMixin):
     def to_json(self) -> Any:
         return utils.dict_without_falsies(
             command_prefix=self.command_prefix,
-            privileged_intents=utils.dict_without_falsies(
-                (self.intents & Intents.privileged()).to_json()
-            ),
             intents=utils.dict_without_falsies(
-                (self.intents & Intents.default()).to_json()
+                (Intents.default() & self.intents).to_json()
+            ),
+            privileged_intents=utils.dict_without_falsies(
+                (Intents.privileged() & self.intents).to_json()
             ),
             allowed_mentions=utils.dict_without_falsies(
                 self.allowed_mentions.to_json()
