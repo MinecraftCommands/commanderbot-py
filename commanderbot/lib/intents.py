@@ -1,4 +1,4 @@
-from typing import Any, Optional, Self
+from typing import Any, Optional, Self, cast
 
 import discord
 
@@ -10,6 +10,18 @@ __all__ = ("Intents",)
 
 class Intents(discord.Intents, JsonSerializable, FromDataMixin):
     """Extends `discord.Intents` to simplify de/serialization."""
+
+    @classmethod
+    def all(cls) -> Self:
+        return cast(Self, super().all())
+
+    @classmethod
+    def none(cls) -> Self:
+        return cast(Self, super().none())
+
+    @classmethod
+    def default(cls) -> Self:
+        return cast(Self, super().default())
 
     @classmethod
     def privileged(cls) -> Self:

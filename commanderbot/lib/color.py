@@ -1,5 +1,5 @@
 import inspect
-from typing import Optional, Self
+from typing import Optional, Self, cast
 
 import discord
 
@@ -19,10 +19,9 @@ class Color(discord.Color, FromDataMixin):
     @classmethod
     def from_str(cls, value: str) -> Self:
         # The classmethod, `discord.Color.from_str()`, always returns a
-        # `discord.Color` regardless of what `cls` is. So we need to
-        # construct our `cls` using a temporary `discord.Color`.
-        temp: discord.Color = super().from_str(value)
-        return cls(temp.value)
+        # `discord.Color` regardless of what `cls` is. So we cast it
+        # to this class.
+        return cast(Self, super().from_str(value))
 
     # @implements FromDataMixin
     @classmethod
