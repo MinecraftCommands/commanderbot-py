@@ -1,20 +1,69 @@
 from typing import Any
 
 from discord import Object
+from discord.app_commands import AppCommandError
 from discord.ext.commands import Cog
 
 from commanderbot.lib import ResponsiveException
+
+
+class SudoTransformerException(ResponsiveException, AppCommandError):
+    pass
+
+
+class ExtensionResolutionError(SudoTransformerException):
+    def __init__(self, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😔 Unable to resolve that extension\n```\n{self.reason}\n```"
+        )
+
+
+class CannotManageExtensionNotInConfig(SudoTransformerException):
+    def __init__(self, name: str):
+        super().__init__(
+            f"😬 Extension `{name}` is not in the config and cannot be managed"
+        )
+
+
+class CannotManageRequiredExtension(SudoTransformerException):
+    def __init__(self, name: str):
+        super().__init__(f"😬 Extension `{name}` is required and cannot be managed")
 
 
 class SudoException(ResponsiveException):
     pass
 
 
+class ExtensionLoadError(SudoException):
+    def __init__(self, name: str, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😵 Unable to load extension `{name}`\n```\n{self.reason}\n```"
+        )
+
+
+class ExtensionUnloadError(SudoException):
+    def __init__(self, name: str, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😵 Unable to unload extension `{name}`\n```\n{self.reason}\n```"
+        )
+
+
+class ExtensionReloadError(SudoException):
+    def __init__(self, name: str, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😵 Unable to reload extension `{name}`\n```\n{self.reason}\n```"
+        )
+
+
 class GlobalSyncError(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 **Unable to sync app commands globally**\n> Reason: `{self.reason}`"
+            f"😵 Unable to sync app commands globally\n```\n{self.reason}\n```"
         )
 
 
@@ -22,9 +71,7 @@ class GuildSyncError(SudoException):
     def __init__(self, guild: Object, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            "😵 **Unable to sync app commands to this guild**\n"
-            f"> Guild ID: `{guild.id}`\n"
-            f"> Reason: `{self.reason}`"
+            f"😵 Unable to sync app commands to this guild (`{guild.id}`)\n```\n{self.reason}\n```"
         )
 
 
@@ -64,7 +111,7 @@ class ErrorChangingBotAvatar(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 **An error ocurred while changing the bot's avatar**\n> Reason: `{self.reason}`"
+            f"😬 An error occurred while changing the bot's avatar\n```\n{self.reason}\n```"
         )
 
 
@@ -72,5 +119,5 @@ class ErrorChangingBotBanner(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 **An error ocurred while changing the bot's banner**\n> Reason: `{self.reason}`"
+            f"😬 An error occurred while changing the bot's banner\n```\n{self.reason}\n```"
         )
