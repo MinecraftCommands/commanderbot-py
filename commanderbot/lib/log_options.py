@@ -50,7 +50,7 @@ class LogOptions(FromDataMixin):
 
     allowed_mentions: Optional[AllowedMentions] = None
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data):
         if isinstance(data, int):

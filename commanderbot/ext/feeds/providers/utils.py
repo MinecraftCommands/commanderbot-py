@@ -25,7 +25,7 @@ class MinecraftJavaChangelog(FromDataMixin):
     date_utc: datetime
     content_url: str
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -72,7 +72,7 @@ class MinecraftJavaVersion(FromDataMixin):
 
     url: Optional[str] = None
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -127,7 +127,7 @@ class ZendeskArticle(FromDataMixin):
     edited_at_utc: datetime
     body: str
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

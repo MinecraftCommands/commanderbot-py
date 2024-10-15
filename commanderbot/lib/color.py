@@ -24,7 +24,7 @@ class Color(discord.Color, FromDataMixin):
         temp: discord.Color = super().from_str(value)
         return cls(temp.value)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data):
         if isinstance(data, str):

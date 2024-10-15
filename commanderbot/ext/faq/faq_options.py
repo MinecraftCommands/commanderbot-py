@@ -18,7 +18,7 @@ class FaqOptions(FromDataMixin):
     term_cap: int = 10
     match_cap: int = 3
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

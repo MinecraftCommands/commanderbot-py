@@ -44,7 +44,7 @@ class MinecraftBedrockUpdatesOptions(FeedProviderOptionsBase):
     max_changelog_entries: int
     max_changelog_age: int
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

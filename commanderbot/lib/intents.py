@@ -18,7 +18,7 @@ class Intents(discord.Intents, JsonSerializable, FromDataMixin):
         """
         return cls(message_content=True, members=True, presences=True)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data) -> Optional[Self]:
         if isinstance(data, int):

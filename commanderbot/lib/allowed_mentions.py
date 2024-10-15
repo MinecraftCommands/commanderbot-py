@@ -28,7 +28,7 @@ class AllowedMentions(discord.AllowedMentions, JsonSerializable, FromDataMixin):
     def only_roles(cls) -> Self:
         return cls(everyone=False, users=False, roles=True, replied_user=False)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data):
         if isinstance(data, str):

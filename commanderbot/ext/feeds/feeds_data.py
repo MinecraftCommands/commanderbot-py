@@ -32,7 +32,7 @@ class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
     subscriber_id: UserID
     subscribed_on: datetime
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -63,7 +63,7 @@ class FeedsSubscriptionData(JsonSerializable, FromDataMixin):
 class FeedsFeedData(JsonSerializable, FromDataMixin):
     subscribers: dict[ChannelID, FeedsSubscriptionData] = field(default_factory=dict)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -161,7 +161,7 @@ class FeedsData(JsonSerializable, FromDataMixin):
     mcje_release_jars: FeedsFeedData = field(default_factory=FeedsFeedData)
     mcje_snapshot_jars: FeedsFeedData = field(default_factory=FeedsFeedData)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

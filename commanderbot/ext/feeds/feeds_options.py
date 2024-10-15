@@ -22,7 +22,7 @@ class FeedsOptions(FromDataMixin):
 
     database: DatabaseOptions = field(default_factory=InMemoryDatabaseOptions)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

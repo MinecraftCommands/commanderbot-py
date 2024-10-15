@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Any, Optional, Self
 
 from commanderbot.lib.exceptions import MalformedData
@@ -6,11 +7,11 @@ from commanderbot.lib.json import JsonObject
 __all__ = ("FromDataMixin",)
 
 
-class FromDataMixin:
+class FromDataMixin(ABC):
     @classmethod
+    @abstractmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         """Override this to return an instance of the class given valid input."""
-        raise NotImplementedError()
 
     @classmethod
     def from_data(cls, data: Any) -> Self:
