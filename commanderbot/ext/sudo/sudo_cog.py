@@ -338,12 +338,35 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
                 await interaction.followup.send("🙂 Continuing...", ephemeral=True)
 
     # @@ sudo export
-    @cmd_sudo.command(name="export", description="Export a cog's store")
-    @describe(cog="The cog to export")
+
+    cmd_sudo_export = Group(
+        name="export", description="Export data from the bot", parent=cmd_sudo
+    )
+
+    # @@ sudo export config
+    @cmd_sudo_export.command(name="config", description="Export the bot's config")
+    @checks.is_owner()
+    async def cmd_sudo_export_config(self, interaction: Interaction):
+        # Respond with a defer since exporting the config might take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # turn the config into Json
+        assert is_commander_bot(self.bot)
+        json_data: str = json_dumps(self.bot.config.to_json())
+        file = utils.str_to_file(json_data, "config.json")
+
+        # Respond with the config file
+        await interaction.followup.send(
+            "Exported the bot config", file=file, ephemeral=True
+        )
+
+    # @@ sudo export database
+    @cmd_sudo_export.command(name="database", description="Export a cog's database")
+    @describe(cog="A cog with a database")
     @autocomplete(cog=cog_with_store_autocomplete)
     @checks.is_owner()
-    async def cmd_sudo_export(self, interaction: Interaction, cog: str):
-        # Respond with a defer since exporting the data might take a while
+    async def cmd_sudo_export_database(self, interaction: Interaction, cog: str):
+        # Respond with a defer since exporting the database might take a while
         await interaction.response.defer(ephemeral=True)
 
         # Try to get the cog
@@ -353,7 +376,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         elif not isinstance(found_cog, CogWithStore):
             raise CogHasNoStore(found_cog)
 
-        # Esport the store and respond with a followup
+        # Export the store and respond with a followup
         match found_cog.store.db:
             case JsonFileDatabaseAdapter() as db:
                 cache = await db.get_cache()
