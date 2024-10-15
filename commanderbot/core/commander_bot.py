@@ -152,7 +152,7 @@ class CommanderBot(Bot):
         try:
             # Resolve the extension name and get the extension.
             resolved_name: str = self._resolve_extension_name(name, package)
-            ext: ConfiguredExtension = self.config.require_extension(resolved_name)
+            ext: ConfiguredExtension = self.config.get_extension(resolved_name)
 
             # Load extension and enable it in the config.
             self.log.info(f"[--->] {ext.name}")
@@ -167,7 +167,7 @@ class CommanderBot(Bot):
         try:
             # Resolve the extension name and get the extension
             resolved_name: str = self._resolve_extension_name(name, package)
-            ext: ConfiguredExtension = self.config.require_extension(resolved_name)
+            ext: ConfiguredExtension = self.config.get_extension(resolved_name)
 
             # Unload extension and disable it in the config
             self.log.info(f"[-x->] {ext.name}")
@@ -182,7 +182,7 @@ class CommanderBot(Bot):
         try:
             # Resolve the extension name and get the extension
             resolved_name: str = self._resolve_extension_name(name, package)
-            ext: ConfiguredExtension = self.config.require_extension(resolved_name)
+            ext: ConfiguredExtension = self.config.get_extension(resolved_name)
 
             # Reload extension
             self.log.info(f"[-o->] {ext.name}")

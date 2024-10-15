@@ -94,29 +94,101 @@ class Config(FromDataMixin):
             else:
                 self.enabled_extensions.append(ext)
 
-    def require_extension(self, name: str) -> ConfiguredExtension:
+    def get_extension(self, name: str) -> ConfiguredExtension:
+        """
+        Get an extension from the config.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the extension to get.
+
+        Raises
+        ------
+        ExtensionNotInConfig
+            The extension was not in the config.
+        """
+
         if ext := self.extensions.get(name):
             return ext
         raise ExtensionNotInConfig(name)
 
-    def require_optional_extension(self, name: str) -> ConfiguredExtension:
-        ext: ConfiguredExtension = self.require_extension(name)
+    def get_optional_extension(self, name: str) -> ConfiguredExtension:
+        """
+        Get an extension from the config that's not marked as required.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the optional extension to get.
+
+        Raises
+        ------
+        ExtensionNotInConfig
+            The extension was not in the config.
+        ExtensionIsRequired
+            The extension was a required extension.
+        """
+
+        ext: ConfiguredExtension = self.get_extension(name)
         if not ext.required:
             return ext
         raise ExtensionIsRequired(name)
 
+    def get_extension_options(self, name: str) -> Optional[JsonObject]:
+        """
+        Get the options for an extension.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the extension to get options for.
+
+        Raises
+        ------
+        ExtensionNotInConfig
+            The extension was not in the config.
+        """
+
+        ext: ConfiguredExtension = self.get_extension(name)
+        return ext.options
+
     def enable_extension(self, name: str):
-        ext: ConfiguredExtension = self.require_extension(name)
+        """
+        Mark an extension as enabled in the config.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the extension to enable.
+
+        Raises
+        ------
+        ExtensionNotInConfig
+            The extension was not in the config.
+        """
+
+        ext: ConfiguredExtension = self.get_extension(name)
         if ext.disabled:
             ext.disabled = False
             self._rebuild_extension_states()
 
     def disable_extension(self, name: str):
-        ext: ConfiguredExtension = self.require_extension(name)
+        """
+        Mark an extension as disabled in the config.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the extension to disable.
+
+        Raises
+        ------
+        ExtensionNotInConfig
+            The extension was not in the config.
+        """
+
+        ext: ConfiguredExtension = self.get_extension(name)
         if not ext.disabled:
             ext.disabled = True
             self._rebuild_extension_states()
-
-    def get_extension_options(self, name: str) -> Optional[JsonObject]:
-        if ext := self.extensions.get(name):
-            return ext.options
