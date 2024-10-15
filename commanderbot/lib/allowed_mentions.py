@@ -1,4 +1,4 @@
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import discord
 from discord.mentions import default
@@ -11,6 +11,14 @@ __all__ = ("AllowedMentions",)
 
 class AllowedMentions(discord.AllowedMentions, JsonSerializable, FromDataMixin):
     """Extends `discord.AllowedMentions` to simplify de/serialization."""
+
+    @classmethod
+    def all(cls) -> Self:
+        return cast(Self, super().all())
+
+    @classmethod
+    def none(cls) -> Self:
+        return cast(Self, super().none())
 
     @classmethod
     def not_everyone(cls) -> Self:
