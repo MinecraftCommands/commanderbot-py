@@ -76,7 +76,14 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         # Create a list of autocomplete choices and return them
         choices: list[Choice] = []
         for entry in invites:
-            choices.append(Choice(name=f"📩 {entry.key}", value=entry.key))
+            if entry.description:
+                choices.append(
+                    Choice(
+                        name=f"📩 {entry.key} - {entry.description}", value=entry.key
+                    )
+                )
+            else:
+                choices.append(Choice(name=f"📩 {entry.key}", value=entry.key))
         return choices
 
     async def invite_and_tag_autocomplete(
@@ -102,6 +109,10 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
         for item in items:
             if isinstance(item, str):
                 choices.append(Choice(name=f"📦 {item}", value=item))
+            elif item.description:
+                choices.append(
+                    Choice(name=f"📩 {item.key} - {item.description}", value=item.key)
+                )
             else:
                 choices.append(Choice(name=f"📩 {item.key}", value=item.key))
         return choices
