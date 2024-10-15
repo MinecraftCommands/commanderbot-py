@@ -1,20 +1,39 @@
+import importlib.util
 import platform
 from enum import Enum
 from typing import Optional
 
 import psutil
 from discord import AppInfo, Asset, Attachment, Embed, Interaction, Object, Permissions
-from discord.app_commands import AppCommand, Choice, Group, autocomplete, describe
+from discord.app_commands import (
+    AppCommand,
+    Choice,
+    Group,
+    Transform,
+    Transformer,
+    autocomplete,
+    describe,
+)
 from discord.ext.commands import Bot, Cog
 
+from commanderbot.core.commander_bot import CommanderBot
+from commanderbot.core.config import Config
+from commanderbot.core.configured_extension import ConfiguredExtension
+from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
 from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.sudo.sudo_data import CogWithStore
 from commanderbot.ext.sudo.sudo_exceptions import (
     BotHasNoAvatar,
     BotHasNoBanner,
+    CannotManageExtensionNotInConfig,
+    CannotManageRequiredExtension,
     CogHasNoStore,
     ErrorChangingBotAvatar,
     ErrorChangingBotBanner,
+    ExtensionLoadError,
+    ExtensionReloadError,
+    ExtensionResolutionError,
+    ExtensionUnloadError,
     GlobalSyncError,
     GuildIDNotFound,
     GuildSyncError,
@@ -38,6 +57,64 @@ class SyncTypeChoices(Enum):
     remove = 2
 
 
+class ExtensionTransformer(Transformer):
+    """
+    A transformer that resolves `value` into a `ConfiguredExtension` from the config.
+    """
+
+    async def transform(
+        self, interaction: Interaction[CommanderBot], value: str
+    ) -> ConfiguredExtension:
+        resolved_name: str = ""
+        try:
+            resolved_name = importlib.util.resolve_name(value, "commanderbot")
+            return interaction.client.config.get_optional_extension(resolved_name)
+        except ImportError as ex:
+            raise ExtensionResolutionError(str(ex))
+        except ExtensionNotInConfig:
+            raise CannotManageExtensionNotInConfig(resolved_name)
+        except ExtensionIsRequired:
+            raise CannotManageRequiredExtension(resolved_name)
+
+
+class EnabledExtensionTransformer(ExtensionTransformer):
+    """
+    Extends `ExtensionTransformer` to provide autocomplete for enabled extensions.
+    """
+
+    async def autocomplete(
+        self, interaction: Interaction[CommanderBot], value: str
+    ) -> list[Choice[str]]:
+        config: Config = interaction.client.config
+        choices: list[Choice] = []
+        for ext in (ext for ext in config.enabled_extensions if not ext.required):
+            if not value:
+                choices.append(Choice(name=f"💿 {ext.name}", value=ext.name))
+            elif value in ext.name:
+                choices.append(Choice(name=f"💿 {ext.name}", value=ext.name))
+
+        return choices[: constants.MAX_AUTOCOMPLETE_CHOICES]
+
+
+class DisabledExtensionTransformer(ExtensionTransformer):
+    """
+    Extends `ExtensionTransformer` to provide autocomplete for disabled extensions.
+    """
+
+    async def autocomplete(
+        self, interaction: Interaction[CommanderBot], value: str
+    ) -> list[Choice[str]]:
+        config: Config = interaction.client.config
+        choices: list[Choice] = []
+        for ext in (ext for ext in config.disabled_extensions if not ext.required):
+            if not value:
+                choices.append(Choice(name=f"💿 {ext.name}", value=ext.name))
+            elif value in ext.name:
+                choices.append(Choice(name=f"💿 {ext.name}", value=ext.name))
+
+        return choices[: constants.MAX_AUTOCOMPLETE_CHOICES]
+
+
 class SudoCog(Cog, name="commanderbot.ext.sudo"):
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
@@ -46,20 +123,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         self.process: psutil.Process = psutil.Process()
         self.process.cpu_percent()
 
-    # @@ AUTOCOMPLETE
-    async def cog_with_store_autocomplete(
-        self, interaction: Interaction, value: str
-    ) -> list[Choice[str]]:
-        choices: list[Choice] = []
-        for cog in self.bot.cogs.values():
-            if isinstance(cog, CogWithStore):
-                name: str = cog.qualified_name
-                if not value:
-                    choices.append(Choice(name=name, value=name))
-                elif value in name:
-                    choices.append(Choice(name=name, value=name))
-
-        return choices
+    # @@ UTILITIES
 
     async def _require_avatar(self, bot: Bot) -> Asset:
         assert is_commander_bot(bot)
@@ -72,6 +136,22 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         if banner := await bot.get_banner():
             return banner
         raise BotHasNoBanner
+
+    # @@ AUTOCOMPLETE
+
+    async def cog_with_store_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        choices: list[Choice] = []
+        for cog in self.bot.cogs.values():
+            if isinstance(cog, CogWithStore):
+                name: str = cog.qualified_name
+                if not value:
+                    choices.append(Choice(name=f"🛞 {name}", value=name))
+                elif value in name:
+                    choices.append(Choice(name=f"🛞 {name}", value=name))
+
+        return choices
 
     # @@ COMMANDS
 
@@ -145,8 +225,9 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         )
 
         process_field = (
+            f"Python Version: `{constants.PYTHON_VERSION}`",
             f"CPU: `{cpu_usage:.2f}%`",
-            f"RAM: `{memory_usage:.2f} MiB`",
+            f"RAM: `{memory_usage:.2f} MB`",
         )
 
         fields = {
@@ -172,6 +253,75 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             embed.add_field(name=k, value=v)
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # @@ sudo extension
+
+    cmd_sudo_extension = Group(
+        name="extension", description="Manage the bot's extensions", parent=cmd_sudo
+    )
+
+    # @@ sudo extension load
+    @cmd_sudo_extension.command(name="load", description="Load an extension")
+    @describe(extension="The extension to load")
+    @checks.is_owner()
+    async def cmd_sudo_extension_load(
+        self,
+        interaction: Interaction,
+        extension: Transform[ConfiguredExtension, DisabledExtensionTransformer],
+    ):
+        # Respond with a defer since loading the extension might take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Try to load the extension
+        try:
+            await self.bot.load_extension(extension.name)
+            await interaction.followup.send(
+                f"✅ Loaded extension `{extension.name}`", ephemeral=True
+            )
+        except Exception as ex:
+            raise ExtensionLoadError(extension.name, str(ex))
+
+    # @@ sudo extension unload
+    @cmd_sudo_extension.command(name="unload", description="Unload an extension")
+    @describe(extension="The extension to unload")
+    @checks.is_owner()
+    async def cmd_sudo_extension_unload(
+        self,
+        interaction: Interaction,
+        extension: Transform[ConfiguredExtension, EnabledExtensionTransformer],
+    ):
+        # Respond with a defer since unloading the extension might take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Try to unload the extension
+        try:
+            await self.bot.unload_extension(extension.name)
+            await interaction.followup.send(
+                f"⛔ Unloaded extension `{extension.name}`", ephemeral=True
+            )
+        except Exception as ex:
+            raise ExtensionUnloadError(extension.name, str(ex))
+
+    # @@ sudo extension reload
+    @cmd_sudo_extension.command(name="reload", description="Reload an extension")
+    @describe(extension="The extension to reload")
+    @checks.is_owner()
+    async def cmd_sudo_extension_reload(
+        self,
+        interaction: Interaction,
+        extension: Transform[ConfiguredExtension, EnabledExtensionTransformer],
+    ):
+        # Respond with a defer since reloading the extension might take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Try to reload the extension
+        try:
+            await self.bot.reload_extension(extension.name)
+            await interaction.followup.send(
+                f"♻️ Reloaded extension `{extension.name}`", ephemeral=True
+            )
+        except Exception as ex:
+            raise ExtensionReloadError(extension.name, str(ex))
 
     # @@ sudo shutdown
     @cmd_sudo.command(name="shutdown", description="Shutdown the bot")
