@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Any, Optional, Self
 
-from commanderbot.lib import FromDataMixin
+from commanderbot.lib import FromDataMixin, JsonSerializable, utils
 from commanderbot.lib.types import JsonObject
 
 
 @dataclass
-class ConfiguredExtension(FromDataMixin):
+class ConfiguredExtension(JsonSerializable, FromDataMixin):
     """
     Represents an extension with an optional config.
 
@@ -28,6 +28,7 @@ class ConfiguredExtension(FromDataMixin):
     disabled: bool = False
     options: Optional[JsonObject] = None
 
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, str):
@@ -41,3 +42,12 @@ class ConfiguredExtension(FromDataMixin):
                 return cls(name=data)
         elif isinstance(data, dict):
             return cls(**data)
+
+    # @implements JsonSerializable
+    def to_json(self) -> Any:
+        return utils.dict_without_falsies(
+            name=self.name,
+            required=self.required,
+            disabled=self.disabled,
+            options=self.options,
+        )
