@@ -43,4 +43,6 @@ class Intents(discord.Intents, JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        return self.__dict__
+        # A very hacky way to turn this instance into a `dict``.
+        # Have no idea why `dict(self)` doesn't work.
+        return dict(discord.Intents(self.value))
