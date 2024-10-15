@@ -4,19 +4,24 @@ from logging import Logger, getLogger
 from pathlib import Path
 from typing import Any, Optional, Self
 
-import discord
-
 from commanderbot.core.configured_extension import ConfiguredExtension
 from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
-from commanderbot.lib import AllowedMentions, FromDataMixin, Intents
+from commanderbot.lib import (
+    AllowedMentions,
+    FromDataMixin,
+    Intents,
+    JsonSerializable,
+    utils,
+)
 from commanderbot.lib.types import JsonObject
+from commanderbot.lib.utils.utils import dict_without_falsies
 
 
 @dataclass
-class Config(FromDataMixin):
+class Config(JsonSerializable, FromDataMixin):
     command_prefix: str
-    intents: discord.Intents
-    allowed_mentions: discord.AllowedMentions
+    intents: Intents
+    allowed_mentions: AllowedMentions
 
     extensions: dict[str, ConfiguredExtension]
     enabled_extensions: list[ConfiguredExtension] = field(
@@ -26,7 +31,7 @@ class Config(FromDataMixin):
         init=False, default_factory=list
     )
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -73,6 +78,22 @@ class Config(FromDataMixin):
                 allowed_mentions=allowed_mentions,
                 extensions=extensions,
             )
+
+    # @implements JsonSerializable
+    def to_json(self) -> Any:
+        return utils.dict_without_falsies(
+            command_prefix=self.command_prefix,
+            privileged_intents=utils.dict_without_falsies(
+                (self.intents & Intents.privileged()).to_json()
+            ),
+            intents=utils.dict_without_falsies(
+                (self.intents & Intents.default()).to_json()
+            ),
+            allowed_mentions=utils.dict_without_falsies(
+                self.allowed_mentions.to_json()
+            ),
+            extensions=[ext.to_json() for ext in self.extensions.values()],
+        )
 
     @classmethod
     def from_file(cls, path: Path) -> Self:
