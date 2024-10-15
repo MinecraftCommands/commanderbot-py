@@ -26,6 +26,7 @@ class Config(FromDataMixin):
         init=False, default_factory=list
     )
 
+    # @overrides FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -169,7 +170,7 @@ class Config(FromDataMixin):
         """
 
         ext: ConfiguredExtension = self.get_extension(name)
-        if ext.disabled:
+        if ext in self.disabled_extensions:
             ext.disabled = False
             self._rebuild_extension_states()
 
@@ -189,6 +190,6 @@ class Config(FromDataMixin):
         """
 
         ext: ConfiguredExtension = self.get_extension(name)
-        if not ext.disabled:
+        if ext in self.enabled_extensions:
             ext.disabled = True
             self._rebuild_extension_states()

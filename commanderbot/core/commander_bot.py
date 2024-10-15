@@ -193,7 +193,7 @@ class CommanderBot(Bot):
 
     # @overrides Bot
     async def setup_hook(self):
-        # Load extensions
+        # Load enabled extensions
         self.log.info(
             f"Loading {len(self.config.enabled_extensions)} enabled extensions..."
         )
