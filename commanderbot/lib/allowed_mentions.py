@@ -36,6 +36,9 @@ class AllowedMentions(discord.AllowedMentions, JsonSerializable, FromDataMixin):
     def only_roles(cls) -> Self:
         return cls(everyone=False, users=False, roles=True, replied_user=False)
 
+    def merge(self, other: discord.AllowedMentions) -> Self:
+        return cast(Self, super().merge(other))
+
     # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data):
