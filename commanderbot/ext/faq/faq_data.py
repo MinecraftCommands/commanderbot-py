@@ -44,7 +44,7 @@ class FaqEntryData(JsonSerializable, FromDataMixin):
 
     match_terms: set[str] = field(init=False, default_factory=set)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -127,7 +127,7 @@ class CategoryEntryData(JsonSerializable, FromDataMixin):
     key: str
     display: str
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -156,7 +156,7 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
     prefix: Optional[re.Pattern] = None
     match: Optional[re.Pattern] = None
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         # Note that aliases will be constructed from entries, during post-init
@@ -511,7 +511,7 @@ class FaqData(JsonSerializable, FromDataMixin):
         default_factory=_guilds_defaultdict_factory
     )
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

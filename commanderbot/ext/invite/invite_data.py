@@ -39,7 +39,7 @@ class InviteEntryData(JsonSerializable, FromDataMixin):
     added_on: datetime
     modified_on: datetime
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -97,7 +97,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
     )
     guild_key: Optional[str] = None
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         # Note that tags will be constructed from entries, during post-init
@@ -300,7 +300,7 @@ class InviteData(JsonSerializable, FromDataMixin):
         default_factory=_guilds_defaultdict_factory
     )
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

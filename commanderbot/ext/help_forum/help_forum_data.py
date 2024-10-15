@@ -31,7 +31,7 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
     threads_created: int
     resolutions: int
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -82,7 +82,7 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
 class HelpForumGuildData(JsonSerializable, FromDataMixin):
     help_forums: dict[ChannelID, HelpForumForumData] = field(default_factory=dict)
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -212,7 +212,7 @@ class HelpForumData(JsonSerializable, FromDataMixin):
         default_factory=_guilds_defaultdict_factory
     )
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):

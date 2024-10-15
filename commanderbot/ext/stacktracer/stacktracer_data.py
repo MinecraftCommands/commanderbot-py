@@ -12,7 +12,7 @@ from commanderbot.lib.utils import dict_without_ellipsis, dict_without_falsies
 class StacktracerGuildData(JsonSerializable, FromDataMixin):
     log_options: Optional[LogOptions] = None
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
@@ -53,7 +53,7 @@ class StacktracerData(JsonSerializable, FromDataMixin):
         default_factory=_guilds_defaultdict_factory
     )
 
-    # @overrides FromDataMixin
+    # @implements FromDataMixin
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
