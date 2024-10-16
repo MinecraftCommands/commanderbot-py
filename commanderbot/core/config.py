@@ -80,14 +80,19 @@ class Config(JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        # Get intents
         intents: Optional[Intents] = Intents.default() & self.intents
         privileged_intents: Intents = Intents.privileged() & self.intents
 
-        # `intents` is technically an optional field in the config and defaults to `Intents.default()`.
+        # `intents` is an optional field in the config and defaults to `Intents.default()`.
         # So don't include it if it's value is the same as `Intents.default()`.
         if intents == Intents.default():
             intents = None
+
+        # `allowed_mentions` is an optional field in the config and defaults to `AllowedMentions.not_everyone()`.
+        # So don't include it if it's value is the same as `AllowedMentions.not_everyone()`.
+        allowed_mentions: Optional[AllowedMentions] = self.allowed_mentions
+        if allowed_mentions == AllowedMentions.not_everyone():
+            allowed_mentions = None
 
         # Create the Json
         return utils.dict_without_falsies(
@@ -96,8 +101,10 @@ class Config(JsonSerializable, FromDataMixin):
                 utils.dict_without_falsies(intents.to_json()) if intents else None
             ),
             privileged_intents=utils.dict_without_falsies(privileged_intents.to_json()),
-            allowed_mentions=utils.dict_without_falsies(
-                self.allowed_mentions.to_json()
+            allowed_mentions=(
+                utils.dict_without_falsies(allowed_mentions.to_json())
+                if allowed_mentions
+                else None
             ),
             extensions=[ext.to_json() for ext in self.extensions.values()],
         )
