@@ -15,7 +15,7 @@ class ExtensionResolutionError(SudoTransformerException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😔 Unable to resolve that extension\n```\n{self.reason}\n```"
+            f"😔 Unable to resolve that extension:\n```\n{self.reason}\n```"
         )
 
 
@@ -39,7 +39,7 @@ class ExtensionLoadError(SudoException):
     def __init__(self, name: str, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to load extension `{name}`\n```\n{self.reason}\n```"
+            f"😵 Unable to load extension `{name}`:\n```\n{self.reason}\n```"
         )
 
 
@@ -47,7 +47,7 @@ class ExtensionUnloadError(SudoException):
     def __init__(self, name: str, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to unload extension `{name}`\n```\n{self.reason}\n```"
+            f"😵 Unable to unload extension `{name}`:\n```\n{self.reason}\n```"
         )
 
 
@@ -55,7 +55,7 @@ class ExtensionReloadError(SudoException):
     def __init__(self, name: str, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to reload extension `{name}`\n```\n{self.reason}\n```"
+            f"😵 Unable to reload extension `{name}`:\n```\n{self.reason}\n```"
         )
 
 
@@ -63,7 +63,7 @@ class GlobalSyncError(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to sync app commands globally\n```\n{self.reason}\n```"
+            f"😵 Unable to sync app commands globally:\n```\n{self.reason}\n```"
         )
 
 
@@ -71,7 +71,7 @@ class GuildSyncError(SudoException):
     def __init__(self, guild: Object, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to sync app commands to this guild (`{guild.id}`)\n```\n{self.reason}\n```"
+            f"😵 Unable to sync app commands to this guild (`{guild.id}`):\n```\n{self.reason}\n```"
         )
 
 
@@ -111,7 +111,7 @@ class ErrorChangingBotAvatar(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 An error occurred while changing the bot's avatar\n```\n{self.reason}\n```"
+            f"😬 An error occurred while changing the bot's avatar:\n```\n{self.reason}\n```"
         )
 
 
@@ -119,5 +119,5 @@ class ErrorChangingBotBanner(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 An error occurred while changing the bot's banner\n```\n{self.reason}\n```"
+            f"😬 An error occurred while changing the bot's banner:\n```\n{self.reason}\n```"
         )
