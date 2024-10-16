@@ -357,7 +357,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
         # Respond with the config file
         await interaction.followup.send(
-            "Exported the bot config", file=file, ephemeral=True
+            "⚙️ Exported the bot config:", file=file, ephemeral=True
         )
 
     # @@ sudo export database
@@ -383,7 +383,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
                 json_data = json_dumps(db.serializer(cache))
                 file = utils.str_to_file(json_data, f"{found_cog.qualified_name}.json")
                 await interaction.followup.send(
-                    f"Exported Json store for `{found_cog.qualified_name}`",
+                    f"📦 Exported Json store for `{found_cog.qualified_name}`:",
                     file=file,
                     ephemeral=True,
                 )
@@ -414,7 +414,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Show the new avatar
         avatar: Asset = await self._require_avatar(self.bot)
         await interaction.followup.send(
-            f"Set the bot's avatar to:\n{avatar.url}", ephemeral=True
+            f"✅ Set the bot's avatar to:\n{avatar.url}", ephemeral=True
         )
 
     # @@ sudo avatar clear
@@ -435,7 +435,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             raise ErrorChangingBotAvatar(str(ex))
 
         # Send a response that the avatar has been cleared
-        await interaction.followup.send("Cleared the bot's avatar", ephemeral=True)
+        await interaction.followup.send("✅ Cleared the bot's avatar", ephemeral=True)
 
     # @@ sudo avatar show
     @cmd_sudo_avatar.command(name="show", description="Show the bot's avatar")
@@ -447,7 +447,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Show the current avatar
         avatar: Asset = await self._require_avatar(self.bot)
         await interaction.followup.send(
-            f"The bot's current avatar is:\n{avatar.url}", ephemeral=True
+            f"🖼️ The bot's current avatar is:\n{avatar.url}", ephemeral=True
         )
 
     # @@ sudo banner
@@ -474,7 +474,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Show the new banner
         banner: Asset = await self._require_banner(self.bot)
         await interaction.followup.send(
-            f"Set the bot's banner to:\n{banner.url}", ephemeral=True
+            f"✅ Set the bot's banner to:\n{banner.url}", ephemeral=True
         )
 
     # @@ sudo banner clear
@@ -495,7 +495,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             raise ErrorChangingBotBanner(str(ex))
 
         # Send a response that the banner has been cleared
-        await interaction.followup.send("Cleared the bot's banner", ephemeral=True)
+        await interaction.followup.send("✅ Cleared the bot's banner", ephemeral=True)
 
     # @@ sudo banner show
     @cmd_sudo_banner.command(name="show", description="Show the bot's banner")
@@ -507,7 +507,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Show the current banner
         banner: Asset = await self._require_banner(self.bot)
         await interaction.followup.send(
-            f"The bot's current banner is:\n{banner.url}", ephemeral=True
+            f"🖼️ The bot's current banner is:\n{banner.url}", ephemeral=True
         )
 
     # @@ sudo sync
@@ -578,6 +578,6 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
         # Send followup with sync results
         await interaction.followup.send(
-            f"Synced `{len(synced_commands)}` app commands to {syncing_to_msg}",
+            f"✅ Synced `{len(synced_commands)}` app commands to {syncing_to_msg}",
             ephemeral=True,
         )
