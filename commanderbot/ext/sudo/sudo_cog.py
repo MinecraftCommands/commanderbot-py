@@ -357,7 +357,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
         # Respond with the config file
         await interaction.followup.send(
-            "⚙️ Exported the bot config:", file=file, ephemeral=True
+            "⚙️ Exported the bot's config:", file=file, ephemeral=True
         )
 
     # @@ sudo export database
