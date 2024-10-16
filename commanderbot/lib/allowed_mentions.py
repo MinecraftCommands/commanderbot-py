@@ -50,9 +50,23 @@ class AllowedMentions(discord.AllowedMentions, JsonSerializable, FromDataMixin):
 
     # @implements JsonSerializable
     def to_json(self) -> Any:
-        fields = ("everyone", "users", "roles", "replied_user")
         data = {}
-        for field in fields:
+        for field in self.__slots__:
             if (value := getattr(self, field, default)) is not default:
                 data[field] = value
         return data
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, discord.AllowedMentions):
+            return False
+
+        for field in self.__slots__:
+            self_value = getattr(self, field, default)
+            other_value = getattr(other, field, default)
+            if self_value != other_value:
+                return False
+
+        return True
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
