@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `sudo`:
   - Added a way to sync slash commands globally or to a specific guild
   - Added a way to load/unload/reload extensions
+  - Added a way to export the bot's config
   - Added a way to export a cog's database
   - Added a way to display info about the bot
   - Added a way to shutdown the bot
