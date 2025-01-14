@@ -46,21 +46,28 @@ python -m commanderbot bot.json --token put_your_bot_token_here
 
 ## Configuring your bot
 
-The current set of configuration options is limited. Following is an example configuration that sets the command prefix and loads the `status` and `faq` extensions.
+The current set of configuration options is limited. The following is an example configuration that sets the command prefix, enabled privileged intents, and loads the `sudo`, `status` and `faq` extensions.
+
+> The `sudo` extension is essential to managing the bot. It can do things like syncing commands, setting the bot's profile picture, or even exporting the config.
+
+> An extension prefixed with `$` means the extension is required and cannot be managed while the bot is running. If the extension's config uses the object syntax, you can make the extension required by adding `"required": true`.
 
 > Note that with this configuration, the `faq` extension will require read-write access to `faq.json` in the working directory.
 
 ```json
 {
-  "command_prefix": ">",
+  "command_prefix": ".",
+  "privileged_intents": {
+    "message_content": true,
+    "members": true
+  },
   "extensions": [
+    "$commanderbot.ext.sudo",
     "commanderbot.ext.status",
     {
       "name": "commanderbot.ext.faq",
-      "enabled": true,
       "options": {
-        "database": "faq.json",
-        "prefix": "?"
+        "database": "faq.json"
       }
     }
   ]
