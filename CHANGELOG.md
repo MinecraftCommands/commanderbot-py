@@ -50,6 +50,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     - Does not work with users who have elevated permissions
   - Added a way to ban a user and send them a DM with the reason
     - Does not work with users who have elevated permissions
+- `xkcd`:
+  - Lets you view xkcd comics
+  - Can be installed to guilds and users
+  - Can be used anywhere
 - Added a config option for `mccq` to allow certain users to run the reload command
 - Added a link button under `jira` issue embeds
 
