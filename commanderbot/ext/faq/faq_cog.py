@@ -1,5 +1,12 @@
 from discord import Interaction, Message, Permissions
-from discord.app_commands import Choice, Group, autocomplete, describe
+from discord.app_commands import (
+    AppCommandContext,
+    AppInstallationType,
+    Choice,
+    Group,
+    autocomplete,
+    describe,
+)
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.faq.faq_data import FaqData
@@ -159,7 +166,12 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
 
     # @@ faq
 
-    cmd_faq = Group(name="faq", description="Show FAQs", guild_only=True)
+    cmd_faq = Group(
+        name="faq",
+        description="Show FAQs",
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(guild=True),
+    )
 
     # @@ faq get
     @cmd_faq.command(name="get", description="Get a frequently asked question (FAQ)")
@@ -181,6 +193,8 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         name="faqs",
         description="Manage FAQs",
         guild_only=True,
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(guild=True),
         default_permissions=Permissions(administrator=True),
     )
 

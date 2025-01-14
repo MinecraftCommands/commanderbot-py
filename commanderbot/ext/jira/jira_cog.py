@@ -6,10 +6,10 @@ from discord import Embed, Interaction, ui
 from discord.app_commands import (
     Transform,
     Transformer,
-    allowed_contexts,
-    allowed_installs,
     command,
     describe,
+    guild_install,
+    user_install,
 )
 from discord.ext.commands import Bot, Cog
 
@@ -58,8 +58,8 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
 
     @command(name="jira", description="Query a Jira issue")
     @describe(query="The issue ID or URL to query")
-    @allowed_installs(guilds=True, users=True)
-    @allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @guild_install()
+    @user_install()
     async def cmd_jira(
         self,
         interaction: Interaction,
