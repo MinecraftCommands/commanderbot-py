@@ -6,6 +6,7 @@ from discord.app_commands import (
     command,
     default_permissions,
     describe,
+    guild_install,
     guild_only,
 )
 from discord.app_commands.checks import bot_has_permissions
@@ -43,6 +44,7 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         user="The user to kick",
         reason="The reason for the kick (This will also be sent as a DM to the user)",
     )
+    @guild_install()
     @guild_only()
     @default_permissions(kick_members=True)
     @bot_has_permissions(kick_members=True)
@@ -108,6 +110,7 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
             Choice(name="Previous 7 days", value=604800),
         ]
     )
+    @guild_install()
     @guild_only()
     @default_permissions(ban_members=True)
     @bot_has_permissions(ban_members=True)

@@ -7,6 +7,8 @@ import psutil
 from discord import AppInfo, Asset, Attachment, Embed, Interaction, Object, Permissions
 from discord.app_commands import (
     AppCommand,
+    AppCommandContext,
+    AppInstallationType,
     Choice,
     Group,
     Transform,
@@ -160,6 +162,10 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
     cmd_sudo = Group(
         name="sudo",
         description="Commands for bot maintainers",
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(
+            guild=True, dm_channel=True, private_channel=True
+        ),
         default_permissions=Permissions(administrator=True),
     )
 
@@ -194,9 +200,12 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Get basic info on the running process
         uname = platform.uname()
         ptr_size: int = constants.POINTER_SIZE_BITS
-
         architecture: str = "x86" if ptr_size == 32 else f"x{ptr_size}"
-        cpu_usage: float = self.process.cpu_percent() / psutil.cpu_count()
+
+        cpu_usage: float = 0.0
+        if (cpu_cores := psutil.cpu_count()) and cpu_cores > 0:
+            cpu_usage = self.process.cpu_percent() / cpu_cores
+
         memory_usage: float = utils.bytes_to(
             self.process.memory_full_info().uss, utils.SizeUnit.MEGABYTE, binary=True
         )

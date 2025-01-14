@@ -2,11 +2,11 @@ from discord import Embed, Interaction
 from discord.app_commands import (
     Choice,
     Range,
-    allowed_contexts,
-    allowed_installs,
     autocomplete,
     command,
     describe,
+    guild_install,
+    user_install,
 )
 from discord.ext.commands import Bot, GroupCog
 
@@ -15,8 +15,8 @@ from commanderbot.ext.xkcd.xkcd_options import XKCDOptions
 from commanderbot.lib import constants, utils
 
 
-@allowed_installs(guilds=True, users=True)
-@allowed_contexts(guilds=True, dms=True, private_channels=True)
+@guild_install()
+@user_install()
 class XKCDCog(
     GroupCog,
     name="commanderbot.ext.xkcd",
