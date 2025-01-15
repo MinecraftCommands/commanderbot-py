@@ -12,10 +12,10 @@ from discord.app_commands import (
     AppInstallationType,
     Group,
     Transform,
+    allowed_contexts,
+    allowed_installs,
     command,
     describe,
-    guild_install,
-    guild_only,
 )
 from discord.enums import MessageType
 from discord.ext.commands import Bot, Cog
@@ -173,8 +173,8 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
     # @@ resolve
     @command(name="resolve", description="Resolve a post in a help forum")
-    @guild_install()
-    @guild_only()
+    @allowed_installs(guilds=True)
+    @allowed_contexts(guilds=True)
     async def cmd_resolve(self, interaction: Interaction):
         # Make sure this command was ran from a thread
         thread = interaction.channel
