@@ -39,6 +39,9 @@ class XKCDCog(
             url=comic.url,
             color=0x00ACED,
         )
+        embed.set_author(
+            name="xkcd", url="https://xkcd.com/", icon_url=self.options.icon_url
+        )
         embed.set_image(url=comic.image_url)
         embed.set_footer(
             text=f"{comic.description}\n\nPublished: {comic.publication_date.strftime("%Y/%m/%d")}"
