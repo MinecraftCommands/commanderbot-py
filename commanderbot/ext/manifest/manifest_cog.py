@@ -11,12 +11,11 @@ from discord.app_commands import (
     Group,
     Transform,
     Transformer,
+    allowed_installs,
     autocomplete,
     command,
     describe,
-    guild_install,
     rename,
-    user_install,
 )
 from discord.ext.commands import Bot, Cog
 from discord.utils import format_dt
@@ -103,8 +102,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
     )
     @rename(manifest_type="type")
     @autocomplete(min_engine_version=min_engine_version_autocomplete)
-    @guild_install()
-    @user_install()
+    @allowed_installs(guilds=True, users=True)
     async def cmd_manifest(
         self,
         interaction: Interaction,

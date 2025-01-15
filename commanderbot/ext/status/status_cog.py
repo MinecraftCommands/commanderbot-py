@@ -1,5 +1,5 @@
 from discord import Embed, Interaction
-from discord.app_commands import command, guild_install
+from discord.app_commands import allowed_installs, command
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.status.status_details import StatusDetails
@@ -10,7 +10,7 @@ class StatusCog(Cog, name="commanderbot.ext.status"):
         self.bot: Bot = bot
 
     @command(name="status", description="Shows the status of the bot")
-    @guild_install()
+    @allowed_installs(guilds=True)
     async def cmd_status(self, interaction: Interaction):
         status_details = StatusDetails(self.bot)
 

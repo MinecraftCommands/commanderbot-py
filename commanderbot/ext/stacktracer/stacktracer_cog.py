@@ -4,11 +4,11 @@ from discord import Interaction, Message, TextChannel, Thread, User
 from discord.app_commands import (
     Group,
     Transform,
+    allowed_contexts,
+    allowed_installs,
     command,
     default_permissions,
     describe,
-    guild_install,
-    guild_only,
 )
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog, Context, GroupCog
@@ -54,8 +54,8 @@ def _make_store(bot: Bot, cog: Cog, options: StacktracerOptions) -> StacktracerS
     raise UnsupportedDatabaseOptions(db_options)
 
 
-@guild_install()
-@guild_only()
+@allowed_installs(guilds=True)
+@allowed_contexts(guilds=True)
 @default_permissions(administrator=True)
 class StacktracerCog(
     GroupCog,

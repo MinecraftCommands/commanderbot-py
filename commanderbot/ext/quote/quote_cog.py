@@ -2,7 +2,13 @@ import re
 from itertools import chain
 
 from discord import Embed, Interaction, Member, Message, User
-from discord.app_commands import Transform, command, describe, guild_install, guild_only
+from discord.app_commands import (
+    Transform,
+    allowed_contexts,
+    allowed_installs,
+    command,
+    describe,
+)
 from discord.ext.commands import Bot, Cog
 from discord.utils import format_dt
 
@@ -107,8 +113,8 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
 
     @command(name="quote", description="Quote a message")
     @describe(message_link="A message link to quote")
-    @guild_install()
-    @guild_only()
+    @allowed_installs(guilds=True)
+    @allowed_contexts(guilds=True)
     async def cmd_quote(
         self,
         interaction: Interaction,
@@ -123,8 +129,8 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
 
     @command(name="quotem", description="Quote a message and mention the author")
     @describe(message_link="A message link to quote")
-    @guild_install()
-    @guild_only()
+    @allowed_installs(guilds=True)
+    @allowed_contexts(guilds=True)
     async def cmd_quotem(
         self,
         interaction: Interaction,
