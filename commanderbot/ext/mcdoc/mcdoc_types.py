@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping, Optional, Union
 
 ICON_ANY = "<:any:1328878339305246761>"
@@ -34,22 +34,14 @@ def cmp_version(a: str, b: str):
     return float(a[2:]) - float(b[2:])
 
 
+@dataclass
 class McdocContext:
-    def __init__(
-            self,
-            version: str,
-            lookup: Callable[[str], Optional["McdocType"]],
-            compact = False,
-            depth = 0,
-            type_mapping: Mapping[str, Union[str, "McdocType"]] = {},
-            type_args: list["McdocType"] = []
-        ):
-        self.version = version
-        self.lookup = lookup
-        self.compact = compact
-        self.depth = depth
-        self.type_mapping = type_mapping
-        self.type_args = type_args
+    version: str
+    lookup: Callable[[str], Optional["McdocType"]]
+    compact: bool = False
+    depth: int = 0
+    type_mapping: Mapping[str, Union[str, "McdocType"]] = field(default_factory=dict)
+    type_args: list["McdocType"] = field(default_factory=list)
 
     def symbol(self, path: str):
         return self.lookup(path)
@@ -64,6 +56,9 @@ class McdocContext:
         if until and cmp_version(self.version, until["value"]["value"]) >= 0:
             return False
         return True
+
+    def allow_body(self):
+        return self.depth <= 2
 
     def make_compact(self) -> "McdocContext":
         return McdocContext(self.version, self.lookup, True, self.depth, self.type_mapping, self.type_args)
@@ -87,6 +82,18 @@ class Attribute:
 @dataclass(kw_only=True)
 class McdocBaseType:
     attributes: Optional[list[Attribute]] = None
+
+    def has_attr(self, name: str):
+        for a in self.attributes or []:
+            if a.name == name:
+                return True
+        return False
+
+    def get_attr(self, name: str) -> Optional[dict]:
+        for a in self.attributes or []:
+            if a.name == name:
+                return a.value or dict()
+        return None
 
     def title(self, name: str, ctx: McdocContext) -> str:
         return name
@@ -181,7 +188,7 @@ class StructTypePairField:
         desc = self.desc.strip() if self.desc else ""
         if desc:
             result += "".join(f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip())
-        if ctx.depth < 1:
+        if ctx.allow_body():
             body = self.type.body(ctx.make_compact())
             if body:
                 result += f"\n{body}"
@@ -267,14 +274,14 @@ class EnumType(McdocBaseType):
 
     def suffix(self, ctx):
         values = self.filtered_values(ctx)
-        if ctx.depth >= 1:
-            if not values:
-                return "*no options*"
-            return f"*one of: {', '.join(json.dumps(v.value) for v in values)}*"
-        return "*one of:*"
+        if ctx.allow_body():
+            return "*one of:*"
+        if not values:
+            return "*no options*"
+        return f"*one of: {', '.join(json.dumps(v.value) for v in values)}*"
 
     def body_flat(self, ctx: McdocContext):
-        if ctx.depth >= 1:
+        if not ctx.allow_body():
             return ""
         results = []
         for field in self.filtered_values(ctx):
@@ -335,12 +342,12 @@ class UnionType(McdocBaseType):
             return "*nothing*"
         if len(members) == 1:
             return members[0].suffix(ctx)
-        if ctx.depth >= 1:
-            return f"*one of {len(members)} types*"
-        return "*one of:*"
+        if ctx.allow_body():
+            return "*one of:*"
+        return f"*one of {len(members)} types*"
 
     def body(self, ctx):
-        if ctx.depth >= 1:
+        if not ctx.allow_body():
             return ""
         members = self.filtered_members(ctx)
         if not members:
@@ -353,12 +360,13 @@ class UnionType(McdocBaseType):
             suffix = member.suffix(ctx)
             if suffix:
                 result += f" {suffix}" if result else suffix
-            if ctx.depth < 1:
+            if ctx.allow_body():
                 body = member.body(ctx.make_compact().nested())
                 if body:
+                    body = "\n".join(f"  {line}" for line in body.split("\n"))
                     result += f"\n{body}" if result else body
-            results.append(result)
-        return "\n".join(f"{'' if ctx.compact else '\n'}* {r}" for r in results)
+            results.append(f"* {result}")
+        return "\n".join(f"{'' if ctx.compact else '\n'}{r}" for r in results)
 
 
 @dataclass
@@ -471,8 +479,8 @@ class StringType(McdocBaseType):
 
     def suffix(self, ctx):
         result = "a string"
-        id = next((a.value for a in self.attributes or [] if a.name == "id"), None)
-        if id:
+        id = self.get_attr("id")
+        if id is not None:
             if id["kind"] == "literal":
                 registry = id["value"]["value"]
             elif id["kind"] == "tree":
@@ -482,9 +490,32 @@ class StringType(McdocBaseType):
             result = "a resource location"
             if registry:
                 result += f" ({registry})"
-        regex_pattern = next((a.value for a in self.attributes or [] if a.name == "regex_pattern"), None)
-        if regex_pattern:
+        elif self.has_attr("text_component"):
+            result = "a stringified text component"
+        elif self.has_attr("integer"):
+            result = "a stringified integer"
+        elif self.has_attr("regex_pattern"):
             result = "a regex pattern"
+        elif self.has_attr("uuid"):
+            result = "a hex uuid"
+        elif self.has_attr("color"):
+            result = "a hex color"
+        elif self.has_attr("nbt"):
+            result = "an SNBT string"
+        elif self.has_attr("nbt_path"):
+            result = "an NBT path"
+        elif self.has_attr("team"):
+            result = "a team name"
+        elif self.has_attr("objective"):
+            result = "a scoreboard objective"
+        elif self.has_attr("tag"):
+            result = "a command tag"
+        elif self.has_attr("translation_key"):
+            result = "a translation key"
+        elif self.has_attr("entity"):
+            result = "an entity selector"
+        elif self.has_attr("command"):
+            result = "a command"
         if self.lengthRange:
             result += f" with length {self.lengthRange.render()}"
         return f"*{result}*"
@@ -693,8 +724,9 @@ class ListType(McdocBaseType):
             result += f" {suffix}" if result else suffix
         body = self.item.body(ctx.make_compact().nested())
         if body:
+            body = "\n".join(f"  {line}" for line in body.split("\n"))
             result += f"\n{body}" if result else body
-        return "* " + result
+        return f"* {result}"
 
 
 @dataclass
@@ -705,7 +737,7 @@ class TupleType(McdocBaseType):
         return [ICON_LIST]
 
     def suffix(self, ctx):
-        return f"*a list of length {len(self.items)}:*"
+        return f"*a tuple of length {len(self.items)}:*"
 
 
 McdocType = Union[
