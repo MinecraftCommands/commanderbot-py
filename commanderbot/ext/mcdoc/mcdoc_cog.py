@@ -53,14 +53,15 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         symbol: Optional[McdocSymbol] = self.symbols.search(query)
 
         if not symbol:
-            await interaction.followup.send("Symbol not found")
+            await interaction.followup.send(f"Symbol `{query}` not found")
             return
 
         # TODO: un-hardcode the latest release version
         ctx = McdocContext(version or "1.21.4", self.symbols.get)
 
+        name = symbol.identifier.split("::")[-1]
         embed: Embed = Embed(
-            title=symbol.identifier.split("::")[-1],
+            title=symbol.typeDef.title(name, ctx),
             description=symbol.typeDef.render(ctx),
             color=0x2783E3,
         )
