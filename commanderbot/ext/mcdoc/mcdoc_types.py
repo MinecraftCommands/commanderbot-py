@@ -34,9 +34,11 @@ def cmp_version(a: str, b: str):
 
 
 class McdocContext:
-    def __init__(self, version: str, lookup: Callable[[str], Optional["McdocType"]]):
+    def __init__(self, version: str, lookup: Callable[[str], Optional["McdocType"]], compact = False, depth = 0):
         self.version = version
         self.lookup = lookup
+        self.compact = compact
+        self.depth = depth
 
     def symbol(self, path: str):
         return self.lookup(path)
@@ -51,6 +53,12 @@ class McdocContext:
         if until and cmp_version(self.version, until["value"]["value"]) >= 0:
             return False
         return True
+    
+    def make_compact(self) -> "McdocContext":
+        return McdocContext(self.version, self.lookup, True, self.depth)
+
+    def nested(self) -> "McdocContext":
+        return McdocContext(self.version, self.lookup, self.compact, self.depth + 1)
 
 
 @dataclass
@@ -141,15 +149,16 @@ class StructTypePairField:
         result += f" {key}" if result else key
         suffix = self.type.suffix(ctx)
         if suffix:
-            result += f"?: {suffix}" if self.optional else f": {suffix}"
+            result += f"**?** {suffix}" if self.optional else f" {suffix}"
         elif self.optional:
-            result += "?"
+            result += "**?**"
         desc = self.desc.strip() if self.desc else ""
         if desc:
             result += "".join(f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip())
-        body = self.type.body(ctx)
-        if body:
-            result += f"\n{body}"
+        if ctx.depth < 1:
+            body = self.type.body(ctx.make_compact())
+            if body:
+                result += f"\n{body}"
         return result
 
 
@@ -176,23 +185,33 @@ class StructTypeSpreadField:
 class StructType(McdocBaseType):
     fields: list[StructTypePairField | StructTypeSpreadField]
 
+    def filtered_fields(self, ctx: McdocContext):
+        return [f for f in self.fields if ctx.filter(f.attributes)]
+
     def icons(self, ctx):
         return [ICON_STRUCT]
 
+    def suffix(self, ctx):
+        fields = self.filtered_fields(ctx)
+        if not fields:
+            return "*an empty object*"
+        return "*an object*"
+
     def body_flat(self, ctx: McdocContext):
         results = []
-        for field in self.fields:
-            if ctx.filter(field.attributes):
-                result = field.render(ctx)
-                if result:
-                    results.append(result)
+        for field in self.filtered_fields(ctx):
+            result = field.render(ctx)
+            if result:
+                results.append(result)
         if not results:
             return "*no fields*"
-        return "\n\n".join(results)
+        joiner = "\n" if ctx.compact else "\n\n"
+        return joiner.join(results)
 
     def body(self, ctx):
-        lines = self.body_flat(ctx)
-        return "".join(f"\n> {line}" for line in lines.split("\n"))
+        lines = self.body_flat(ctx.nested())
+        start = "" if ctx.compact else "\n"
+        return start + "\n".join(f"> {line}" for line in lines.split("\n"))
 
     def render(self, ctx):
         return self.body_flat(ctx)
@@ -209,20 +228,32 @@ class EnumType(McdocBaseType):
     enumKind: str
     values: list[EnumTypeField]
 
+    def filtered_values(self, ctx: McdocContext):
+        return [v for v in self.values if ctx.filter(v.attributes)]
+
     def icons(self, ctx):
         return [LITERAL_ICONS[self.enumKind]]
 
+    def suffix(self, ctx):
+        values = self.filtered_values(ctx)
+        if ctx.depth >= 1:
+            if not values:
+                return "*no options*"
+            return f"*one of: {', '.join(json.dumps(v.value) for v in values)}*"
+        return "*one of:*"
+
     def body_flat(self, ctx: McdocContext):
+        if ctx.depth >= 1:
+            return ""
         results = []
-        for field in self.values:
-            if ctx.filter(field.attributes):
-                result = self.prefix(ctx)
-                result += f" `{field.identifier}`"
-                result += f" = {field.value}"
-                desc = field.desc.strip() if field.desc else ""
-                if desc:
-                    result += "".join(f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip())
-                results.append(result)
+        for field in self.filtered_values(ctx):
+            result = self.prefix(ctx)
+            result += f" `{field.identifier}`"
+            result += f" = {json.dumps(field.value)}"
+            desc = field.desc.strip() if field.desc else ""
+            if desc:
+                result += "".join(f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip())
+            results.append(result)
         if not results:
             return "*no options*"
         return "\n".join(results)
@@ -239,8 +270,14 @@ class EnumType(McdocBaseType):
 class ReferenceType(McdocBaseType):
     path: str
 
+    def icons(self, ctx):
+        typeDef = ctx.symbol(self.path)
+        if typeDef:
+            return typeDef.icons(ctx)
+        return super().icons(ctx)
+
     def suffix(self, ctx):
-        return self.path.split("::")[-1]
+        return f"__{self.path.split('::')[-1]}__"
 
 
 @dataclass
@@ -256,11 +293,36 @@ class UnionType(McdocBaseType):
             all_icons.extend(member.icons(ctx))
         return list(set(all_icons))
 
+    def suffix(self, ctx):
+        members = self.filtered_members(ctx)
+        if not members:
+            return "*nothing*"
+        if len(members) == 1:
+            return members[0].suffix(ctx)
+        if ctx.depth >= 1:
+            return f"*one of {len(members)} types*"
+        return "*one of:*"
 
-@dataclass
-class IndexedType(McdocBaseType):
-    parallelIndices: list[Any]
-    child: "McdocType"
+    def body(self, ctx):
+        if ctx.depth >= 1:
+            return ""
+        members = self.filtered_members(ctx)
+        if not members:
+            return ""
+        if len(members) == 1:
+            return members[0].body(ctx)
+        results: list[str] = []
+        for member in members:
+            result = member.prefix(ctx)
+            suffix = member.suffix(ctx)
+            if suffix:
+                result += f" {suffix}" if result else suffix
+            if ctx.depth < 1:
+                body = member.body(ctx.make_compact().nested())
+                if body:
+                    result += f"\n{body}" if result else body
+            results.append(result)
+        return "\n".join(f"{'' if ctx.compact else '\n'}* {r}" for r in results)
 
 
 @dataclass
@@ -268,25 +330,91 @@ class TemplateType(McdocBaseType):
     child: "McdocType"
     typeParams: list[dict[str, str]]
 
+    def icons(self, ctx):
+        return self.child.icons(ctx)
+
+    def prefix(self, ctx):
+        return self.child.prefix(ctx)
+
+    def suffix(self, ctx):
+        return self.child.suffix(ctx)
+
+    def body(self, ctx):
+        return self.child.body(ctx)
+
+    def render(self, ctx):
+        return self.child.render(ctx)
+
 
 @dataclass
 class ConcreteType(McdocBaseType):
     child: "McdocType"
     typeArgs: list["McdocType"]
 
+    def icons(self, ctx):
+        return self.child.icons(ctx)
+
+    def prefix(self, ctx):
+        return self.child.prefix(ctx)
+
+    def suffix(self, ctx):
+        return self.child.suffix(ctx)
+
+    def body(self, ctx):
+        return self.child.body(ctx)
+
+    def render(self, ctx):
+        return self.child.render(ctx)
+
 
 @dataclass
-class MappedType(McdocBaseType):
-    child: "McdocType"
-    mapping: dict[str, "McdocType"]
+class NumericRange(McdocBaseType):
+    min: Optional[float]
+    max: Optional[float]
+    minExcl: bool
+    maxExcl: bool
 
+    def render(self, ctx: McdocContext):
+        if self.min is None:
+            return f"below {self.max}" if self.maxExcl else f"at most {self.max}"
+        if self.max is None:
+            return f"above {self.min}" if self.minExcl else f"at least {self.min}"
+        if self.minExcl and self.maxExcl:
+            return f"between {self.min} and {self.max} (exclusive)"
+        if self.minExcl:
+            return f"above {self.min} and at most {self.max}"
+        if self.maxExcl:
+            return f"at least {self.min} and below {self.max}"
+        if self.min == self.max:
+            return f"exactly {self.min}"
+        return f"between {self.min} and {self.max} (inclusive)"
 
 @dataclass
 class StringType(McdocBaseType):
-    lengthRange: Optional[Any] = None
+    lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_STRING]
+
+    def suffix(self, ctx):
+        result = "a string"
+        id = next((a.value for a in self.attributes or [] if a.name == "id"), None)
+        if id:
+            if id["kind"] == "literal":
+                registry = id["value"]["value"]
+            elif id["kind"] == "tree":
+                registry = id["values"]["registry"]["value"]["value"] # TODO
+            else:
+                registry = None
+            result = "a resource location"
+            if registry:
+                result += f" ({registry})"
+        regex_pattern = next((a.value for a in self.attributes or [] if a.name == "regex_pattern"), None)
+        if regex_pattern:
+            result = "a regex pattern"
+        if self.lengthRange:
+            result += f" with length {self.lengthRange.render(ctx)}"
+        return f"*{result}*"
 
 
 @dataclass
@@ -296,7 +424,7 @@ class LiteralType(McdocBaseType):
 
     def icons(self, ctx):
         return [LITERAL_ICONS.get(self.kind, ICON_ANY)]
-    
+
     def suffix(self, ctx):
         return json.dumps(self.value)
 
@@ -306,11 +434,17 @@ class AnyType(McdocBaseType):
     def icons(self, ctx):
         return [ICON_ANY]
 
+    def suffix(self, ctx):
+        return "*anything*"
+
 
 @dataclass
 class UnsafeType(McdocBaseType):
     def icons(self, ctx):
         return [ICON_ANY]
+
+    def suffix(self, ctx):
+        return "*anything*"
 
 
 @dataclass
@@ -318,89 +452,179 @@ class BooleanType(McdocBaseType):
     def icons(self, ctx):
         return [ICON_BOOLEAN]
 
+    def suffix(self, ctx):
+        return "*a boolean*"
+
 
 @dataclass
 class ByteType(McdocBaseType):
-    valueRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_BYTE]
 
+    def suffix(self, ctx):
+        result = "a byte"
+        if self.valueRange:
+            result += f" {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class ShortType(McdocBaseType):
-    valueRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_SHORT]
 
+    def suffix(self, ctx):
+        result = "a short"
+        if self.valueRange:
+            result += f" {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class IntType(McdocBaseType):
-    valueRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_INT]
 
+    def suffix(self, ctx):
+        result = "an int"
+        if self.valueRange:
+            result += f" {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class LongType(McdocBaseType):
-    valueRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_LONG]
 
+    def suffix(self, ctx):
+        result = "a long"
+        if self.valueRange:
+            result += f" {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class FloatType(McdocBaseType):
-    valueRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_FLOAT]
 
+    def suffix(self, ctx):
+        result = "a float"
+        if self.valueRange:
+            result += f" {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class DoubleType(McdocBaseType):
-    valueRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_DOUBLE]
 
+    def suffix(self, ctx):
+        result = "a double"
+        if self.valueRange:
+            result += f" {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class ByteArrayType(McdocBaseType):
-    valueRange: Optional[Any] = None
-    lengthRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
+    lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_BYTE_ARRAY]
 
+    def suffix(self, ctx):
+        result = "a byte array"
+        if self.lengthRange:
+            result += f" with length {self.lengthRange.render(ctx)}"
+        if self.valueRange:
+            if self.lengthRange:
+                result += ", and"
+            result += f" with values {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class IntArrayType(McdocBaseType):
-    valueRange: Optional[Any] = None
-    lengthRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
+    lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_INT_ARRAY]
 
+    def suffix(self, ctx):
+        result = "an int array"
+        if self.lengthRange:
+            result += f" with length {self.lengthRange.render(ctx)}"
+        if self.valueRange:
+            if self.lengthRange:
+                result += ", and"
+            result += f" with values {self.valueRange.render(ctx)}"
+        return f"*{result}*"
+
 
 @dataclass
 class LongArrayType(McdocBaseType):
-    valueRange: Optional[Any] = None
-    lengthRange: Optional[Any] = None
+    valueRange: Optional[NumericRange] = None
+    lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_LONG_ARRAY]
+
+    def suffix(self, ctx):
+        result = "a long array"
+        if self.lengthRange:
+            result += f" with length {self.lengthRange.render(ctx)}"
+        if self.valueRange:
+            if self.lengthRange:
+                result += ", and"
+            result += f" with values {self.valueRange.render(ctx)}"
+        return f"*{result}*"
 
 
 @dataclass
 class ListType(McdocBaseType):
     item: "McdocType"
-    lengthRange: Optional[Any] = None
+    lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
         return [ICON_LIST]
+
+    def suffix(self, ctx):
+        result = "a list"
+        if self.lengthRange:
+            if self.lengthRange.min == self.lengthRange.max:
+                result += f" of length {self.lengthRange.min}"
+            else:
+                result += f" with length {self.lengthRange.render(ctx)}"
+        else:
+            result += " of"
+        return f"*{result}:*"
+
+    def body(self, ctx):
+        result = self.item.prefix(ctx)
+        suffix = self.item.suffix(ctx)
+        if suffix:
+            result += f" {suffix}" if result else suffix
+        body = self.item.body(ctx.make_compact().nested())
+        if body:
+            result += f"\n{body}" if result else body
+        return "* " + result
 
 
 @dataclass
@@ -409,6 +633,9 @@ class TupleType(McdocBaseType):
 
     def icons(self, ctx):
         return [ICON_LIST]
+
+    def suffix(self, ctx):
+        return f"*a list of length {len(self.items)}:*"
 
 
 McdocType = Union[
@@ -433,10 +660,8 @@ McdocType = Union[
     StructType,
     TupleType,
     UnionType,
-    IndexedType,
     TemplateType,
     ConcreteType,
-    MappedType
 ]
 
 
@@ -447,6 +672,18 @@ def deserialize_attributes(data: dict) -> list[Attribute]:
         value = attr.get("value", None)
         result.append(Attribute(name=name,value=value))
     return result
+
+
+def deserialize_numeric_range(data: Optional[dict]) -> Optional[NumericRange]:
+    if data is None:
+        return None
+    kind = data.get("kind", 0)
+    return NumericRange(
+        min=data.get("min", None),
+        max=data.get("max", None),
+        minExcl=(kind & 0b10) != 0,
+        maxExcl=(kind & 0b01) != 0,
+    )
 
 
 def deserialize_mcdoc(data: dict) -> McdocType:
@@ -518,30 +755,54 @@ def deserialize_mcdoc(data: dict) -> McdocType:
     if kind == "boolean":
         return BooleanType(attributes=deserialize_attributes(data))
     if kind == "byte":
-        return ByteType(valueRange=data.get("valueRange"), attributes=deserialize_attributes(data))
+        return ByteType(
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "short":
-        return ShortType(valueRange=data.get("valueRange"), attributes=deserialize_attributes(data))
+        return ShortType(
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "int":
-        return IntType(valueRange=data.get("valueRange"), attributes=deserialize_attributes(data))
+        return IntType(
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "long":
-        return LongType(valueRange=data.get("valueRange"), attributes=deserialize_attributes(data))
+        return LongType(
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "float":
-        return FloatType(valueRange=data.get("valueRange"), attributes=deserialize_attributes(data))
+        return FloatType(
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "double":
-        return DoubleType(valueRange=data.get("valueRange"), attributes=deserialize_attributes(data))
+        return DoubleType(
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "reference":
-        return ReferenceType(data.get("path", ""), attributes=deserialize_attributes(data))
+        return ReferenceType(
+            path=data.get("path", ""),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "union":
         return UnionType(
             members=[deserialize_mcdoc(member) for member in data.get("members", [])],
             attributes=deserialize_attributes(data),
         )
     if kind == "string":
-        return StringType(lengthRange=data.get("lengthRange"), attributes=deserialize_attributes(data))
+        return StringType(
+            lengthRange=deserialize_numeric_range(data.get("lengthRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "list":
         return ListType(
             item=deserialize_mcdoc(data["item"]),
-            lengthRange=data.get("lengthRange"),
+            lengthRange=deserialize_numeric_range(data.get("lengthRange")),
             attributes=deserialize_attributes(data),
         )
     if kind == "tuple":
@@ -550,11 +811,23 @@ def deserialize_mcdoc(data: dict) -> McdocType:
             attributes=deserialize_attributes(data),
         )
     if kind == "byte_array":
-        return ByteArrayType(attributes=deserialize_attributes(data)) # TODO
+        return ByteArrayType(
+            lengthRange=deserialize_numeric_range(data.get("lengthRange")),
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "int_array":
-        return IntArrayType(attributes=deserialize_attributes(data)) # TODO
+        return IntArrayType(
+            lengthRange=deserialize_numeric_range(data.get("lengthRange")),
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "long_array":
-        return LongArrayType(attributes=deserialize_attributes(data)) # TODO
+        return LongArrayType(
+            lengthRange=deserialize_numeric_range(data.get("lengthRange")),
+            valueRange=deserialize_numeric_range(data.get("valueRange")),
+            attributes=deserialize_attributes(data),
+        )
     if kind == "template":
         return TemplateType(
             child=deserialize_mcdoc(data["child"]),

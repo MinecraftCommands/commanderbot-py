@@ -14,7 +14,7 @@ from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbol, McdocSymbols
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext
-from commanderbot.lib import constants
+from commanderbot.lib import constants, AllowedMentions
 
 MCDOC_SYMBOLS_URL = "https://api.spyglassmc.com/vanilla-mcdoc/symbols"
 SPYGLASS_ICON_URL = "https://avatars.githubusercontent.com/u/74945225?s=64"
@@ -62,8 +62,8 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         embed: Embed = Embed(
             title=symbol.identifier.split("::")[-1],
             description=symbol.typeDef.render(ctx),
-            color=0x00ACED,
+            color=0x2783E3,
         )
         embed.set_footer(text=f"vanilla-mcdoc · {ctx.version}", icon_url=SPYGLASS_ICON_URL)
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, allowed_mentions=AllowedMentions.none())
