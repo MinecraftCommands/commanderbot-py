@@ -12,7 +12,7 @@ from discord.app_commands import (
 )
 from discord.ext.commands import Bot, Cog
 
-from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbol, McdocSymbols
+from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbols
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext
 from commanderbot.lib import constants, AllowedMentions
 
@@ -50,18 +50,17 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         if self.symbols is None:
             self.symbols = await self._request_symbols()
 
-        symbol: Optional[McdocSymbol] = self.symbols.search(query)
+        symbol = self.symbols.search(query)
 
-        if not symbol:
-            await interaction.followup.send(f"Symbol `{query}` not found")
+        if isinstance(symbol, str):
+            await interaction.followup.send(symbol)
             return
 
         # TODO: un-hardcode the latest release version
-        ctx = McdocContext(version or "1.21.4", self.symbols.get)
+        ctx = McdocContext(version or "1.21.4", self.symbols)
 
-        name = symbol.identifier.split("::")[-1]
         embed: Embed = Embed(
-            title=symbol.typeDef.title(name, ctx),
+            title=symbol.title(ctx),
             description=symbol.typeDef.render(ctx),
             color=0x2783E3,
         )
