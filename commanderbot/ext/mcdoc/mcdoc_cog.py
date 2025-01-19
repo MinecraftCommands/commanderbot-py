@@ -1,7 +1,7 @@
 from logging import Logger, getLogger
 from typing import Optional
-
 import aiohttp
+import re
 
 from discord import Embed, Interaction
 from discord.app_commands import (
@@ -14,6 +14,7 @@ from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbols
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext
+from commanderbot.ext.mcdoc.mcdoc_exceptions import RequestError
 from commanderbot.lib import constants, AllowedMentions
 
 MCDOC_SYMBOLS_URL = "https://api.spyglassmc.com/vanilla-mcdoc/symbols"
@@ -26,14 +27,36 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         self.log: Logger = getLogger(self.qualified_name)
         self.symbols: Optional[McdocSymbols] = None
 
-    async def _request_symbols(self) -> McdocSymbols:
-        headers: dict[str, str] = {"User-Agent": constants.USER_AGENT}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                MCDOC_SYMBOLS_URL, headers=headers, raise_for_status=True
-            ) as response:
-                data: dict = await response.json()
-                return McdocSymbols(data)
+        self._etag: Optional[str] = None
+
+    async def _fetch_symbols(self) -> McdocSymbols:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    MCDOC_SYMBOLS_URL,
+                    headers={
+                        "User-Agent": constants.USER_AGENT,
+                        "If-None-Match": self._etag or "",
+                    },
+                ) as response:
+                    # Use cached symbols if they are still valid
+                    if response.status == 304 and self.symbols:
+                        return self.symbols
+
+                    if response.status != 200:
+                        raise RequestError()
+
+                    # Store symbol data and ETag header
+                    data: dict = await response.json()
+                    self.symbols = McdocSymbols(data)
+                    etag = response.headers.get("ETag")
+                    if etag:
+                        self._etag = etag.removeprefix('W/"').removesuffix('"')
+
+                    return self.symbols
+
+        except aiohttp.ClientError:
+            raise RequestError()
 
     @command(name="mcdoc", description="Query vanilla mcdoc types")
     @describe(
@@ -46,18 +69,11 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         # Respond to the interaction with a defer since the web request may take a while
         await interaction.response.defer()
 
-        # TODO: refresh this every so often
-        if self.symbols is None:
-            self.symbols = await self._request_symbols()
-
-        symbol = self.symbols.search(query)
-
-        if isinstance(symbol, str):
-            await interaction.followup.send(symbol)
-            return
+        symbols = await self._fetch_symbols()
+        symbol = symbols.search(query)
 
         # TODO: un-hardcode the latest release version
-        ctx = McdocContext(version or "1.21.4", self.symbols)
+        ctx = McdocContext(version or "1.21.4", symbols)
 
         embed: Embed = Embed(
             title=symbol.title(ctx),

@@ -2,6 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional, Union
 
+from commanderbot.ext.mcdoc.mcdoc_exceptions import QueryReturnedNoResults
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext, McdocType, deserialize_mcdoc
 
 
@@ -46,7 +47,7 @@ class McdocSymbols:
             self.names[name].append(key)
         self.names = dict(self.names)
 
-    def search(self, query: str) -> Union[SymbolResult, DispatchResult, str]:
+    def search(self, query: str) -> Union[SymbolResult, DispatchResult]:
         if query in self.symbols:
             return SymbolResult(query, self.symbols[query])
 
@@ -61,13 +62,9 @@ class McdocSymbols:
                 registry = f"minecraft:{registry}"
             identifier = identifier.removeprefix("minecraft:")
             map = self.dispatchers.get(registry, None)
-            if map:
-                if identifier in map:
-                    return DispatchResult(registry, identifier, map[identifier])
-                else:
-                    return f"Dispatcher `{registry}` does not contain `{identifier}`."
-            else:
-                return f"Dispatcher `{registry}` not found."
+            if map and identifier in map:
+                return DispatchResult(registry, identifier, map[identifier])
+            raise QueryReturnedNoResults(query)
 
         identifier = query.removeprefix("minecraft:")
         resources = self.dispatchers.get("minecraft:resource", {})
@@ -78,7 +75,7 @@ class McdocSymbols:
             if identifier in map:
                 return DispatchResult(registry, identifier, map[identifier])
 
-        return f"Symbol `{query}` not found."
+        raise QueryReturnedNoResults(query)
 
     def get(self, path: str) -> Optional[McdocType]:
         return self.symbols.get(path, None)
