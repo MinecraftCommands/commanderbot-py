@@ -1,13 +1,29 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 
-from commanderbot.ext.mcdoc.mcdoc_types import McdocType, deserialize_mcdoc
+from commanderbot.ext.mcdoc.mcdoc_types import McdocContext, McdocType, deserialize_mcdoc
+
 
 @dataclass
-class McdocSymbol:
+class SymbolResult:
     identifier: str
     typeDef: McdocType
+
+    def title(self, ctx: McdocContext):
+        name = self.identifier.split("::")[-1]
+        return self.typeDef.title(name, ctx)
+
+
+@dataclass
+class DispatchResult:
+    registry: str
+    identifier: str
+    typeDef: McdocType
+
+    def title(self, ctx: McdocContext):
+        name = f"{self.registry.removeprefix("minecraft:")} [{self.identifier}]"
+        return self.typeDef.title(name, ctx)
 
 
 class McdocSymbols:
@@ -30,16 +46,42 @@ class McdocSymbols:
             self.names[name].append(key)
         self.names = dict(self.names)
 
-    def search(self, query: str) -> Optional[McdocSymbol]:
+    def search(self, query: str) -> Union[SymbolResult, DispatchResult, str]:
         if query in self.symbols:
-            return McdocSymbol(query, self.symbols[query])
+            return SymbolResult(query, self.symbols[query])
 
         if query in self.names:
             identifier = self.names[query][0]
-            return McdocSymbol(identifier, self.symbols[identifier])
+            return SymbolResult(identifier, self.symbols[identifier])
 
-        # TODO: search dispatchers
-        return None
-    
+        parts = query.split(" ")
+        if len(parts) == 2:
+            registry, identifier = parts
+            if ":" not in registry:
+                registry = f"minecraft:{registry}"
+            identifier = identifier.removeprefix("minecraft:")
+            map = self.dispatchers.get(registry, None)
+            if map:
+                if identifier in map:
+                    return DispatchResult(registry, identifier, map[identifier])
+                else:
+                    return f"Dispatcher `{registry}` does not contain `{identifier}`."
+            else:
+                return f"Dispatcher `{registry}` not found."
+
+        identifier = query.removeprefix("minecraft:")
+        resources = self.dispatchers.get("minecraft:resource", {})
+        if query in resources:
+            return DispatchResult("resource", identifier, resources[identifier])
+
+        for registry, map in self.dispatchers.items():
+            if identifier in map:
+                return DispatchResult(registry, identifier, map[identifier])
+
+        return f"Symbol `{query}` not found."
+
     def get(self, path: str) -> Optional[McdocType]:
         return self.symbols.get(path, None)
+
+    def dispatch(self, registry: str, identifier: str) -> Optional[McdocType]:
+        return self.dispatchers.get(registry, {}).get(identifier, None)

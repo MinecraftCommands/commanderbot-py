@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass, field
-from typing import Any, Callable, Mapping, Optional, Union
+from typing import Mapping, Protocol, Optional, Union
 
 ICON_ANY = "<:any:1328878339305246761>"
 ICON_BOOLEAN = "<:boolean:1328844824824254475>"
@@ -30,21 +30,27 @@ LITERAL_ICONS = {
 
 TEMPLATE_CHARS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"]
 
+
 def cmp_version(a: str, b: str):
     return float(a[2:]) - float(b[2:])
+
+
+class McdocLookup(Protocol):
+    def get(self, path: str) -> Optional["McdocType"]:
+        ...
+
+    def dispatch(self, registry: str, identifier: str) -> Optional["McdocType"]:
+        ...
 
 
 @dataclass
 class McdocContext:
     version: str
-    lookup: Callable[[str], Optional["McdocType"]]
+    symbols: McdocLookup
     compact: bool = False
     depth: int = 0
     type_mapping: Mapping[str, Union[str, "McdocType"]] = field(default_factory=dict)
     type_args: list["McdocType"] = field(default_factory=list)
-
-    def symbol(self, path: str):
-        return self.lookup(path)
 
     def filter(self, attributes: Optional[list["Attribute"]]):
         if not attributes:
@@ -61,16 +67,16 @@ class McdocContext:
         return self.depth <= 2
 
     def make_compact(self) -> "McdocContext":
-        return McdocContext(self.version, self.lookup, True, self.depth, self.type_mapping, self.type_args)
+        return McdocContext(self.version, self.symbols, True, self.depth, self.type_mapping, self.type_args)
 
     def nested(self, diff=1) -> "McdocContext":
-        return McdocContext(self.version, self.lookup, self.compact, self.depth + diff, self.type_mapping, self.type_args)
+        return McdocContext(self.version, self.symbols, self.compact, self.depth + diff, self.type_mapping, self.type_args)
 
     def with_type_mapping(self, mapping: Mapping[str, Union[str, "McdocType"]]) -> "McdocContext":
-        return McdocContext(self.version, self.lookup, self.compact, self.depth, mapping, self.type_args)
+        return McdocContext(self.version, self.symbols, self.compact, self.depth, mapping, self.type_args)
 
     def with_type_args(self, type_args: list["McdocType"]) -> "McdocContext":
-        return McdocContext(self.version, self.lookup, self.compact, self.depth, self.type_mapping, type_args)
+        return McdocContext(self.version, self.symbols, self.compact, self.depth, self.type_mapping, type_args)
 
 
 @dataclass
@@ -147,9 +153,24 @@ class DispatcherType(McdocBaseType):
     registry: str
     parallelIndices: list[DynamicIndex | StaticIndex]
 
+    def title(self, name, ctx):
+        match self.parallelIndices:
+            case [StaticIndex(value)]:
+                typeDef = ctx.symbols.dispatch(self.registry, value)
+                if typeDef:
+                    return typeDef.title(name, ctx)
+        return super().title(name, ctx)
+
     def suffix(self, ctx):
         return f"{self.registry}[{','.join(i.render() for i in self.parallelIndices)}]"
 
+    def render(self, ctx):
+        match self.parallelIndices:
+            case [StaticIndex(value)]:
+                typeDef = ctx.symbols.dispatch(self.registry, value)
+                if typeDef:
+                    return typeDef.render(ctx)
+        return super().render(ctx)
 
 @dataclass
 class StructTypePairField:
@@ -311,11 +332,14 @@ class EnumType(McdocBaseType):
 class ReferenceType(McdocBaseType):
     path: str
 
+    def title(self, name, ctx):
+        return f"{name} · {self.path.split('::')[-1]}"
+
     def icons(self, ctx):
         if self.path in ctx.type_mapping:
             mapped = ctx.type_mapping[self.path]
             return mapped if isinstance(mapped, str) else mapped.icons(ctx)
-        typeDef = ctx.symbol(self.path)
+        typeDef = ctx.symbols.get(self.path)
         if typeDef:
             return typeDef.icons(ctx)
         return super().icons(ctx)
@@ -325,6 +349,11 @@ class ReferenceType(McdocBaseType):
             return ""
         return f"__{self.path.split('::')[-1]}__"
 
+    def render(self, ctx):
+        typeDef = ctx.symbols.get(self.path)
+        if typeDef:
+            return typeDef.render(ctx)
+        return super().render(ctx)
 
 @dataclass
 class UnionType(McdocBaseType):
@@ -447,9 +476,6 @@ class ConcreteType(McdocBaseType):
 
     def body(self, ctx):
         return self.child.body(self.nest_context(ctx))
-
-    def render(self, ctx):
-        return self.child.render(self.nest_context(ctx))
 
 
 @dataclass
