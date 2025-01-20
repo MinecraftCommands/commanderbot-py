@@ -1,0 +1,17 @@
+from dataclasses import dataclass
+from typing import Any, Optional, Self
+
+from commanderbot.lib import FromDataMixin
+
+@dataclass
+class McdocOptions(FromDataMixin):
+    symbols_url: str
+    icon_url: Optional[str]
+
+    @classmethod
+    def try_from_data(cls, data: Any) -> Optional[Self]:
+        if isinstance(data, dict):
+            return cls(
+                symbols_url=data["symbols_url"],
+                icon_url=data.get("icon_url", None),
+            )
