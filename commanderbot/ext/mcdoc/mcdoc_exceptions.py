@@ -5,9 +5,20 @@ class McdocException(ResponsiveException):
     pass
 
 
-class RequestError(McdocException):
+class RequestSymbolsError(McdocException):
     def __init__(self):
         super().__init__(f"😵 Unable to fetch vanilla-mcdoc symbol data")
+
+
+class RequestVersionError(McdocException):
+    def __init__(self):
+        super().__init__(f"😵 Unable to fetch the latest version number")
+
+
+class InvalidVersionError(McdocException):
+    def __init__(self, version: str):
+        self.version: str = version
+        super().__init__(f"😬 Invalid version format `{self.version}`. Only release versions are allowed.")
 
 
 class QueryReturnedNoResults(McdocException):

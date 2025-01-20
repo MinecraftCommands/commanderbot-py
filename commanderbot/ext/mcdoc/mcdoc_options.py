@@ -6,6 +6,7 @@ from commanderbot.lib import FromDataMixin
 @dataclass
 class McdocOptions(FromDataMixin):
     symbols_url: str
+    manifest_url: str
     icon_url: Optional[str]
 
     @classmethod
@@ -13,5 +14,6 @@ class McdocOptions(FromDataMixin):
         if isinstance(data, dict):
             return cls(
                 symbols_url=data["symbols_url"],
+                manifest_url=data["manifest_url"],
                 icon_url=data.get("icon_url", None),
             )

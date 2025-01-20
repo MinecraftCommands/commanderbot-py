@@ -10,11 +10,12 @@ from discord.app_commands import (
     command,
     describe,
 )
+from discord.ext import tasks
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbols
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext
-from commanderbot.ext.mcdoc.mcdoc_exceptions import RequestError
+from commanderbot.ext.mcdoc.mcdoc_exceptions import InvalidVersionError, RequestSymbolsError, RequestVersionError
 from commanderbot.ext.mcdoc.mcdoc_options import McdocOptions
 from commanderbot.lib import constants, AllowedMentions
 
@@ -25,8 +26,15 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         self.log: Logger = getLogger(self.qualified_name)
         self.options = McdocOptions.from_data(options)
 
+        self._latest_version: Optional[str] = None
         self._symbols: Optional[McdocSymbols] = None
         self._etag: Optional[str] = None
+
+    async def cog_load(self):
+        self._fetch_latest_version.start()
+
+    async def cog_unload(self):
+        self._fetch_latest_version.stop()
 
     async def _fetch_symbols(self) -> McdocSymbols:
         try:
@@ -43,7 +51,7 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
                         return self._symbols
 
                     if response.status != 200:
-                        raise RequestError()
+                        raise RequestSymbolsError()
 
                     # Store symbol data and ETag header
                     data: dict = await response.json()
@@ -53,7 +61,31 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
                     return self._symbols
 
         except aiohttp.ClientError:
-            raise RequestError()
+            raise RequestSymbolsError()
+
+    @tasks.loop(hours=1)
+    async def _fetch_latest_version(self) -> str:
+        try:
+            # Try to update the version
+            async with aiohttp.ClientSession(raise_for_status=True) as session:
+                async with session.get(self.options.manifest_url, headers={
+                    "User-Agent": constants.USER_AGENT,
+                }) as response:
+                    data: dict = await response.json()
+                    release: str = data["latest"]["release"]
+                    print(f"relase={release}")
+                    self._latest_version = release
+                    return self._latest_version
+
+        except aiohttp.ClientError:
+            raise RequestVersionError()
+
+    async def _get_latest_version(self, override: Optional[str]) -> str:
+        if override:
+            return override
+        if self._latest_version:
+            return self._latest_version
+        return await self._fetch_latest_version()
 
     @command(name="mcdoc", description="Query vanilla mcdoc types")
     @describe(
@@ -66,17 +98,29 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         # Respond to the interaction with a defer since the web request may take a while
         await interaction.response.defer()
 
+        # Fetch the vanilla-mcdoc symbols and search for a symbol
         symbols = await self._fetch_symbols()
         symbol = symbols.search(query)
 
-        # TODO: un-hardcode the latest release version
-        ctx = McdocContext(version or "1.21.4", symbols)
+        # Use the version override or get the cached latest version
+        version = await self._get_latest_version(version)
+
+        # Validate that the version number can be used to compare
+        if not version.startswith("1."):
+            raise InvalidVersionError(version)
+        try:
+            float(version[2:])
+        except:
+            raise InvalidVersionError(version)
+
+        # Create a context object used for rendering
+        ctx = McdocContext(version, symbols)
 
         embed: Embed = Embed(
             title=symbol.title(ctx),
             description=symbol.typeDef.render(ctx),
-            color=0x2783E3,
+            color=0x2783E3, # Spyglass blue
         )
-        embed.set_footer(text=f"vanilla-mcdoc · {ctx.version}", icon_url=self.options.icon_url)
+        embed.set_footer(text=f"vanilla-mcdoc · {version}", icon_url=self.options.icon_url)
 
         await interaction.followup.send(embed=embed, allowed_mentions=AllowedMentions.none())
