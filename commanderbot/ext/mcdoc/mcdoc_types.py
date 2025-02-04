@@ -36,6 +36,9 @@ def cmp_version(a: str, b: str):
 
 
 class McdocLookup(Protocol):
+    def compact_path(self, path: str) -> str:
+        ...
+
     def get(self, path: str) -> Optional["McdocType"]:
         ...
 
@@ -333,7 +336,7 @@ class ReferenceType(McdocBaseType):
     path: str
 
     def title(self, name, ctx):
-        return f"{name} · {self.path.split('::')[-1]}"
+        return f"{name} · {ctx.symbols.compact_path(self.path)}"
 
     def icons(self, ctx):
         if self.path in ctx.type_mapping:
@@ -347,7 +350,7 @@ class ReferenceType(McdocBaseType):
     def suffix(self, ctx):
         if self.path in ctx.type_mapping:
             return ""
-        return f"__{self.path.split('::')[-1]}__"
+        return f"__{ctx.symbols.compact_path(self.path)}__"
 
     def render(self, ctx):
         typeDef = ctx.symbols.get(self.path)
