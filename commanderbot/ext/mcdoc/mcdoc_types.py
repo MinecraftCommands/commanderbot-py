@@ -395,8 +395,9 @@ class UnionType(McdocBaseType):
             suffix = member.suffix(ctx)
             if suffix:
                 result += f" {suffix}" if result else suffix
-            if ctx.allow_body():
-                body = member.body(ctx.make_compact().nested())
+            body_ctx = ctx.make_compact().nested()
+            if body_ctx.allow_body():
+                body = member.body(body_ctx)
                 if body:
                     body = "\n".join(f"  {line}" for line in body.split("\n"))
                     result += f"\n{body}" if result else body
@@ -759,10 +760,12 @@ class ListType(McdocBaseType):
         suffix = self.item.suffix(ctx)
         if suffix:
             result += f" {suffix}" if result else suffix
-        body = self.item.body(ctx.make_compact().nested())
-        if body:
-            body = "\n".join(f"  {line}" for line in body.split("\n"))
-            result += f"\n{body}" if result else body
+        body_ctx = ctx.make_compact().nested()
+        if body_ctx.allow_body():
+            body = self.item.body(body_ctx)
+            if body:
+                body = "\n".join(f"  {line}" for line in body.split("\n"))
+                result += f"\n{body}" if result else body
         return f"* {result}"
 
 
