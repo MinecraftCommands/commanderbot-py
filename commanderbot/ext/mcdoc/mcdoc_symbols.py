@@ -1,6 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional, Union
+import re
 
 from commanderbot.ext.mcdoc.mcdoc_exceptions import QueryReturnedNoResults
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext, McdocType, deserialize_mcdoc
@@ -12,8 +13,11 @@ class SymbolResult:
     typeDef: McdocType
 
     def title(self, ctx: McdocContext):
-        name = self.identifier.split("::")[-1]
+        name = ctx.symbols.compact_path(self.identifier)
         return self.typeDef.title(name, ctx)
+    
+    def body(self, ctx: McdocContext):
+        return self.typeDef.render(ctx)
 
 
 @dataclass
@@ -25,6 +29,21 @@ class DispatchResult:
     def title(self, ctx: McdocContext):
         name = f"{self.registry.removeprefix("minecraft:")} [{self.identifier}]"
         return self.typeDef.title(name, ctx)
+    
+    def body(self, ctx: McdocContext):
+        return self.typeDef.render(ctx)
+
+
+@dataclass
+class DisambiguationResult:
+    query: str
+    identifiers: list[str]
+
+    def title(self, ctx: McdocContext):
+        return f"{len(self.identifiers)} results for {self.query}"
+    
+    def body(self, ctx: McdocContext):
+        return "\n".join([f"* {ctx.symbols.compact_path(i)}" for i in self.identifiers])
 
 
 class McdocSymbols:
@@ -43,17 +62,34 @@ class McdocSymbols:
 
         self.names = defaultdict[str, list[str]](list)
         for key in self.symbols:
-            name = key.split("::")[-1]
-            self.names[name].append(key)
+            parts = key.split("::")
+            for i in range(len(parts)):
+                name = "::".join(parts[i:])
+                self.names[name].append(key)
         self.names = dict(self.names)
 
-    def search(self, query: str) -> Union[SymbolResult, DispatchResult]:
+        self.unique_suffixes = dict[str, str]()
+        for name, keys in self.names.items():
+            if len(keys) <= 1 or re.match(r"<anonymous \d+>", name):
+                continue
+            for key in keys:
+                parts = key.split("::")
+                for i in reversed(range(len(parts)-1)):
+                    suffix = "::".join(parts[i:])
+                    if not [k for k in keys if k is not key and k.endswith(f"::{suffix}")]:
+                        self.unique_suffixes[key] = suffix
+                        break
+
+    def search(self, query: str) -> Union[SymbolResult, DispatchResult, DisambiguationResult]:
         if query in self.symbols:
             return SymbolResult(query, self.symbols[query])
 
         if query in self.names:
-            identifier = self.names[query][0]
-            return SymbolResult(identifier, self.symbols[identifier])
+            identifiers = self.names[query]
+            if len(identifiers) > 1:
+                return DisambiguationResult(query, identifiers)
+            elif len(identifiers) == 1:
+                return SymbolResult(identifiers[0], self.symbols[identifiers[0]])
 
         parts = query.split(" ")
         if len(parts) == 2:
@@ -76,6 +112,11 @@ class McdocSymbols:
                 return DispatchResult(registry, identifier, map[identifier])
 
         raise QueryReturnedNoResults(query)
+
+    def compact_path(self, path: str) -> str:
+        if path in self.unique_suffixes:
+            return self.unique_suffixes[path]
+        return path.split("::")[-1]
 
     def get(self, path: str) -> Optional[McdocType]:
         return self.symbols.get(path, None)

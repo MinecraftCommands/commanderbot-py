@@ -73,7 +73,6 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
                 }) as response:
                     data: dict = await response.json()
                     release: str = data["latest"]["release"]
-                    print(f"relase={release}")
                     self._latest_version = release
                     return self._latest_version
 
@@ -118,7 +117,7 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
 
         embed: Embed = Embed(
             title=symbol.title(ctx),
-            description=symbol.typeDef.render(ctx),
+            description=symbol.body(ctx),
             color=0x2783E3, # Spyglass blue
         )
         embed.set_footer(text=f"vanilla-mcdoc · {version}", icon_url=self.options.icon_url)
