@@ -9,6 +9,7 @@ from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
 from discord.interactions import Interaction
 from discord.utils import utcnow
 
+from commanderbot.core.application_emoji_manager import ApplicationEmojiManager
 from commanderbot.core.command_tree import CachingCommandTree
 from commanderbot.core.config import Config
 from commanderbot.core.configured_extension import ConfiguredExtension
@@ -25,10 +26,6 @@ from commanderbot.lib import EventData
 
 class CommanderBot(Bot):
     def __init__(self, config: Config, sync_tree_on_login: bool = False):
-        # Store the config and if the command tree should sync on login
-        self.config: Config = config
-        self._sync_tree_on_login: bool = sync_tree_on_login
-
         # Initialize discord.py Bot base.
         super().__init__(
             command_prefix=config.command_prefix,
@@ -41,6 +38,10 @@ class CommanderBot(Bot):
         # Grab our own logger instance.
         self.log: Logger = getLogger("CommanderBot")
 
+        # Store the config and if the command tree should sync on login.
+        self.config: Config = config
+        self._sync_tree_on_login: bool = sync_tree_on_login
+
         # Remember when we started and the last time we connected.
         self._started_at: datetime = utcnow()
         self._connected_since: Optional[datetime] = None
@@ -48,6 +49,9 @@ class CommanderBot(Bot):
         # Create an error handling component.
         self.error_handling = ErrorHandling(log=self.log)
         self.tree.on_error = self.on_app_command_error
+
+        # Create application emoji manager.
+        self.application_emojis = ApplicationEmojiManager(self)
 
     @property
     def started_at(self) -> datetime:
@@ -85,20 +89,28 @@ class CommanderBot(Bot):
 
         await self.add_cog(cog)
 
-    async def set_avatar(self, new_avatar: Optional[bytes | Attachment]):
+    async def set_avatar(self, avatar: bytes | Attachment):
         # Throw exception if the bot isn't logged in
         if not self.user:
             raise NotLoggedIn
 
         # Read the attachment if necessary or just store the byte array
         data: Optional[bytes] = None
-        if isinstance(new_avatar, Attachment):
-            data = await new_avatar.read()
+        if isinstance(avatar, Attachment):
+            data = await avatar.read()
         else:
-            data = new_avatar
+            data = avatar
 
         # Set the new avatar
         await self.user.edit(avatar=data)
+
+    async def clear_avatar(self):
+        # Throw exception if the bot isn't logged in
+        if not self.user:
+            raise NotLoggedIn
+
+        # Clear the avatar
+        await self.user.edit(avatar=None)
 
     async def get_avatar(self) -> Optional[Asset]:
         # Throw exception if the bot isn't logged in
@@ -109,20 +121,28 @@ class CommanderBot(Bot):
         user: User = await self.fetch_user(self.user.id)
         return user.avatar
 
-    async def set_banner(self, new_banner: Optional[bytes | Attachment]):
+    async def set_banner(self, banner: bytes | Attachment):
         # Throw exception if the bot isn't logged in
         if not self.user:
             raise NotLoggedIn
 
         # Read the attachment if necessary or just store the byte array
         data: Optional[bytes] = None
-        if isinstance(new_banner, Attachment):
-            data = await new_banner.read()
+        if isinstance(banner, Attachment):
+            data = await banner.read()
         else:
-            data = new_banner
+            data = banner
 
         # Set the new banner
         await self.user.edit(banner=data)
+
+    async def clear_banner(self):
+        # Throw exception if the bot isn't logged in
+        if not self.user:
+            raise NotLoggedIn
+
+        # Clear the Banner
+        await self.user.edit(banner=None)
 
     async def get_banner(self) -> Optional[Asset]:
         # Throw exception if the bot isn't logged in
@@ -133,9 +153,13 @@ class CommanderBot(Bot):
         user: User = await self.fetch_user(self.user.id)
         return user.banner
 
-    async def set_description(self, new_description: Optional[str]):
+    async def set_description(self, description: str):
         app: AppInfo = await self.application_info()
-        await app.edit(description=new_description)
+        await app.edit(description=description)
+
+    async def clear_description(self):
+        app: AppInfo = await self.application_info()
+        await app.edit(description=None)
 
     async def get_description(self) -> Optional[str]:
         app: AppInfo = await self.application_info()

@@ -26,6 +26,7 @@ __all__ = (
     "UserID",
     "ForumTagID",
     "AppCommandID",
+    "EmojiID",
     "RawOptions",
     "JsonObject",
     "MemberOrUser",
@@ -48,6 +49,7 @@ RoleID: TypeAlias = IDType
 UserID: TypeAlias = IDType
 ForumTagID: TypeAlias = IDType
 AppCommandID: TypeAlias = IDType
+EmojiID: TypeAlias = IDType
 
 RawOptions: TypeAlias = Any
 
