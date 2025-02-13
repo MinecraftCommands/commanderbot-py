@@ -1,4 +1,4 @@
-from typing import Optional, Iterable
+from typing import Iterable, Optional
 
 from discord import Attachment, Emoji
 from discord.ext.commands import Bot
@@ -78,7 +78,7 @@ class ApplicationEmojiManager:
             data = image
 
         # Create the emoji
-        emoji = await self._bot.create_application_emoji(name=name, image=data)
+        emoji: Emoji = await self._bot.create_application_emoji(name=name, image=data)
         await self._update_cache()
         return emoji
 
@@ -101,6 +101,6 @@ class ApplicationEmojiManager:
             await self._update_cache()
 
         # Delete the emoji
-        found_emoji = self._find_in_cache(emoji)
+        found_emoji: Emoji = self._find_in_cache(emoji)
         await found_emoji.delete()
         await self._update_cache()
