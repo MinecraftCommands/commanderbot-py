@@ -4,7 +4,16 @@ from enum import Enum
 from typing import Optional
 
 import psutil
-from discord import AppInfo, Asset, Attachment, Embed, Interaction, Object, Permissions
+from discord import (
+    AppInfo,
+    Asset,
+    Attachment,
+    Embed,
+    Emoji,
+    Interaction,
+    Object,
+    Permissions,
+)
 from discord.app_commands import (
     AppCommand,
     AppCommandContext,
@@ -17,21 +26,30 @@ from discord.app_commands import (
     describe,
 )
 from discord.ext.commands import Bot, Cog
+from discord.utils import format_dt
 
 from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.core.config import Config
 from commanderbot.core.configured_extension import ConfiguredExtension
-from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
+from commanderbot.core.exceptions import (
+    ApplicationEmojiDoesNotExist,
+    ExtensionIsRequired,
+    ExtensionNotInConfig,
+)
 from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.sudo.sudo_data import CogWithStore
 from commanderbot.ext.sudo.sudo_exceptions import (
     BotHasNoAvatar,
     BotHasNoBanner,
+    CannotFindApplicationEmoji,
     CannotManageExtensionNotInConfig,
     CannotManageRequiredExtension,
     CogHasNoStore,
+    ErrorAddingApplicationEmoji,
     ErrorChangingBotAvatar,
     ErrorChangingBotBanner,
+    ErrorRemovingApplicationEmoji,
+    ErrorRenamingApplicationEmoji,
     ExtensionLoadError,
     ExtensionReloadError,
     ExtensionResolutionError,
@@ -117,6 +135,36 @@ class DisabledExtensionTransformer(ExtensionTransformer):
         return choices[: constants.MAX_AUTOCOMPLETE_CHOICES]
 
 
+class ApplicationEmojiTransformer(Transformer):
+    """
+    A transformer that resolves `value` into an application emoji.
+    """
+
+    async def transform(
+        self, interaction: Interaction[CommanderBot], value: str
+    ) -> Emoji:
+        try:
+            return await interaction.client.application_emojis.fetch(value)
+        except ApplicationEmojiDoesNotExist:
+            raise CannotFindApplicationEmoji(value)
+
+    async def autocomplete(
+        self, interaction: Interaction[CommanderBot], value: str
+    ) -> list[Choice[str]]:
+        # Fetch all emojis
+        emojis = await interaction.client.application_emojis.fetch_all()
+
+        # Create choices
+        choices: list[Choice] = []
+        for emoji in emojis:
+            if not value:
+                choices.append(Choice(name=f"🎨 {emoji.name}", value=emoji.name))
+            elif value in emoji.name:
+                choices.append(Choice(name=f"🎨 {emoji.name}", value=emoji.name))
+
+        return choices[: constants.MAX_AUTOCOMPLETE_CHOICES]
+
+
 class SudoCog(Cog, name="commanderbot.ext.sudo"):
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
@@ -127,15 +175,15 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
     # @@ UTILITIES
 
-    async def _require_avatar(self, bot: Bot) -> Asset:
-        assert is_commander_bot(bot)
-        if avatar := await bot.get_avatar():
+    async def _require_avatar(self) -> Asset:
+        assert is_commander_bot(self.bot)
+        if avatar := await self.bot.get_avatar():
             return avatar
         raise BotHasNoAvatar
 
-    async def _require_banner(self, bot: Bot) -> Asset:
-        assert is_commander_bot(bot)
-        if banner := await bot.get_banner():
+    async def _require_banner(self) -> Asset:
+        assert is_commander_bot(self.bot)
+        if banner := await self.bot.get_banner():
             return banner
         raise BotHasNoBanner
 
@@ -153,7 +201,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
                 elif value in name:
                     choices.append(Choice(name=f"🛞 {name}", value=name))
 
-        return choices
+        return choices[: constants.MAX_AUTOCOMPLETE_CHOICES]
 
     # @@ COMMANDS
 
@@ -211,11 +259,10 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         )
 
         # Create embed fields
-
-        # TODO: Add stats for user app installs!
         installs_field = (
             f"Public Bot: {public_bot}",
             f"Guilds: `{app.approximate_guild_count}`",
+            f"Users: `{app.approximate_user_install_count}`",
         )
 
         commands_field = (
@@ -333,7 +380,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             raise ExtensionReloadError(extension.name, str(ex))
 
     # @@ sudo shutdown
-    @cmd_sudo.command(name="shutdown", description="Shutdown the bot")
+    @cmd_sudo.command(name="shutdown", description="Shut down the bot")
     @checks.is_owner()
     async def cmd_sudo_shutdown(self, interaction: Interaction):
         result = await respond_with_confirmation(
@@ -421,7 +468,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             raise ErrorChangingBotAvatar(str(ex))
 
         # Show the new avatar
-        avatar: Asset = await self._require_avatar(self.bot)
+        avatar: Asset = await self._require_avatar()
         await interaction.followup.send(
             f"✅ Set the bot's avatar to:\n{avatar.url}", ephemeral=True
         )
@@ -434,12 +481,12 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         await interaction.response.defer(ephemeral=True)
 
         # The bot must have an avatar
-        await self._require_avatar(self.bot)
+        await self._require_avatar()
 
         # Clear the avatar
         try:
             assert is_commander_bot(self.bot)
-            await self.bot.set_avatar(None)
+            await self.bot.clear_avatar()
         except Exception as ex:
             raise ErrorChangingBotAvatar(str(ex))
 
@@ -454,7 +501,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         await interaction.response.defer(ephemeral=True)
 
         # Show the current avatar
-        avatar: Asset = await self._require_avatar(self.bot)
+        avatar: Asset = await self._require_avatar()
         await interaction.followup.send(
             f"🖼️ The bot's current avatar is:\n{avatar.url}", ephemeral=True
         )
@@ -481,7 +528,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             raise ErrorChangingBotBanner(str(ex))
 
         # Show the new banner
-        banner: Asset = await self._require_banner(self.bot)
+        banner: Asset = await self._require_banner()
         await interaction.followup.send(
             f"✅ Set the bot's banner to:\n{banner.url}", ephemeral=True
         )
@@ -494,12 +541,12 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         await interaction.response.defer(ephemeral=True)
 
         # The bot must have a banner
-        await self._require_banner(self.bot)
+        await self._require_banner()
 
         # Clear the banner
         try:
             assert is_commander_bot(self.bot)
-            await self.bot.set_banner(None)
+            await self.bot.clear_banner()
         except Exception as ex:
             raise ErrorChangingBotBanner(str(ex))
 
@@ -514,10 +561,139 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         await interaction.response.defer(ephemeral=True)
 
         # Show the current banner
-        banner: Asset = await self._require_banner(self.bot)
+        banner: Asset = await self._require_banner()
         await interaction.followup.send(
             f"🖼️ The bot's current banner is:\n{banner.url}", ephemeral=True
         )
+
+    # @@ sudo emoji
+
+    cmd_sudo_emoji = Group(
+        name="emoji", description="Manage the bot's application emojis", parent=cmd_sudo
+    )
+
+    # @@ sudo emoji add
+    @cmd_sudo_emoji.command(name="add", description="Add an application emoji")
+    @describe(
+        name="The name for this application emoji",
+        file="The image for this application emoji",
+    )
+    @checks.is_owner()
+    async def cmd_sudo_emoji_add(
+        self, interaction: Interaction, name: str, file: Attachment
+    ):
+        # Respond with a defer since adding the application emoji may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Add the application emoji
+        try:
+            assert is_commander_bot(self.bot)
+            created_emoji: Emoji = await self.bot.application_emojis.create(name, file)
+        except Exception as ex:
+            raise ErrorAddingApplicationEmoji(str(ex))
+
+        # Show the newly added application emoji
+        await interaction.followup.send(
+            f"✅ Added application emoji `{created_emoji.name}` ({created_emoji})",
+            ephemeral=True,
+        )
+
+    # @@ sudo emoji rename
+    @cmd_sudo_emoji.command(name="rename", description="Rename an application emoji")
+    @describe(
+        emoji="The application emoji to rename",
+        new_name="The new name for this application emoji",
+    )
+    @checks.is_owner()
+    async def cmd_sudo_emoji_rename(
+        self,
+        interaction: Interaction,
+        emoji: Transform[Emoji, ApplicationEmojiTransformer],
+        new_name: str,
+    ):
+        # Respond with a defer since renaming the application emoji may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Rename the application emoji
+        try:
+            assert is_commander_bot(self.bot)
+            modified_emoji: Emoji = await self.bot.application_emojis.edit(
+                emoji.name, new_name
+            )
+        except Exception as ex:
+            raise ErrorRenamingApplicationEmoji(str(ex))
+
+        # Respond that the emoji was renamed
+        await interaction.followup.send(
+            f"✅ Renamed application emoji `{emoji.name}` to `{modified_emoji.name}`"
+        )
+
+    # @@ sudo emoji remove
+    @cmd_sudo_emoji.command(name="remove", description="Remove an application emoji")
+    @describe(emoji="The application emoji to remove")
+    @checks.is_owner()
+    async def cmd_sudo_emoji_remove(
+        self,
+        interaction: Interaction,
+        emoji: Transform[Emoji, ApplicationEmojiTransformer],
+    ):
+        # Respond with a defer since removing the application emoji may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Respond with a confirmation dialog
+        result = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove the application emoji `{emoji.name}` ({emoji})?",
+            ephemeral=True,
+        )
+        match result:
+            case ConfirmationResult.YES:
+                # If the answer was yes, attempt to remove the application emoji and send a response
+                try:
+                    assert is_commander_bot(self.bot)
+                    await self.bot.application_emojis.delete(emoji.name)
+                    await interaction.followup.send(
+                        f"Removed application emoji `{emoji.name}`", ephemeral=True
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ErrorRemovingApplicationEmoji(str(ex))
+            case _:
+                # If the answer was no, send a response
+                await interaction.followup.send(
+                    f"Keeping application emoji `{emoji.name}` ({emoji})",
+                    ephemeral=True,
+                )
+
+    # @@ sudo emoji details
+    @cmd_sudo_emoji.command(
+        name="details", description="Show the details about an application emoji"
+    )
+    @describe(emoji="The application emoji to show details about")
+    @checks.is_owner()
+    async def cmd_sudo_emoji_details(
+        self,
+        interaction: Interaction,
+        emoji: Transform[Emoji, ApplicationEmojiTransformer],
+    ):
+        # Respond with a defer since fetching the emojis may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Create application emoji details embed
+        embed = Embed(
+            title=f"Details for application emoji `{emoji.name}`",
+            description=f"**Preview**\n> {emoji}",
+            color=0x00ACED,
+        )
+        embed.add_field(name="Name", value=f"`{emoji.name}`")
+        embed.add_field(name="ID", value=f"`{emoji.id}`")
+        if emoji.user:
+            embed.add_field(
+                name="Added By",
+                value=f"<@{emoji.user.id}> ({format_dt(emoji.created_at, style='R')})",
+            )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     # @@ sudo sync
 

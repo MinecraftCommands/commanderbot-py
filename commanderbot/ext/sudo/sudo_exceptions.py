@@ -31,6 +31,11 @@ class CannotManageRequiredExtension(SudoTransformerException):
         super().__init__(f"😬 Extension `{name}` is required and cannot be managed")
 
 
+class CannotFindApplicationEmoji(SudoTransformerException):
+    def __init__(self, name: str):
+        super().__init__(f"😬 Application emoji `{name}` does not exist")
+
+
 class SudoException(ResponsiveException):
     pass
 
@@ -120,4 +125,26 @@ class ErrorChangingBotBanner(SudoException):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
             f"😬 An error occurred while changing the bot's banner:\n```\n{self.reason}\n```"
+        )
+
+
+class ErrorAddingApplicationEmoji(SudoException):
+    def __init__(self, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😬 An error occurred while adding an application emoji:\n```\n{self.reason}\n```"
+        )
+
+class ErrorRenamingApplicationEmoji(SudoException):
+    def __init__(self, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😬 An error occurred while renaming an application emoji:\n```\n{self.reason}\n```"
+        )
+
+class ErrorRemovingApplicationEmoji(SudoException):
+    def __init__(self, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😬 An error occurred while removing an application emoji:\n```\n{self.reason}\n```"
         )
