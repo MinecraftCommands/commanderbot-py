@@ -221,12 +221,17 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
     @cmd_sudo.command(name="appinfo", description="Show the application info")
     @checks.is_owner()
     async def cmd_sudo_appinfo(self, interaction: Interaction):
-        # Get app info
+        # Respond with a defer since getting the application info may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Get the application info
+        assert is_commander_bot(self.bot)
         app: AppInfo = await self.bot.application_info()
 
         owner: str = app.team.name if app.team else f"{app.owner.mention} ({app.owner})"
         has_app_commands: str = "✅" if app.flags.app_commands_badge else "❌"
         public_bot: str = "✅" if app.bot_public else "❌"
+
         message_content_enabled: str = "❌"
         if app.flags.gateway_message_content:
             message_content_enabled = "✅"
@@ -265,6 +270,8 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             f"Users: `{app.approximate_user_install_count}`",
         )
 
+        emojis_field = f"Total: `{len(self.bot.application_emojis.get_all())}/{constants.MAX_APPLICATION_EMOJIS}`"
+
         commands_field = (
             f"Total: `{len(self.bot.commands)}`",
             f"Prefix: `{self.bot.command_prefix}`",
@@ -293,6 +300,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             "Guild Members": guild_members_enabled,
             "Presence": presence_enabled,
             "Installs": "\n".join(installs_field),
+            "Emojis": emojis_field,
             "Commands": "\n".join(commands_field),
             "App Commands": "\n".join(app_commands_field),
             "System": "\n".join(system_field),
@@ -308,7 +316,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         for k, v in fields.items():
             embed.add_field(name=k, value=v)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     # @@ sudo extension
 
