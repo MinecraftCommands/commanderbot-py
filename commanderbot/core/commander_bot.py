@@ -217,7 +217,12 @@ class CommanderBot(Bot):
 
     # @overrides Bot
     async def setup_hook(self):
-        # Load enabled extensions
+        # Build application emoji cache before we process extensions.
+        self.log.info("Building application emoji cache...")
+        await self.application_emojis.build_cache()
+        self.log.info("Finished building application emoji cache.")
+
+        # Load enabled extensions.
         self.log.info(
             f"Loading {len(self.config.enabled_extensions)} enabled extensions..."
         )
@@ -225,7 +230,7 @@ class CommanderBot(Bot):
         for ext in self.config.enabled_extensions:
             await self.load_extension(ext.name)
 
-        self.log.info(f"Finished loading extensions.")
+        self.log.info("Finished loading extensions.")
 
         # Sync global app commands and build the command cache.
         # We only build the guild command cache since `sync()` will build the global command cache.
