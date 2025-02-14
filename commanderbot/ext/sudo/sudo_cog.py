@@ -430,7 +430,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         if not found_cog:
             raise UnknownCog(cog)
         elif not isinstance(found_cog, CogWithStore):
-            raise CogHasNoStore(found_cog)
+            raise CogHasNoStore(found_cog.qualified_name)
 
         # Export the store and respond with a followup
         match found_cog.store.db:
