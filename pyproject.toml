@@ -27,7 +27,7 @@ dependencies = [
     "colorlog>=6.9.0",
 
     # These are used for managing SQLite databases.
-    "aiosqlite>=0.20.0",
+    "aiosqlite>=0.21.0",
     "sqlalchemy>=1.4.0,<2.0.0",
 
     # These are used for handling text-based data (json, yaml, etc).
@@ -39,7 +39,7 @@ dependencies = [
     "emoji>=2.0.0",
     "allay>=1.3.0",
     "mccq>=1.0.0",
-    "psutil>=6.0.0",
+    "psutil>=7.0.0",
 ]
 
 [project.urls]
@@ -54,7 +54,7 @@ commanderbot = "commanderbot:__main__"
 dev-dependencies = ["black>=24.0.0", "isort>=5.13.0"]
 
 [tool.uv.sources]
-discord-py = { git = "https://github.com/Rapptz/discord.py.git", rev = "76eb12666472ddd4a01459555680e630804994ea" }
+discord-py = { git = "https://github.com/Rapptz/discord.py.git", rev = "8edf4332557c3b980cf4eabc4bed4cbab9a01934" }
 
 [tool.isort]
 profile = "black"
