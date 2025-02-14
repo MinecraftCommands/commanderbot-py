@@ -483,15 +483,27 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # The bot must have an avatar
         await self._require_avatar()
 
-        # Clear the avatar
-        try:
-            assert is_commander_bot(self.bot)
-            await self.bot.clear_avatar()
-        except Exception as ex:
-            raise ErrorChangingBotAvatar(str(ex))
-
-        # Send a response that the avatar has been cleared
-        await interaction.followup.send("✅ Cleared the bot's avatar", ephemeral=True)
+        # Respond with a confirmation dialog
+        result = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to clear the bot's avatar?",
+            ephemeral=True,
+        )
+        match result:
+            case ConfirmationResult.YES:
+                try:
+                    assert is_commander_bot(self.bot)
+                    await self.bot.clear_avatar()
+                    await interaction.followup.send(
+                        "✅ Cleared the bot's avatar", ephemeral=True
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ErrorChangingBotAvatar(str(ex))
+            case _:
+                await interaction.followup.send(
+                    "Keeping the bot's current avatar", ephemeral=True
+                )
 
     # @@ sudo avatar show
     @cmd_sudo_avatar.command(name="show", description="Show the bot's avatar")
@@ -543,15 +555,27 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # The bot must have a banner
         await self._require_banner()
 
-        # Clear the banner
-        try:
-            assert is_commander_bot(self.bot)
-            await self.bot.clear_banner()
-        except Exception as ex:
-            raise ErrorChangingBotBanner(str(ex))
-
-        # Send a response that the banner has been cleared
-        await interaction.followup.send("✅ Cleared the bot's banner", ephemeral=True)
+        # Respond with a confirmation dialog
+        result = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to clear the bot's banner?",
+            ephemeral=True,
+        )
+        match result:
+            case ConfirmationResult.YES:
+                try:
+                    assert is_commander_bot(self.bot)
+                    await self.bot.clear_banner()
+                    await interaction.followup.send(
+                        "✅ Cleared the bot's banner", ephemeral=True
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ErrorChangingBotBanner(str(ex))
+            case _:
+                await interaction.followup.send(
+                    "Keeping the bot's current banner", ephemeral=True
+                )
 
     # @@ sudo banner show
     @cmd_sudo_banner.command(name="show", description="Show the bot's banner")
@@ -648,7 +672,6 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         )
         match result:
             case ConfirmationResult.YES:
-                # If the answer was yes, attempt to remove the application emoji and send a response
                 try:
                     assert is_commander_bot(self.bot)
                     await self.bot.application_emojis.delete(emoji.name)
@@ -659,7 +682,6 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
                     await interaction.delete_original_response()
                     raise ErrorRemovingApplicationEmoji(str(ex))
             case _:
-                # If the answer was no, send a response
                 await interaction.followup.send(
                     f"Keeping application emoji `{emoji.name}` ({emoji})",
                     ephemeral=True,
