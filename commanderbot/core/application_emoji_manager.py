@@ -43,6 +43,10 @@ class ApplicationEmojiManager:
         ------
         ApplicationEmojiDoesNotExist
             The application emoji does not exist.
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Retrieving the emojis failed.
         """
 
         if not self._cache:
@@ -52,6 +56,13 @@ class ApplicationEmojiManager:
     async def fetch_all(self) -> Iterable[Emoji]:
         """
         Fetch all application emojis from Discord, or from the cache.
+
+        Raises
+        ------
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Retrieving the emojis failed.
         """
 
         if not self._cache:
@@ -68,6 +79,13 @@ class ApplicationEmojiManager:
             The emoji name.
         image: :class:`bytes | Attachment`
             The image for this emoji.
+
+        Raises
+        ------
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Creating the emoji failed or retrieving the emojis failed.
         """
 
         # Get the emoji image
@@ -82,19 +100,53 @@ class ApplicationEmojiManager:
         await self._update_cache()
         return emoji
 
+    async def edit(self, emoji: str | EmojiID, new_name: str) -> Emoji:
+        """
+        Edit an application emoji.
+
+        Parameters
+        ----------
+        emoji: :class:`str | EmojiID`
+            The emoji to edit.
+        new_name: :class:`str`
+            The new name for this emoji.
+
+        Raises
+        ------
+        ApplicationEmojiDoesNotExist
+            The application emoji does not exist.
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Editing the emoji failed or retrieving the emojis failed.
+        """
+
+        if not self._cache:
+            await self._update_cache()
+
+        # Edit the emoji
+        found_emoji: Emoji = self._find_in_cache(emoji)
+        renamed_emoji: Emoji = await found_emoji.edit(name=new_name)
+        await self._update_cache()
+        return renamed_emoji
+
     async def delete(self, emoji: str | EmojiID):
         """
         Delete an application emoji.
 
         Parameters
         ----------
-        name: :class:`str`
-            The emoji name.
+        emoji: :class:`str | EmojiID`
+            The emoji to delete.
 
         Raises
         ------
         ApplicationEmojiDoesNotExist
             The application emoji does not exist.
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Deleting the emoji failed or retrieving the emojis failed.
         """
 
         if not self._cache:
