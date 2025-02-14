@@ -2,7 +2,6 @@ from typing import Any
 
 from discord import Object
 from discord.app_commands import AppCommandError
-from discord.ext.commands import Cog
 
 from commanderbot.lib import ResponsiveException
 
@@ -20,20 +19,23 @@ class ExtensionResolutionError(SudoTransformerException):
 
 
 class CannotManageExtensionNotInConfig(SudoTransformerException):
-    def __init__(self, name: str):
+    def __init__(self, extension_name: str):
+        self.extension_name: str = extension_name
         super().__init__(
-            f"😬 Extension `{name}` is not in the config and cannot be managed"
+            f"😬 Extension `{self.extension_name}` is not in the config and cannot be managed"
         )
 
 
 class CannotManageRequiredExtension(SudoTransformerException):
-    def __init__(self, name: str):
-        super().__init__(f"😬 Extension `{name}` is required and cannot be managed")
+    def __init__(self, extension_name: str):
+        self.extension_name: str = extension_name
+        super().__init__(f"😬 Extension `{self.extension_name}` is required and cannot be managed")
 
 
 class CannotFindApplicationEmoji(SudoTransformerException):
-    def __init__(self, name: str):
-        super().__init__(f"😬 Application emoji `{name}` does not exist")
+    def __init__(self, emoji_name: str):
+        self.emoji_name: str = emoji_name
+        super().__init__(f"😬 Application emoji `{self.emoji_name}` does not exist")
 
 
 class SudoException(ResponsiveException):
@@ -41,26 +43,29 @@ class SudoException(ResponsiveException):
 
 
 class ExtensionLoadError(SudoException):
-    def __init__(self, name: str, reason: str):
+    def __init__(self, extension_name: str, reason: str):
+        self.extension_name: str = extension_name
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to load extension `{name}`:\n```\n{self.reason}\n```"
+            f"😵 Unable to load extension `{self.extension_name}`:\n```\n{self.reason}\n```"
         )
 
 
 class ExtensionUnloadError(SudoException):
-    def __init__(self, name: str, reason: str):
+    def __init__(self, extension_name: str, reason: str):
+        self.extension_name: str = extension_name
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to unload extension `{name}`:\n```\n{self.reason}\n```"
+            f"😵 Unable to unload extension `{self.extension_name}`:\n```\n{self.reason}\n```"
         )
 
 
 class ExtensionReloadError(SudoException):
-    def __init__(self, name: str, reason: str):
+    def __init__(self, extension_name: str, reason: str):
+        self.extension_name: str = extension_name
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to reload extension `{name}`:\n```\n{self.reason}\n```"
+            f"😵 Unable to reload extension `{self.extension_name}`:\n```\n{self.reason}\n```"
         )
 
 
@@ -74,9 +79,10 @@ class GlobalSyncError(SudoException):
 
 class GuildSyncError(SudoException):
     def __init__(self, guild: Object, reason: str):
+        self.guild: Object = guild
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😵 Unable to sync app commands to this guild (`{guild.id}`):\n```\n{self.reason}\n```"
+            f"😵 Unable to sync app commands to this guild (`{self.guild.id}`):\n```\n{self.reason}\n```"
         )
 
 
@@ -88,13 +94,15 @@ class GuildIDNotFound(SudoException):
 
 
 class UnknownCog(SudoException):
-    def __init__(self, cog: str):
-        super().__init__(f"😔 Unable to find a loaded cog with the name `{cog}`")
+    def __init__(self, cog_name: str):
+        self.cog_name: str = cog_name
+        super().__init__(f"😔 Unable to find a loaded cog with the name `{self.cog_name}`")
 
 
 class CogHasNoStore(SudoException):
-    def __init__(self, cog: Cog):
-        super().__init__(f"😬 The cog `{cog.qualified_name}` does not use a store")
+    def __init__(self, cog_name: str):
+        self.cog_name: str = cog_name
+        super().__init__(f"😬 The cog `{self.cog_name}` does not use a store")
 
 
 class UnsupportedStoreExport(SudoException):
@@ -116,7 +124,7 @@ class ErrorChangingBotAvatar(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 An error occurred while changing the bot's avatar:\n```\n{self.reason}\n```"
+            f"😬 Unable to change the bot's avatar:\n```\n{self.reason}\n```"
         )
 
 
@@ -124,7 +132,7 @@ class ErrorChangingBotBanner(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 An error occurred while changing the bot's banner:\n```\n{self.reason}\n```"
+            f"😬 Unable to change the bot's banner:\n```\n{self.reason}\n```"
         )
 
 
@@ -132,19 +140,19 @@ class ErrorAddingApplicationEmoji(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 An error occurred while adding an application emoji:\n```\n{self.reason}\n```"
+            f"😬 Unable to add application emoji\n```\n{self.reason}\n```"
         )
 
 class ErrorRenamingApplicationEmoji(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 An error occurred while renaming an application emoji:\n```\n{self.reason}\n```"
+            f"😬 Unable to rename application emoji:\n```\n{self.reason}\n```"
         )
 
 class ErrorRemovingApplicationEmoji(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
-            f"😬 An error occurred while removing an application emoji:\n```\n{self.reason}\n```"
+            f"😬 Unable to remove application emoji:\n```\n{self.reason}\n```"
         )
