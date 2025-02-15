@@ -7,6 +7,7 @@ from discord.app_commands import (
     AppCommandContext,
     AppInstallationType,
     Group,
+    allowed_installs,
     command,
     default_permissions,
     describe,
@@ -166,6 +167,7 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
 
     # @@ mccreload
     @command(name="mccreload", description="Reloads the query managers")
+    @allowed_installs(guilds=True)
     @default_permissions(administrator=True)
     @checks.is_owner()
     async def cmd_mccreload(self, interaction: Interaction):

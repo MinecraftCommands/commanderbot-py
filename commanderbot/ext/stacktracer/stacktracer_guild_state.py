@@ -24,16 +24,6 @@ class StacktracerGuildState(CogGuildState):
 
     store: StacktracerStore
 
-    async def show_guild_log_options(self, interaction: Interaction):
-        log_options = await self.store.get_guild_log_options(self.guild)
-        if log_options:
-            await interaction.response.send_message(
-                f"Error logging is configured for this guild: {log_options.format_channel_name(self.bot)}\n"
-                + log_options.format_settings()
-            )
-        else:
-            raise GuildLoggingNotConfigured
-
     async def set_guild_log_options(
         self,
         interaction: Interaction,
@@ -64,12 +54,22 @@ class StacktracerGuildState(CogGuildState):
                 + new_log_options.format_settings()
             )
 
-    async def remove_guild_log_options(self, interaction: Interaction):
+    async def clear_guild_log_options(self, interaction: Interaction):
         old_log_options = await self.store.set_guild_log_options(self.guild, None)
         if old_log_options:
             await interaction.response.send_message(
-                f"Removed the error logging configuration for this guild: {old_log_options.format_channel_name(self.bot)}\n"
+                f"Cleared the error logging configuration for this guild: {old_log_options.format_channel_name(self.bot)}\n"
                 + old_log_options.format_settings()
+            )
+        else:
+            raise GuildLoggingNotConfigured
+
+    async def show_guild_log_options(self, interaction: Interaction):
+        log_options = await self.store.get_guild_log_options(self.guild)
+        if log_options:
+            await interaction.response.send_message(
+                f"Error logging is configured for this guild: {log_options.format_channel_name(self.bot)}\n"
+                + log_options.format_settings()
             )
         else:
             raise GuildLoggingNotConfigured

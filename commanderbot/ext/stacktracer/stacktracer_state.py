@@ -165,15 +165,7 @@ class StacktracerState(GuildPartitionedCogState[StacktracerGuildState]):
                     f"Failed to log app command error to channel with ID {log_options.channel}"
                 )
 
-    async def show_global_log_options(self, interaction: Interaction):
-        log_options = await self.store.get_global_log_options()
-        if log_options:
-            await interaction.response.send_message(
-                f"Global error logging is configured: {log_options.format_channel_name(self.bot)}\n"
-                + log_options.format_settings()
-            )
-        else:
-            raise LoggingNotConfigured
+    
 
     async def set_global_log_options(
         self,
@@ -203,15 +195,25 @@ class StacktracerState(GuildPartitionedCogState[StacktracerGuildState]):
                 + new_log_options.format_settings()
             )
 
-    async def remove_global_log_options(
+    async def clear_global_log_options(
         self,
         interaction: Interaction,
     ):
         old_log_options = await self.store.set_global_log_options(None)
         if old_log_options:
             await interaction.response.send_message(
-                f"Removed the global error logging configuration: {old_log_options.format_channel_name(self.bot)}\n"
+                f"Cleared the global error logging configuration: {old_log_options.format_channel_name(self.bot)}\n"
                 + old_log_options.format_settings()
+            )
+        else:
+            raise LoggingNotConfigured
+        
+    async def show_global_log_options(self, interaction: Interaction):
+        log_options = await self.store.get_global_log_options()
+        if log_options:
+            await interaction.response.send_message(
+                f"Global error logging is configured: {log_options.format_channel_name(self.bot)}\n"
+                + log_options.format_settings()
             )
         else:
             raise LoggingNotConfigured

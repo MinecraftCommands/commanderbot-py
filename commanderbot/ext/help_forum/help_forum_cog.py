@@ -7,7 +7,16 @@ from discord import (
     RawThreadUpdateEvent,
     Thread,
 )
-from discord.app_commands import Group, Transform, command, describe, guild_only
+from discord.app_commands import (
+    AppCommandContext,
+    AppInstallationType,
+    Group,
+    Transform,
+    allowed_contexts,
+    allowed_installs,
+    command,
+    describe,
+)
 from discord.enums import MessageType
 from discord.ext.commands import Bot, Cog
 
@@ -164,7 +173,8 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
 
     # @@ resolve
     @command(name="resolve", description="Resolve a post in a help forum")
-    @guild_only()
+    @allowed_installs(guilds=True)
+    @allowed_contexts(guilds=True)
     async def cmd_resolve(self, interaction: Interaction):
         # Make sure this command was ran from a thread
         thread = interaction.channel
@@ -190,7 +200,8 @@ class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     cmd_forum = Group(
         name="forum",
         description="Manage help forums",
-        guild_only=True,
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(guild=True),
         default_permissions=Permissions(administrator=True),
     )
 

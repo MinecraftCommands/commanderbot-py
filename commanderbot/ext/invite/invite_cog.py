@@ -1,5 +1,12 @@
 from discord import Interaction, Permissions
-from discord.app_commands import Choice, Group, autocomplete, describe
+from discord.app_commands import (
+    AppCommandContext,
+    AppInstallationType,
+    Choice,
+    Group,
+    autocomplete,
+    describe,
+)
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.invite.invite_data import InviteData
@@ -121,7 +128,12 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
 
     # @@ invite
 
-    cmd_invite = Group(name="invite", description="Show invites", guild_only=True)
+    cmd_invite = Group(
+        name="invite",
+        description="Show invites",
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(guild=True),
+    )
 
     # @@ invite get
     @cmd_invite.command(name="get", description="Get invites")
@@ -148,7 +160,8 @@ class InviteCog(Cog, name="commanderbot.ext.invite"):
     cmd_invites = Group(
         name="invites",
         description="Manage invites",
-        guild_only=True,
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(guild=True),
         default_permissions=Permissions(administrator=True),
     )
 

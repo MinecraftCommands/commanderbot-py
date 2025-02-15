@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional
 
 from discord import Interaction, Permissions, Role
-from discord.app_commands import Group, describe
+from discord.app_commands import AppCommandContext, AppInstallationType, Group, describe
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.feeds.feeds_data import FeedsData
@@ -106,7 +106,8 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     cmd_feed = Group(
         name="feed",
         description="Manage feeds",
-        guild_only=True,
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(guild=True),
         default_permissions=Permissions(administrator=True),
     )
 
@@ -189,6 +190,10 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     cmd_feeds = Group(
         name="feeds",
         description="Manage feed providers",
+        allowed_installs=AppInstallationType(guild=True),
+        allowed_contexts=AppCommandContext(
+            guild=True, dm_channel=True, private_channel=True
+        ),
         default_permissions=Permissions(administrator=True),
     )
 
