@@ -7,6 +7,7 @@ from commanderbot.lib import FromDataMixin
 class McdocOptions(FromDataMixin):
     symbols_url: str
     manifest_url: str
+    emoji_prefix: str
     icon_url: Optional[str]
 
     @classmethod
@@ -15,5 +16,6 @@ class McdocOptions(FromDataMixin):
             return cls(
                 symbols_url=data["symbols_url"],
                 manifest_url=data["manifest_url"],
+                emoji_prefix=data["emoji_prefix"],
                 icon_url=data.get("icon_url", None),
             )

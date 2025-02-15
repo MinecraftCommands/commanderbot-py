@@ -25,3 +25,9 @@ class QueryReturnedNoResults(McdocException):
     def __init__(self, query: str):
         self.query: str = query
         super().__init__(f"😔 Could not find any symbols matching `{self.query}`")
+
+
+class EmojiNotFoundError(McdocException):
+    def __init__(self, name: str):
+        self.name: str = name
+        super().__init__(f"😵 Unable to get application emoji `{name}`")
