@@ -8,7 +8,7 @@ from discord.ext.commands import Bot, Context
 from discord.interactions import Interaction
 from discord.ui import Button, View, button
 
-from commanderbot.lib.allowed_mentions import AllowedMentions
+from commanderbot.lib import AllowedMentions
 
 __all__ = (
     "ConfirmationResult",
@@ -157,7 +157,7 @@ async def respond_with_confirmation(
     *,
     timeout: float = 60.0,
     ephemeral=False,
-    allowed_mentions: discord.AllowedMentions = discord.AllowedMentions.none()
+    allowed_mentions: discord.AllowedMentions = discord.AllowedMentions.none(),
 ) -> ConfirmationResult:
     """
     Ask a user to confirm an action via a `discord.ui.View` with buttons.
@@ -169,9 +169,14 @@ async def respond_with_confirmation(
 
     # Create the view and send it as a response
     view = ConfirmView(interaction, timeout)
-    await interaction.response.send_message(
-        content, view=view, ephemeral=ephemeral, allowed_mentions=allowed_mentions
-    )
+    if not interaction.response.is_done():
+        await interaction.response.send_message(
+            content, view=view, ephemeral=ephemeral, allowed_mentions=allowed_mentions
+        )
+    else:
+        await interaction.followup.send(
+            content, view=view, ephemeral=ephemeral, allowed_mentions=allowed_mentions
+        )
 
     # Wait for the view to be interacted with or time out then return the result
     await view.wait()
