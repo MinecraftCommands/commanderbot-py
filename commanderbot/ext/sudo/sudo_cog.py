@@ -31,11 +31,7 @@ from discord.utils import format_dt
 from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.core.config import Config
 from commanderbot.core.configured_extension import ConfiguredExtension
-from commanderbot.core.exceptions import (
-    ApplicationEmojiDoesNotExist,
-    ExtensionIsRequired,
-    ExtensionNotInConfig,
-)
+from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
 from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.sudo.sudo_data import CogWithStore
 from commanderbot.ext.sudo.sudo_exceptions import (
@@ -48,9 +44,9 @@ from commanderbot.ext.sudo.sudo_exceptions import (
     ErrorAddingApplicationEmoji,
     ErrorChangingBotAvatar,
     ErrorChangingBotBanner,
+    ErrorRefreshingApplicationEmojis,
     ErrorRemovingApplicationEmoji,
     ErrorRenamingApplicationEmoji,
-    ErrorRefreshingApplicationEmojis,
     ExtensionLoadError,
     ExtensionReloadError,
     ExtensionResolutionError,
@@ -144,18 +140,14 @@ class ApplicationEmojiTransformer(Transformer):
     async def transform(
         self, interaction: Interaction[CommanderBot], value: str
     ) -> Emoji:
-        try:
-            return await interaction.client.application_emojis.fetch(value)
-        except ApplicationEmojiDoesNotExist:
-            raise CannotFindApplicationEmoji(value)
+        if emoji := interaction.client.application_emojis.get(value):
+            return emoji
+        raise CannotFindApplicationEmoji(value)
 
     async def autocomplete(
         self, interaction: Interaction[CommanderBot], value: str
     ) -> list[Choice[str]]:
-        # Fetch all emojis
-        emojis = await interaction.client.application_emojis.fetch_all()
-
-        # Create choices
+        emojis = interaction.client.application_emojis.get_all()
         choices: list[Choice] = []
         for emoji in emojis:
             if not value:
