@@ -184,7 +184,7 @@ wheels = [
 
 [[package]]
 name = "commanderbot"
-version = "0.20.0a31"
+version = "0.20.0a32"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
