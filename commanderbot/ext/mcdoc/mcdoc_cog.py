@@ -1,9 +1,8 @@
 from logging import Logger, getLogger
 from typing import Optional
 import aiohttp
-import re
 
-from discord import Embed, Interaction
+from discord import Embed, Emoji, Interaction
 from discord.app_commands import (
     allowed_contexts,
     allowed_installs,
@@ -13,16 +12,17 @@ from discord.app_commands import (
 from discord.ext import tasks
 from discord.ext.commands import Bot, Cog
 
+from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbols
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext
-from commanderbot.ext.mcdoc.mcdoc_exceptions import InvalidVersionError, RequestSymbolsError, RequestVersionError
+from commanderbot.ext.mcdoc.mcdoc_exceptions import InvalidVersionError, RequestSymbolsError, RequestVersionError, EmojiNotFoundError
 from commanderbot.ext.mcdoc.mcdoc_options import McdocOptions
 from commanderbot.lib import constants, AllowedMentions
 
 
 class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
-    def __init__(self, bot: Bot, **options):
-        self.bot: Bot = bot
+    def __init__(self, bot: CommanderBot, **options):
+        self.bot: CommanderBot = bot
         self.log: Logger = getLogger(self.qualified_name)
         self.options = McdocOptions.from_data(options)
 
@@ -86,6 +86,13 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
             return self._latest_version
         return await self._fetch_latest_version()
 
+    def _get_emoji(self, type: str) -> Emoji:
+        name = self.options.emoji_prefix + type
+        emoji = self.bot.application_emojis.get(name)
+        if emoji is None:
+            raise EmojiNotFoundError(name)
+        return emoji
+
     @command(name="mcdoc", description="Query vanilla mcdoc types")
     @describe(
         query="The mcdoc identifier",
@@ -113,7 +120,7 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
             raise InvalidVersionError(version)
 
         # Create a context object used for rendering
-        ctx = McdocContext(version, symbols)
+        ctx = McdocContext(version, symbols, self._get_emoji)
 
         embed: Embed = Embed(
             title=symbol.title(ctx),

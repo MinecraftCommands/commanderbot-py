@@ -1,34 +1,7 @@
 import json
 from dataclasses import dataclass, field
-from typing import Mapping, Protocol, Optional, Union
-
-ICON_ANY = "<:any:1328878339305246761>"
-ICON_BOOLEAN = "<:boolean:1328844824824254475>"
-ICON_BYTE = "<:byte:1328844842469425264>"
-ICON_BYTE_ARRAY = "<:byte_array:1328844856713412758>"
-ICON_DOUBLE = "<:double:1328844873205547028>"
-ICON_FLOAT = "<:float:1328844885276622858>"
-ICON_INT = "<:int:1328844896903237634>"
-ICON_INT_ARRAY = "<:int_array:1328844908898812004>"
-ICON_LIST = "<:list:1328844919665856622>"
-ICON_LONG = "<:long:1328844930998730812>"
-ICON_LONG_ARRAY = "<:long_array:1328844941706793022>"
-ICON_SHORT = "<:short:1328844953757028382>"
-ICON_STRING = "<:string:1328844965161467956>"
-ICON_STRUCT = "<:struct:1328844974661435546>"
-
-LITERAL_ICONS = {
-    "boolean": ICON_BOOLEAN,
-    "byte": ICON_BYTE,
-    "short": ICON_SHORT,
-    "int": ICON_INT,
-    "long": ICON_LONG,
-    "float": ICON_FLOAT,
-    "double": ICON_DOUBLE,
-    "string": ICON_STRING,
-}
-
-TEMPLATE_CHARS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"]
+from typing import Callable, Mapping, Protocol, Optional, Union
+from discord import Emoji
 
 
 def cmp_version(a: str, b: str):
@@ -50,6 +23,7 @@ class McdocLookup(Protocol):
 class McdocContext:
     version: str
     symbols: McdocLookup
+    emojis: Callable[[str], Emoji]
     compact: bool = False
     depth: int = 0
     type_mapping: Mapping[str, Union[str, "McdocType"]] = field(default_factory=dict)
@@ -70,16 +44,16 @@ class McdocContext:
         return self.depth <= 2
 
     def make_compact(self) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, True, self.depth, self.type_mapping, self.type_args)
+        return McdocContext(self.version, self.symbols, self.emojis, True, self.depth, self.type_mapping, self.type_args)
 
     def nested(self, diff=1) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, self.compact, self.depth + diff, self.type_mapping, self.type_args)
+        return McdocContext(self.version, self.symbols, self.emojis, self.compact, self.depth + diff, self.type_mapping, self.type_args)
 
     def with_type_mapping(self, mapping: Mapping[str, Union[str, "McdocType"]]) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, self.compact, self.depth, mapping, self.type_args)
+        return McdocContext(self.version, self.symbols, self.emojis, self.compact, self.depth, mapping, self.type_args)
 
     def with_type_args(self, type_args: list["McdocType"]) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, self.compact, self.depth, self.type_mapping, type_args)
+        return McdocContext(self.version, self.symbols, self.emojis, self.compact, self.depth, self.type_mapping, type_args)
 
 
 @dataclass
@@ -108,10 +82,11 @@ class McdocBaseType:
         return name
 
     def icons(self, ctx: McdocContext) -> list[str]:
-        return [ICON_ANY]
+        return ["any"]
 
     def prefix(self, ctx: McdocContext) -> str:
-        return "".join(list(dict.fromkeys(self.icons(ctx))))
+        icons = list(dict.fromkeys(self.icons(ctx)))
+        return "".join([str(ctx.emojis(icon)) for icon in icons])
 
     def suffix(self, ctx: McdocContext) -> str:
         return ""
@@ -246,7 +221,7 @@ class StructType(McdocBaseType):
         return [f for f in self.fields if ctx.filter(f.attributes)]
 
     def icons(self, ctx):
-        return [ICON_STRUCT]
+        return ["struct"]
 
     def suffix(self, ctx):
         fields = self.filtered_fields(ctx)
@@ -297,7 +272,7 @@ class EnumType(McdocBaseType):
         return f"enum {name}"
 
     def icons(self, ctx):
-        return [LITERAL_ICONS[self.enumKind]]
+        return [self.enumKind]
 
     def suffix(self, ctx):
         values = self.filtered_values(ctx)
@@ -403,6 +378,9 @@ class UnionType(McdocBaseType):
                     result += f"\n{body}" if result else body
             results.append(f"* {result}")
         return "\n".join(f"{'' if ctx.compact else '\n'}{r}" for r in results)
+
+
+TEMPLATE_CHARS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"]
 
 
 @dataclass
@@ -516,7 +494,7 @@ class StringType(McdocBaseType):
     lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_STRING]
+        return ["string"]
 
     def suffix(self, ctx):
         result = "a string"
@@ -565,7 +543,7 @@ class LiteralType(McdocBaseType):
     value: bool | str | float
 
     def icons(self, ctx):
-        return [LITERAL_ICONS.get(self.kind, ICON_ANY)]
+        return [self.kind]
 
     def suffix(self, ctx):
         return json.dumps(self.value)
@@ -574,7 +552,7 @@ class LiteralType(McdocBaseType):
 @dataclass
 class AnyType(McdocBaseType):
     def icons(self, ctx):
-        return [ICON_ANY]
+        return ["any"]
 
     def suffix(self, ctx):
         return "*anything*"
@@ -583,7 +561,7 @@ class AnyType(McdocBaseType):
 @dataclass
 class UnsafeType(McdocBaseType):
     def icons(self, ctx):
-        return [ICON_ANY]
+        return ["any"]
 
     def suffix(self, ctx):
         return "*anything*"
@@ -592,7 +570,7 @@ class UnsafeType(McdocBaseType):
 @dataclass
 class BooleanType(McdocBaseType):
     def icons(self, ctx):
-        return [ICON_BOOLEAN]
+        return ["boolean"]
 
     def suffix(self, ctx):
         return "a boolean"
@@ -603,7 +581,7 @@ class ByteType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_BYTE]
+        return ["byte"]
 
     def suffix(self, ctx):
         result = "a byte"
@@ -617,7 +595,7 @@ class ShortType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_SHORT]
+        return ["short"]
 
     def suffix(self, ctx):
         result = "a short"
@@ -631,7 +609,7 @@ class IntType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_INT]
+        return ["int"]
 
     def suffix(self, ctx):
         result = "an int"
@@ -645,7 +623,7 @@ class LongType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_LONG]
+        return ["long"]
 
     def suffix(self, ctx):
         result = "a long"
@@ -659,7 +637,7 @@ class FloatType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_FLOAT]
+        return ["float"]
 
     def suffix(self, ctx):
         result = "a float"
@@ -673,7 +651,7 @@ class DoubleType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_DOUBLE]
+        return ["double"]
 
     def suffix(self, ctx):
         result = "a double"
@@ -688,7 +666,7 @@ class ByteArrayType(McdocBaseType):
     lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_BYTE_ARRAY]
+        return ["byte_array"]
 
     def suffix(self, ctx):
         result = "a byte array"
@@ -707,7 +685,7 @@ class IntArrayType(McdocBaseType):
     lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_INT_ARRAY]
+        return ["int_array"]
 
     def suffix(self, ctx):
         result = "an int array"
@@ -726,7 +704,7 @@ class LongArrayType(McdocBaseType):
     lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_LONG_ARRAY]
+        return ["long_array"]
 
     def suffix(self, ctx):
         result = "a long array"
@@ -745,7 +723,7 @@ class ListType(McdocBaseType):
     lengthRange: Optional[NumericRange] = None
 
     def icons(self, ctx):
-        return [ICON_LIST]
+        return ["list"]
 
     def suffix(self, ctx):
         result = "a list"
@@ -774,7 +752,7 @@ class TupleType(McdocBaseType):
     items: list["McdocType"]
 
     def icons(self, ctx):
-        return [ICON_LIST]
+        return ["list"]
 
     def suffix(self, ctx):
         return f"a tuple of length {len(self.items)}"
