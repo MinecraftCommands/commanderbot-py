@@ -219,7 +219,7 @@ class CommanderBot(Bot):
     async def setup_hook(self):
         # Build application emoji cache before we process extensions.
         self.log.info("Building application emoji cache...")
-        await self.application_emojis.build_cache()
+        await self.application_emojis.update_cache()
         self.log.info("Finished building application emoji cache.")
 
         # Load enabled extensions.

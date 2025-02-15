@@ -50,6 +50,7 @@ from commanderbot.ext.sudo.sudo_exceptions import (
     ErrorChangingBotBanner,
     ErrorRemovingApplicationEmoji,
     ErrorRenamingApplicationEmoji,
+    ErrorRefreshingApplicationEmojis,
     ExtensionLoadError,
     ExtensionReloadError,
     ExtensionResolutionError,
@@ -621,14 +622,13 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         try:
             assert is_commander_bot(self.bot)
             created_emoji: Emoji = await self.bot.application_emojis.create(name, file)
+
+            await interaction.followup.send(
+                f"✅ Added application emoji `{created_emoji.name}` ({created_emoji})",
+                ephemeral=True,
+            )
         except Exception as ex:
             raise ErrorAddingApplicationEmoji(str(ex))
-
-        # Show the newly added application emoji
-        await interaction.followup.send(
-            f"✅ Added application emoji `{created_emoji.name}` ({created_emoji})",
-            ephemeral=True,
-        )
 
     # @@ sudo emoji rename
     @cmd_sudo_emoji.command(name="rename", description="Rename an application emoji")
@@ -652,13 +652,13 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             modified_emoji: Emoji = await self.bot.application_emojis.edit(
                 emoji.name, new_name
             )
+
+            await interaction.followup.send(
+                f"✅ Renamed application emoji `{emoji.name}` to `{modified_emoji.name}`",
+                ephemeral=True,
+            )
         except Exception as ex:
             raise ErrorRenamingApplicationEmoji(str(ex))
-
-        # Respond that the emoji was renamed
-        await interaction.followup.send(
-            f"✅ Renamed application emoji `{emoji.name}` to `{modified_emoji.name}`"
-        )
 
     # @@ sudo emoji remove
     @cmd_sudo_emoji.command(name="remove", description="Remove an application emoji")
@@ -724,6 +724,25 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             )
 
         await interaction.followup.send(embed=embed, ephemeral=True)
+
+    # @@ sudo emoji refresh
+    @cmd_sudo_emoji.command(
+        name="refresh", description="Refresh the application emoji cache"
+    )
+    @checks.is_owner()
+    async def cmd_sudo_emoji_refresh(self, interaction: Interaction):
+        # Respond with a defer since refreshing the application emoji cache may take a while
+        await interaction.response.defer(ephemeral=True)
+
+        # Refresh the application emoji cache
+        try:
+            assert is_commander_bot(self.bot)
+            await self.bot.application_emojis.update_cache()
+            await interaction.followup.send(
+                f"✅ Refreshed the application emoji cache", ephemeral=True
+            )
+        except Exception as ex:
+            raise ErrorRefreshingApplicationEmojis(str(ex))
 
     # @@ sudo sync
 

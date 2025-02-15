@@ -29,7 +29,9 @@ class CannotManageExtensionNotInConfig(SudoTransformerException):
 class CannotManageRequiredExtension(SudoTransformerException):
     def __init__(self, extension_name: str):
         self.extension_name: str = extension_name
-        super().__init__(f"😬 Extension `{self.extension_name}` is required and cannot be managed")
+        super().__init__(
+            f"😬 Extension `{self.extension_name}` is required and cannot be managed"
+        )
 
 
 class CannotFindApplicationEmoji(SudoTransformerException):
@@ -96,7 +98,9 @@ class GuildIDNotFound(SudoException):
 class UnknownCog(SudoException):
     def __init__(self, cog_name: str):
         self.cog_name: str = cog_name
-        super().__init__(f"😔 Unable to find a loaded cog with the name `{self.cog_name}`")
+        super().__init__(
+            f"😔 Unable to find a loaded cog with the name `{self.cog_name}`"
+        )
 
 
 class CogHasNoStore(SudoException):
@@ -139,9 +143,8 @@ class ErrorChangingBotBanner(SudoException):
 class ErrorAddingApplicationEmoji(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
-        super().__init__(
-            f"😬 Unable to add application emoji\n```\n{self.reason}\n```"
-        )
+        super().__init__(f"😬 Unable to add application emoji\n```\n{self.reason}\n```")
+
 
 class ErrorRenamingApplicationEmoji(SudoException):
     def __init__(self, reason: str):
@@ -150,9 +153,18 @@ class ErrorRenamingApplicationEmoji(SudoException):
             f"😬 Unable to rename application emoji:\n```\n{self.reason}\n```"
         )
 
+
 class ErrorRemovingApplicationEmoji(SudoException):
     def __init__(self, reason: str):
         self.reason: str = reason.replace("\n", " ")
         super().__init__(
             f"😬 Unable to remove application emoji:\n```\n{self.reason}\n```"
+        )
+
+
+class ErrorRefreshingApplicationEmojis(SudoException):
+    def __init__(self, reason: str):
+        self.reason: str = reason.replace("\n", " ")
+        super().__init__(
+            f"😬 Unable to refresh application emojis:\n```\n{self.reason}\n```"
         )
