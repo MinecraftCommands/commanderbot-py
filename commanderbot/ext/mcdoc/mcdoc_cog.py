@@ -1,16 +1,14 @@
-from logging import Logger, getLogger
 from typing import Optional
 import aiohttp
 
 from discord import Embed, Emoji, Interaction
 from discord.app_commands import (
-    allowed_contexts,
     allowed_installs,
     command,
     describe,
 )
 from discord.ext import tasks
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Cog
 
 from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbols
@@ -18,12 +16,12 @@ from commanderbot.ext.mcdoc.mcdoc_types import McdocContext
 from commanderbot.ext.mcdoc.mcdoc_exceptions import InvalidVersionError, RequestSymbolsError, RequestVersionError, EmojiNotFoundError
 from commanderbot.ext.mcdoc.mcdoc_options import McdocOptions
 from commanderbot.lib import constants, AllowedMentions
+from commanderbot.lib.predicates import is_convertable_to
 
 
 class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
     def __init__(self, bot: CommanderBot, **options):
         self.bot: CommanderBot = bot
-        self.log: Logger = getLogger(self.qualified_name)
         self.options = McdocOptions.from_data(options)
 
         self._latest_version: Optional[str] = None
@@ -99,7 +97,6 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         version="The Minecraft game version (defaults to the latest release)",
     )
     @allowed_installs(guilds=True, users=True)
-    @allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_mcdoc(self, interaction: Interaction, query: str, version: Optional[str]):
         # Respond to the interaction with a defer since the web request may take a while
         await interaction.response.defer()
@@ -112,11 +109,7 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         version = await self._get_latest_version(version)
 
         # Validate that the version number can be used to compare
-        if not version.startswith("1."):
-            raise InvalidVersionError(version)
-        try:
-            float(version[2:])
-        except:
+        if not version.startswith("1.") or not is_convertable_to(version[2:], float):
             raise InvalidVersionError(version)
 
         # Create a context object used for rendering

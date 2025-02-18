@@ -30,4 +30,4 @@ class QueryReturnedNoResults(McdocException):
 class EmojiNotFoundError(McdocException):
     def __init__(self, name: str):
         self.name: str = name
-        super().__init__(f"😵 Unable to get application emoji `{name}`")
+        super().__init__(f"😵 Unable to get application emoji `{self.name}`")
