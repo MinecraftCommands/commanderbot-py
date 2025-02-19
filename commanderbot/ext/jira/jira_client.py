@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 import aiohttp
 
@@ -27,13 +27,20 @@ class JiraClient:
 
     async def _request_issue_data(self, base_url: str, issue_id: str) -> dict:
         try:
-            issue_url: str = f"{base_url}/rest/api/latest/issue/{issue_id}"
+            url: str = f"{base_url}/api/jql-search-post"
             headers: dict[str, str] = {"User-Agent": constants.USER_AGENT}
+            request_data: dict[str, Any] = {
+                "advanced": True,
+                "project": issue_id.split("-")[0],
+                "search": f"key = {issue_id}",
+                "maxResults": 1,
+            }
             async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    issue_url, headers=headers, raise_for_status=True
+                async with session.post(
+                    url, headers=headers, json=request_data, raise_for_status=True
                 ) as response:
-                    return await response.json()
+                    response_data = await response.json()
+                    return response_data["issues"][0]
 
         except aiohttp.InvalidURL:
             raise InvalidURL(issue_id)
@@ -77,9 +84,7 @@ class JiraClient:
         return JiraIssue(
             issue_id=issue_id,
             url=f"{base_url}/browse/{issue_id}",
-            icon_url=f"{base_url}/jira-favicon-hires.png",
             summary=fields["summary"],
-            reporter=fields["reporter"]["displayName"],
             assignee=assignee,
             created=datetime.strptime(fields["created"], "%Y-%m-%dT%H:%M:%S.%f%z"),
             updated=datetime.strptime(fields["updated"], "%Y-%m-%dT%H:%M:%S.%f%z"),

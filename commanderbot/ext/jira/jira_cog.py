@@ -87,8 +87,6 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
             color=issue.status_color.value,
         )
 
-        issue_embed.set_thumbnail(url=issue.icon_url)
-
         for k, v in issue.fields.items():
             issue_embed.add_field(name=k, value=v)
 

@@ -37,9 +37,7 @@ class StatusColor(Enum):
 class JiraIssue:
     issue_id: str
     url: str
-    icon_url: str
     summary: str
-    reporter: str
     assignee: str
     created: datetime
     updated: datetime
@@ -53,7 +51,6 @@ class JiraIssue:
     @property
     def fields(self) -> dict:
         return {
-            "Reported By": self.reporter,
             "Assigned To": self.assignee,
             "Created": format_dt(self.created, style="R"),
             "Updated": format_dt(self.updated, style="R"),
