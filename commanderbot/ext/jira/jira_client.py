@@ -84,6 +84,7 @@ class JiraClient:
         return JiraIssue(
             issue_id=issue_id,
             url=f"{base_url}/browse/{issue_id}",
+            icon_url=f"{base_url}/{issue_id.split("-")[0].lower()}_icon.png",
             summary=fields["summary"],
             assignee=assignee,
             created=datetime.strptime(fields["created"], "%Y-%m-%dT%H:%M:%S.%f%z"),

@@ -37,6 +37,7 @@ class StatusColor(Enum):
 class JiraIssue:
     issue_id: str
     url: str
+    icon_url: str
     summary: str
     assignee: str
     created: datetime
