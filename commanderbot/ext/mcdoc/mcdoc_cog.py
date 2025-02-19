@@ -101,16 +101,20 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         # Respond to the interaction with a defer since the web request may take a while
         await interaction.response.defer()
 
-        # Fetch the vanilla-mcdoc symbols and search for a symbol
-        symbols = await self._fetch_symbols()
-        symbol = symbols.search(query)
+        try:
+            # Fetch the vanilla-mcdoc symbols and search for a symbol
+            symbols = await self._fetch_symbols()
+            symbol = symbols.search(query)
 
-        # Use the version override or get the cached latest version
-        version = await self._get_latest_version(version)
+            # Use the version override or get the cached latest version
+            version = await self._get_latest_version(version)
 
-        # Validate that the version number can be used to compare
-        if not version.startswith("1.") or not is_convertable_to(version[2:], float):
-            raise InvalidVersionError(version)
+            # Validate that the version number can be used to compare
+            if not version.startswith("1.") or not is_convertable_to(version[2:], float):
+                raise InvalidVersionError(version)
+        except Exception as ex:
+            await interaction.delete_original_response()
+            raise ex
 
         # Create a context object used for rendering
         ctx = McdocContext(version, symbols, self._get_emoji)
