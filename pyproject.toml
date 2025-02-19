@@ -1,7 +1,7 @@
 [project]
 name = "commanderbot"
 description = "A collection of utilities and extensions for discord.py bots."
-version = "0.20.0a31"
+version = "0.20.0a32"
 requires-python = ">=3.13,<3.14"
 authors = [
     { name = "Ersatz", email = "ersatz0077@gmail.com" },
@@ -33,7 +33,7 @@ dependencies = [
     # These are used for handling text-based data (json, yaml, etc).
     "jsonpath-ng>=1.7.0",
     "pyyaml>=6.0.0",
-    
+
     # The rest are for various extensions.
     "aiohttp>=3.11.0",
     "emoji>=2.0.0",
@@ -52,9 +52,6 @@ commanderbot = "commanderbot:__main__"
 
 [tool.uv]
 dev-dependencies = ["black>=24.0.0", "isort>=5.13.0"]
-
-[tool.uv.sources]
-discord-py = { git = "https://github.com/Rapptz/discord.py.git", rev = "8edf4332557c3b980cf4eabc4bed4cbab9a01934" }
 
 [tool.isort]
 profile = "black"
