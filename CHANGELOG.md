@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Added a way to shutdown the bot
   - Added a may to manage the bot's avatar
   - Added a way to change the bot's banner
+  - Added a way to manage application emojis
 - `help_forum`:
   - A cog that acts as a wrapper around a forum channel
   - Forum threads can have two states: unresolved and resolved
@@ -54,7 +55,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Lets you view xkcd comics
   - Can be installed to guilds and users
   - Can be used anywhere
-- Added a config option for `mccq` to allow certain users to run the reload command
+- `mcdoc` ([#18](https://github.com/MinecraftCommands/commanderbot-py/pull/18))
+  - Lets you query [mcdoc](https://github.com/SpyglassMC/vanilla-mcdoc) types
 - Added a link button under `jira` issue embeds
 
 ### Changed
