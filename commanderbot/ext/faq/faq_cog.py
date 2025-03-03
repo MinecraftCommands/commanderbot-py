@@ -71,6 +71,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         )
 
     # @@ AUTOCOMPLETE
+    
     async def faq_autocomplete(
         self, interaction: Interaction, value: str
     ) -> list[Choice[str]]:
@@ -150,6 +151,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         return choices
 
     # @@ LISTENERS
+
     @Cog.listener()
     async def on_message(self, message: Message):
         # Make sure the message wasn't sent by the bot
@@ -192,7 +194,6 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
     cmd_faqs = Group(
         name="faqs",
         description="Manage FAQs",
-        guild_only=True,
         allowed_installs=AppInstallationType(guild=True),
         allowed_contexts=AppCommandContext(guild=True),
         default_permissions=Permissions(administrator=True),

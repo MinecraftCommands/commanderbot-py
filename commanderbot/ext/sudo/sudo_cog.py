@@ -204,9 +204,6 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         name="sudo",
         description="Commands for bot maintainers",
         allowed_installs=AppInstallationType(guild=True),
-        allowed_contexts=AppCommandContext(
-            guild=True, dm_channel=True, private_channel=True
-        ),
         default_permissions=Permissions(administrator=True),
     )
 
