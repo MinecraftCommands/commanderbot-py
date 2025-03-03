@@ -1,0 +1,78 @@
+import re
+from datetime import datetime, timedelta
+from typing import Optional, Protocol
+
+from discord import Guild
+
+from commanderbot.lib import UserID
+
+
+class FridayRule(Protocol):
+    name: str
+    pattern: Optional[re.Pattern]
+    chance: float
+    cooldown: int
+    response: str
+    last_response: Optional[datetime]
+    hits: int
+    added_by_id: UserID
+    modified_by_id: UserID
+    added_on: datetime
+    modified_on: datetime
+
+    @property
+    def current_cooldown(self) -> Optional[timedelta]: ...
+
+    @property
+    def available(self) -> bool: ...
+
+    def modify(
+        self,
+        pattern: Optional[re.Pattern],
+        chance: float,
+        cooldown: int,
+        response: str,
+        user_id: UserID,
+    ): ...
+
+    def check(self, content: str) -> bool: ...
+
+
+class FridayStore(Protocol):
+    """
+    Abstracts the data storage and persistence of the friday cog.
+    """
+
+    async def require_rule(self, guild: Guild, name: str) -> FridayRule: ...
+
+    async def add_rule(
+        self,
+        guild: Guild,
+        name: str,
+        pattern: Optional[re.Pattern],
+        chance: float,
+        cooldown: int,
+        response: str,
+        user_id: UserID,
+    ) -> FridayRule: ...
+
+    async def modify_rule(
+        self,
+        guild: Guild,
+        name: str,
+        pattern: Optional[re.Pattern],
+        chance: float,
+        cooldown: int,
+        response: str,
+        user_id: UserID,
+    ) -> FridayRule: ...
+
+    async def update_on_rule_matched(self, rule: FridayRule): ...
+
+    async def remove_rule(self, guild: Guild, name: str) -> FridayRule: ...
+
+    async def check_rules(self, guild: Guild, content: str) -> Optional[FridayRule]: ...
+
+    async def enable(self, guild: Guild): ...
+
+    async def disable(self, guild: Guild): ...
