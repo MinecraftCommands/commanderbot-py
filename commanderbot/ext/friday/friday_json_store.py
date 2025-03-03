@@ -1,12 +1,12 @@
 import re
 from dataclasses import dataclass
-from typing import AsyncIterable, Optional
+from typing import Optional
 
 from discord import Guild
 
 from commanderbot.ext.friday.friday_data import FridayData
 from commanderbot.ext.friday.friday_store import FridayRule
-from commanderbot.lib import UserID
+from commanderbot.lib import ChannelID, UserID
 from commanderbot.lib.cogs import CogStore
 from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
 
@@ -19,6 +19,23 @@ class FridayJsonStore(CogStore):
     """
 
     db: JsonFileDatabaseAdapter[FridayData]
+
+    # @implements FridayStore
+    async def is_channel_registered(self, guild: Guild, channel_id: ChannelID) -> bool:
+        cache = await self.db.get_cache()
+        return await cache.is_channel_registered(guild, channel_id)
+
+    # @implements FridayStore
+    async def register_channel(self, guild: Guild, channel_id: ChannelID):
+        cache = await self.db.get_cache()
+        await cache.register_channel(guild, channel_id)
+        await self.db.dirty()
+
+    # @implements FridayStore
+    async def unregister_channel(self, guild: Guild, channel_id: ChannelID):
+        cache = await self.db.get_cache()
+        await cache.unregister_channel(guild, channel_id)
+        await self.db.dirty()
 
     # @implements FridayStore
     async def require_rule(self, guild: Guild, name: str) -> FridayRule:
@@ -62,12 +79,6 @@ class FridayJsonStore(CogStore):
         return rule
 
     # @implements FridayStore
-    async def update_on_rule_matched(self, rule: FridayRule):
-        cache = await self.db.get_cache()
-        await cache.update_on_rule_matched(rule)
-        await self.db.dirty()
-
-    # @implements FridayStore
     async def remove_rule(self, guild: Guild, name: str) -> FridayRule:
         cache = await self.db.get_cache()
         rule = await cache.remove_rule(guild, name)
@@ -80,13 +91,7 @@ class FridayJsonStore(CogStore):
         return await cache.check_rules(guild, content)
 
     # @implements FridayStore
-    async def enable(self, guild: Guild):
+    async def update_on_rule_matched(self, rule: FridayRule):
         cache = await self.db.get_cache()
-        await cache.enable(guild)
-        await self.db.dirty()
-
-    # @implements FridayStore
-    async def disable(self, guild: Guild):
-        cache = await self.db.get_cache()
-        await cache.disable(guild)
+        await cache.update_on_rule_matched(rule)
         await self.db.dirty()

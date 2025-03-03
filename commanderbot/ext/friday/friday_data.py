@@ -9,11 +9,15 @@ from discord import Guild
 from discord.utils import utcnow
 
 from commanderbot.ext.friday.friday_exceptions import (
+    ChannelAlreadyRegistered,
+    ChannelNotRegistered,
     RuleAlreadyExists,
     RuleDoesNotExist,
 )
 from commanderbot.ext.friday.friday_store import FridayRule
 from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID, utils
+from commanderbot.lib.types import ChannelID
+from commanderbot.lib.utils import channels
 
 
 # @implements FridayRule
@@ -123,7 +127,7 @@ class FridayRuleData(JsonSerializable, FromDataMixin):
 @dataclass
 class FridayGuildData(JsonSerializable, FromDataMixin):
     rules: dict[str, FridayRuleData] = field(default_factory=dict)
-    enabled: bool = False
+    channels: list[ChannelID] = field(default_factory=list)
 
     # @implements FromDataMixin
     @classmethod
@@ -134,7 +138,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
                     name: FridayRuleData.from_data(raw_rule)
                     for name, raw_rule in data.get("rules", {}).items()
                 },
-                enabled=data.get("enabled", False)
+                channels=[channel_id for channel_id in data.get("channels", [])],
             )
 
     # @implements JsonSerializable
@@ -143,11 +147,30 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
             rules=utils.dict_without_falsies(
                 {name: rule.to_json() for name, rule in self.rules.items()}
             ),
-            enabled=self.enabled
+            channels=self.channels,
         )
 
     def _is_rule_name_available(self, name: str) -> bool:
         return name not in self.rules.keys()
+
+    def is_channel_registered(self, channel_id: ChannelID) -> bool:
+        return channel_id in self.channels
+
+    def register_channel(self, channel_id: ChannelID):
+        # Check if the channel was already registered
+        if self.is_channel_registered(channel_id):
+            raise ChannelAlreadyRegistered(channel_id)
+
+        # Register the channel
+        self.channels.append(channel_id)
+
+    def unregister_channel(self, channel_id: ChannelID):
+        # Check if the channel was not registered
+        if not self.is_channel_registered(channel_id):
+            raise ChannelNotRegistered(channel_id)
+
+        # Unregister the channel
+        self.channels.remove(channel_id)
 
     def require_rule(self, name: str) -> FridayRuleData:
         if rule := self.rules.get(name):
@@ -218,13 +241,6 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
         for rule in self.rules.values():
             if rule.check(content):
                 return rule
-            
-    def enable(self):
-        self.enabled = True
-
-    def disable(self):
-        self.enabled = False
-
 
 
 def _guilds_defaultdict_factory() -> defaultdict[GuildID, FridayGuildData]:
@@ -267,6 +283,18 @@ class FridayData(JsonSerializable, FromDataMixin):
         )
 
     # @implements FridayStore
+    async def is_channel_registered(self, guild: Guild, channel_id: ChannelID) -> bool:
+        return self.guilds[guild.id].is_channel_registered(channel_id)
+
+    # @implements FridayStore
+    async def register_channel(self, guild: Guild, channel_id: ChannelID):
+        return self.guilds[guild.id].register_channel(channel_id)
+
+    # @implements FridayStore
+    async def unregister_channel(self, guild: Guild, channel_id: ChannelID):
+        return self.guilds[guild.id].unregister_channel(channel_id)
+
+    # @implements FridayStore
     async def require_rule(self, guild: Guild, name: str) -> FridayRule:
         return self.guilds[guild.id].require_rule(name)
 
@@ -301,22 +329,14 @@ class FridayData(JsonSerializable, FromDataMixin):
         )
 
     # @implements FridayStore
-    async def update_on_rule_matched(self, rule: FridayRule):
-        rule.last_response = utcnow()
-        rule.hits += 1
-
-    # @implements FridayStore
     async def remove_rule(self, guild: Guild, name: str) -> FridayRule:
         return self.guilds[guild.id].remove_rule(name)
 
     # @implements FridayStore
     async def check_rules(self, guild: Guild, content: str) -> Optional[FridayRule]:
         return self.guilds[guild.id].check_rules(content)
-    
-    # @implements FridayStore
-    async def enable(self, guild: Guild):
-        self.guilds[guild.id].enable()
 
     # @implements FridayStore
-    async def disable(self, guild: Guild):
-        self.guilds[guild.id].disable()
+    async def update_on_rule_matched(self, rule: FridayRule):
+        rule.last_response = utcnow()
+        rule.hits += 1

@@ -4,7 +4,7 @@ from typing import Optional, Protocol
 
 from discord import Guild
 
-from commanderbot.lib import UserID
+from commanderbot.lib import ChannelID, UserID
 
 
 class FridayRule(Protocol):
@@ -43,6 +43,14 @@ class FridayStore(Protocol):
     Abstracts the data storage and persistence of the friday cog.
     """
 
+    async def is_channel_registered(
+        self, guild: Guild, channel_id: ChannelID
+    ) -> bool: ...
+
+    async def register_channel(self, guild: Guild, channel_id: ChannelID): ...
+
+    async def unregister_channel(self, guild: Guild, channel_id: ChannelID): ...
+
     async def require_rule(self, guild: Guild, name: str) -> FridayRule: ...
 
     async def add_rule(
@@ -67,12 +75,8 @@ class FridayStore(Protocol):
         user_id: UserID,
     ) -> FridayRule: ...
 
-    async def update_on_rule_matched(self, rule: FridayRule): ...
-
     async def remove_rule(self, guild: Guild, name: str) -> FridayRule: ...
 
     async def check_rules(self, guild: Guild, content: str) -> Optional[FridayRule]: ...
 
-    async def enable(self, guild: Guild): ...
-
-    async def disable(self, guild: Guild): ...
+    async def update_on_rule_matched(self, rule: FridayRule): ...
