@@ -15,8 +15,14 @@ from commanderbot.ext.friday.friday_exceptions import (
     RuleDoesNotExist,
 )
 from commanderbot.ext.friday.friday_store import FridayRule
-from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID, utils
-from commanderbot.lib.types import ChannelID
+from commanderbot.lib import (
+    ChannelID,
+    FromDataMixin,
+    GuildID,
+    JsonSerializable,
+    UserID,
+    utils,
+)
 
 
 # @implements FridayRule

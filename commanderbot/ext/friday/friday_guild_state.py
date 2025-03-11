@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 from typing import Optional
 
 from discord import Interaction, Message, TextStyle
@@ -92,7 +92,9 @@ class FridayModal(CogStateModal[FridayGuildState, FridayStore]):
 
     @classmethod
     def pattern_to_str(cls, pattern: Optional[re.Pattern]) -> str:
-        return pattern.pattern if pattern and pattern.pattern else ""
+        if pattern and pattern.pattern:
+            return pattern.pattern
+        return ""
 
     @classmethod
     def chance_from_str(cls, chance_str: str) -> float:
