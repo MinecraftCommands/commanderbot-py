@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from typing import Optional
 
@@ -47,7 +46,7 @@ class FridayJsonStore(CogStore):
         self,
         guild: Guild,
         name: str,
-        pattern: Optional[re.Pattern],
+        pattern: Optional[str],
         chance: float,
         cooldown: int,
         response: str,
@@ -65,7 +64,7 @@ class FridayJsonStore(CogStore):
         self,
         guild: Guild,
         name: str,
-        pattern: Optional[re.Pattern],
+        pattern: Optional[str],
         chance: float,
         cooldown: int,
         response: str,

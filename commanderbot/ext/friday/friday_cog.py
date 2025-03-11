@@ -8,7 +8,12 @@ from commanderbot.ext.friday.friday_json_store import FridayJsonStore
 from commanderbot.ext.friday.friday_options import FridayOptions
 from commanderbot.ext.friday.friday_state import FridayState
 from commanderbot.ext.friday.friday_store import FridayStore
-from commanderbot.lib import MessageableGuildChannel, is_bot, is_guild
+from commanderbot.lib import (
+    MessageableGuildChannel,
+    is_bot,
+    is_guild,
+    is_messagable_guild_channel,
+)
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.cogs.database import (
     InMemoryDatabaseOptions,
@@ -60,6 +65,12 @@ class FridayCog(Cog, name="commanderbot.ext.friday"):
         # Make sure the message wasn't sent by the bot
         if is_bot(self.bot, message.author):
             return
+
+        # Make sure the message was sent in a messageable channel in a guild
+        if not (message.guild and is_messagable_guild_channel(message.channel)):
+            return
+
+        await self.state[message.guild].on_message(message)
 
     # @@ COMMANDS
 

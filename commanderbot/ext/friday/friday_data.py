@@ -17,7 +17,6 @@ from commanderbot.ext.friday.friday_exceptions import (
 from commanderbot.ext.friday.friday_store import FridayRule
 from commanderbot.lib import FromDataMixin, GuildID, JsonSerializable, UserID, utils
 from commanderbot.lib.types import ChannelID
-from commanderbot.lib.utils import channels
 
 
 # @implements FridayRule
@@ -104,7 +103,7 @@ class FridayRuleData(JsonSerializable, FromDataMixin):
         response: str,
         user_id: UserID,
     ):
-        self.pattern = re.compile(pattern) if pattern else None
+        self.pattern = pattern
         self.chance = chance
         self.cooldown = cooldown
         self.response = response
@@ -180,7 +179,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
     def add_rule(
         self,
         name: str,
-        pattern: Optional[re.Pattern],
+        pattern: Optional[str],
         chance: float,
         cooldown: int,
         response: str,
@@ -193,7 +192,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
         # Create and add a new rule
         rule = FridayRuleData(
             name=name,
-            pattern=pattern,
+            pattern=re.compile(pattern) if pattern else None,
             chance=chance,
             cooldown=cooldown,
             response=response,
@@ -210,7 +209,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
     def modify_rule(
         self,
         name: str,
-        pattern: Optional[re.Pattern],
+        pattern: Optional[str],
         chance: float,
         cooldown: int,
         response: str,
@@ -221,7 +220,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
 
         # Modify the rule
         rule.modify(
-            pattern=pattern,
+            pattern=re.compile(pattern) if pattern else None,
             chance=chance,
             cooldown=cooldown,
             response=response,
@@ -303,7 +302,7 @@ class FridayData(JsonSerializable, FromDataMixin):
         self,
         guild: Guild,
         name: str,
-        pattern: Optional[re.Pattern],
+        pattern: Optional[str],
         chance: float,
         cooldown: int,
         response: str,
@@ -318,7 +317,7 @@ class FridayData(JsonSerializable, FromDataMixin):
         self,
         guild: Guild,
         name: str,
-        pattern: Optional[re.Pattern],
+        pattern: Optional[str],
         chance: float,
         cooldown: int,
         response: str,
