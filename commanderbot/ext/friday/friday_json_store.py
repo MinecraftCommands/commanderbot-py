@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import AsyncIterable, Optional
 
 from discord import Guild
 
@@ -94,3 +94,23 @@ class FridayJsonStore(CogStore):
         cache = await self.db.get_cache()
         await cache.update_on_rule_matched(rule)
         await self.db.dirty()
+
+    # @implements FridayStore
+    async def get_rules(
+        self,
+        guild: Guild,
+        *,
+        rule_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None,
+    ) -> AsyncIterable[FridayRule]:
+        cache = await self.db.get_cache()
+        async for rule in cache.get_rules(
+            guild,
+            rule_filter=rule_filter,
+            case_sensitive=case_sensitive,
+            sort=sort,
+            cap=cap,
+        ):
+            yield rule

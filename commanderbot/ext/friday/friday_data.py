@@ -3,7 +3,8 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Optional, Self
+from itertools import islice
+from typing import Any, AsyncIterable, Iterable, Optional, Self
 
 from discord import Guild
 from discord.utils import utcnow
@@ -86,19 +87,28 @@ class FridayRuleData(JsonSerializable, FromDataMixin):
 
     # @implements FridayRule
     @property
-    def current_cooldown(self) -> Optional[timedelta]:
-        if self.last_response:
-            now = utcnow()
-            delta = now - self.last_response
-
-            cooldown_td = timedelta(seconds=self.cooldown)
-            if delta < cooldown_td:
-                return cooldown_td - delta
-
-    # @implements FridayRule
-    @property
     def available(self) -> bool:
-        return not self.current_cooldown
+        # Return early if the rule doesn't have a last response
+        if not self.last_response:
+            return True
+
+        # Get the difference between now and the last response
+        now = utcnow()
+        delta = now - self.last_response
+
+        # Check if the difference is larger than the cooldown
+        cooldown_td = timedelta(seconds=self.cooldown)
+        return delta > cooldown_td
+
+    # @implements FridayStore
+    @property
+    def avaliable_after(self) -> Optional[datetime]:
+        # Return early if the rule doesn't have a last response
+        if not self.last_response:
+            return None
+
+        # Get the date for when the rule is available next
+        return self.last_response + timedelta(seconds=self.cooldown)
 
     # @implements FridayRule
     def modify(
@@ -247,6 +257,18 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
             if rule.check(content):
                 return rule
 
+    def all_rules_matching(
+        self, rule_filter: Optional[str], case_sensitive: bool
+    ) -> Iterable[FridayRuleData]:
+        if not rule_filter:
+            yield from self.rules.values()
+        else:
+            rule_filter = rule_filter if case_sensitive else rule_filter.lower()
+            for rule in self.rules.values():
+                rule_name: str = rule.name if case_sensitive else rule.name.lower()
+                if rule_filter in rule_name:
+                    yield rule
+
 
 def _guilds_defaultdict_factory() -> defaultdict[GuildID, FridayGuildData]:
     return defaultdict(lambda: FridayGuildData())
@@ -345,3 +367,18 @@ class FridayData(JsonSerializable, FromDataMixin):
     async def update_on_rule_matched(self, rule: FridayRule):
         rule.last_response = utcnow()
         rule.hits += 1
+
+    # @implements FridayStore
+    async def get_rules(
+        self,
+        guild: Guild,
+        *,
+        rule_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None,
+    ) -> AsyncIterable[FridayRule]:
+        rules = self.guilds[guild.id].all_rules_matching(rule_filter, case_sensitive)
+        maybe_sorted_rules = sorted(rules, key=lambda r: r.name) if sort else rules
+        for rule in islice(maybe_sorted_rules, cap):
+            yield rule

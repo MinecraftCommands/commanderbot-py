@@ -1,5 +1,12 @@
 from discord import ForumChannel, Interaction, Message, Permissions
-from discord.app_commands import AppCommandContext, AppInstallationType, Group, describe
+from discord.app_commands import (
+    AppCommandContext,
+    AppInstallationType,
+    Choice,
+    Group,
+    autocomplete,
+    describe,
+)
 from discord.ext.commands import Bot, Cog
 
 from commanderbot.ext.friday.friday_data import FridayData
@@ -10,6 +17,7 @@ from commanderbot.ext.friday.friday_state import FridayState
 from commanderbot.ext.friday.friday_store import FridayStore
 from commanderbot.lib import (
     MessageableGuildChannel,
+    constants,
     is_bot,
     is_guild,
     is_messagable_guild_channel,
@@ -57,6 +65,26 @@ class FridayCog(Cog, name="commanderbot.ext.friday"):
             ),
             store=self.store,
         )
+
+    # @@ AUTOCOMPLETE
+
+    async def rule_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        """
+        An autocomplete callback that will return any rules that match `value`
+        """
+
+        choices: list[Choice] = []
+        assert is_guild(interaction.guild)
+        async for rule in self.store.get_rules(
+            interaction.guild,
+            rule_filter=value,
+            sort=True,
+            cap=constants.MAX_AUTOCOMPLETE_CHOICES,
+        ):
+            choices.append(Choice(name=f"📜 {rule.name}", value=rule.name))
+        return choices
 
     # @@ LISTENERS
 
@@ -107,37 +135,40 @@ class FridayCog(Cog, name="commanderbot.ext.friday"):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].unregister_channel(interaction, channel.id)
 
-    # @@ friday rule
-    cmd_friday_rule = Group(name="rule", description="Manage rules", parent=cmd_friday)
+    # @@ friday rules
+    cmd_friday_rules = Group(name="rules", description="Manage rules", parent=cmd_friday)
 
-    # @@ friday rule add
-    @cmd_friday_rule.command(name="add", description="Add a new rule")
-    async def cmd_friday_rule_add(self, interaction: Interaction):
+    # @@ friday rules add
+    @cmd_friday_rules.command(name="add", description="Add a new rule")
+    async def cmd_friday_rules_add(self, interaction: Interaction):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].add_rule(interaction)
 
-    # @@ friday rule modify
-    @cmd_friday_rule.command(name="modify", description="Modify a rule")
-    async def cmd_friday_rule_modify(self, interaction: Interaction, rule: str):
+    # @@ friday rules modify
+    @cmd_friday_rules.command(name="modify", description="Modify a rule")
+    @autocomplete(rule=rule_autocomplete)
+    async def cmd_friday_rules_modify(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_rule(interaction, rule)
 
-    # @@ friday rule remove
-    @cmd_friday_rule.command(name="remove", description="Remove a rule")
-    async def cmd_friday_rule_remove(self, interaction: Interaction, rule: str):
+    # @@ friday rules remove
+    @cmd_friday_rules.command(name="remove", description="Remove a rule")
+    @autocomplete(rule=rule_autocomplete)
+    async def cmd_friday_rules_remove(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].remove_rule(interaction, rule)
 
-    # @@ friday rule details
-    @cmd_friday_rule.command(
+    # @@ friday rules details
+    @cmd_friday_rules.command(
         name="details", description="Show the details about a rule"
     )
-    async def cmd_friday_rule_details(self, interaction: Interaction, rule: str):
+    @autocomplete(rule=rule_autocomplete)
+    async def cmd_friday_rules_details(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_rule_details(interaction, rule)
 
-    # @@ friday rule list
-    @cmd_friday_rule.command(name="list", description="List all rules")
-    async def cmd_friday_rule_list(self, interaction: Interaction):
+    # @@ friday rules list
+    @cmd_friday_rules.command(name="list", description="List all rules")
+    async def cmd_friday_rules_list(self, interaction: Interaction):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].list_rules(interaction)

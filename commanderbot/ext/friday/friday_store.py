@@ -1,6 +1,6 @@
 import re
-from datetime import datetime, timedelta
-from typing import Optional, Protocol
+from datetime import datetime
+from typing import AsyncIterable, Optional, Protocol
 
 from discord import Guild
 
@@ -21,10 +21,10 @@ class FridayRule(Protocol):
     modified_on: datetime
 
     @property
-    def current_cooldown(self) -> Optional[timedelta]: ...
+    def available(self) -> bool: ...
 
     @property
-    def available(self) -> bool: ...
+    def avaliable_after(self) -> Optional[datetime]: ...
 
     def modify(
         self,
@@ -80,3 +80,13 @@ class FridayStore(Protocol):
     async def check_rules(self, guild: Guild, content: str) -> Optional[FridayRule]: ...
 
     async def update_on_rule_matched(self, rule: FridayRule): ...
+
+    def get_rules(
+        self,
+        guild: Guild,
+        *,
+        rule_filter: Optional[str] = None,
+        case_sensitive: bool = False,
+        sort: bool = False,
+        cap: Optional[int] = None,
+    ) -> AsyncIterable[FridayRule]: ...

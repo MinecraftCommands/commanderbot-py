@@ -2,8 +2,9 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Interaction, Message, TextStyle
+from discord import Embed, Interaction, Message, TextStyle
 from discord.ui import TextInput
+from discord.utils import format_dt
 
 from commanderbot.ext.friday.friday_exceptions import (
     InvalidRuleChance,
@@ -13,11 +14,13 @@ from commanderbot.ext.friday.friday_store import FridayRule, FridayStore
 from commanderbot.lib import (
     AllowedMentions,
     ChannelID,
+    ConfirmationResult,
     MessageableGuildChannel,
     constants,
     is_convertable_to,
     is_messagable_guild_channel,
     is_thread,
+    respond_with_confirmation,
 )
 from commanderbot.lib.cogs import CogGuildState
 from commanderbot.lib.cogs.views import CogStateModal
@@ -26,7 +29,7 @@ from commanderbot.lib.cogs.views import CogStateModal
 @dataclass
 class FridayGuildState(CogGuildState):
     """
-    Encapsulates the state and logic of the faq cog, at the guild level.
+    Encapsulates the state and logic of the friday cog, at the guild level.
 
     Attributes
     -----------
@@ -76,13 +79,116 @@ class FridayGuildState(CogGuildState):
         await interaction.response.send_modal(ModifyRuleModal(interaction, self, rule))
 
     async def remove_rule(self, interaction: Interaction, name: str):
-        pass
+        # Try to get the rule
+        rule: FridayRule = await self.store.require_rule(self.guild, name)
+
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove the rule `{rule.name}`?",
+            timeout=10.0,
+        )
+
+        match result:
+            case ConfirmationResult.YES:
+                # If the answer was yes, attempt to remove the rule and send a response
+                try:
+                    await self.store.remove_rule(self.guild, rule.name)
+                    await interaction.followup.send(
+                        content=f"Removed the rule `{rule.name}`"
+                    )
+                except Exception as ex:
+                    await interaction.delete_original_response()
+                    raise ex
+            case _:
+                # If the answer was no, send a response
+                await interaction.followup.send(
+                    f"Did not remove the rule `{rule.name}`"
+                )
 
     async def show_rule_details(self, interaction: Interaction, name: str):
-        pass
+        # Try to get the rule
+        rule: FridayRule = await self.store.require_rule(self.guild, name)
+
+        # Format rule data
+        formatted_response: str = "\n".join(
+            (f"> {line}" for line in rule.response.split("\n"))
+        )
+
+        formatted_pattern: str = "**None!**"
+        if rule.pattern:
+            formatted_pattern = f"```\n{rule.pattern.pattern}\n```"
+
+        formatted_last_response: str = "**None!**"
+        if rule.last_response:
+            formatted_last_response = f"{format_dt(rule.last_response, style='R')}"
+
+        formatted_available_after: str = "**Not Triggered Yet!**"
+        if dt := rule.avaliable_after:
+            formatted_available_after = f"{format_dt(dt, style='R')}"
+
+        # Create rule details embed
+        embed = Embed(
+            title=f"Details for rule `{rule.name}`",
+            description=f"**Response Preview**\n{formatted_response}",
+            color=0x00ACED,
+        )
+        embed.add_field(name="Name", value=f"`{rule.name}`", inline=False)
+        embed.add_field(name="Pattern", value=formatted_pattern, inline=False)
+        embed.add_field(name="Cooldown", value=f"`{rule.cooldown}` seconds")
+        embed.add_field(name="Hits", value=f"`{rule.hits}`")
+        embed.add_field(name="Last Response", value=formatted_last_response)
+        embed.add_field(name="Available After", value=formatted_available_after)
+        embed.add_field(
+            name="Added By",
+            value=f"<@{rule.added_by_id}> ({format_dt(rule.added_on, style='R')})",
+        )
+        embed.add_field(
+            name="Modified By",
+            value=f"<@{rule.modified_by_id}> ({format_dt(rule.modified_on, style='R')})",
+        )
+
+        await interaction.response.send_message(embed=embed)
 
     async def list_rules(self, interaction: Interaction):
-        pass
+        # Get all rules
+        total_rules: int = 0
+        available_rules: list[FridayRule] = []
+        rules_on_cooldown: list[FridayRule] = []
+        async for rule in self.store.get_rules(self.guild, sort=True):
+            total_rules += 1
+            if rule.available:
+                available_rules.append(rule)
+            else:
+                rules_on_cooldown.append(rule)
+
+        # Format embed lines
+        lines: list[str] = []
+        if available_rules:
+            lines.append("**Ready**")
+            lines.append(", ".join((f"`{r.name}`" for r in available_rules)))
+
+        if rules_on_cooldown:
+            lines.append("**On Cooldown**")
+            lines.append(
+                ", ".join(
+                    (
+                        f"`{r.name}` ({format_dt(r.avaliable_after, style='R')})"
+                        for r in rules_on_cooldown
+                        if r.avaliable_after
+                    )
+                )
+            )
+
+        # Create rule list embed
+        embed = Embed(
+            title="All rules",
+            description="\n".join(lines) or "**None!**",
+            color=0x00ACED,
+        )
+        embed.set_footer(text=f"Rules: {total_rules}")
+
+        await interaction.response.send_message(embed=embed)
 
 
 class FridayModal(CogStateModal[FridayGuildState, FridayStore]):
