@@ -135,10 +135,11 @@ class FridayGuildState(CogGuildState):
         )
         embed.add_field(name="Name", value=f"`{rule.name}`", inline=False)
         embed.add_field(name="Pattern", value=formatted_pattern, inline=False)
+        embed.add_field(name="Chance", value=f"`{rule.chance}`")
         embed.add_field(name="Cooldown", value=f"`{rule.cooldown}` seconds")
         embed.add_field(name="Hits", value=f"`{rule.hits}`")
         embed.add_field(name="Last Response", value=formatted_last_response)
-        embed.add_field(name="Available After", value=formatted_available_after)
+        embed.add_field(name="On Cooldown Until", value=formatted_available_after)
         embed.add_field(
             name="Added By",
             value=f"<@{rule.added_by_id}> ({format_dt(rule.added_on, style='R')})",
