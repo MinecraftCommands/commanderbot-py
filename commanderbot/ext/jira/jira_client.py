@@ -27,13 +27,21 @@ class JiraClient:
 
     async def _request_issue_data(self, base_url: str, issue_id: str) -> dict:
         try:
-            issue_url: str = f"{base_url}/rest/api/latest/issue/{issue_id}"
+            issue_url: str = f"{base_url}/api/jql-search-post"
             headers: dict[str, str] = {"User-Agent": constants.USER_AGENT}
+            project = issue_id.split('-')[0]
+            body = {
+              "advanced": True,
+              "search": f"key = {issue_id}",
+              "project": project
+            }
             async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    issue_url, headers=headers, raise_for_status=True
+                async with session.post(
+                    issue_url, json=body, headers=headers, raise_for_status=True
                 ) as response:
-                    return await response.json()
+                    data = await response.json()
+                    issue = data["issues"][0]
+                    return issue
 
         except aiohttp.InvalidURL:
             raise InvalidURL(issue_id)
