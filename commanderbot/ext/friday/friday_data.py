@@ -47,7 +47,7 @@ class FridayRuleData(JsonSerializable, FromDataMixin):
         if isinstance(data, dict):
             pattern: Optional[re.Pattern] = None
             if raw_pattern := data.get("pattern"):
-                pattern = re.compile(raw_pattern)
+                pattern = re.compile(raw_pattern, re.IGNORECASE)
 
             last_response: Optional[datetime] = None
             if raw_last_response := data.get("last_response"):
@@ -208,7 +208,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
         # Create and add a new rule
         rule = FridayRuleData(
             name=name,
-            pattern=re.compile(pattern) if pattern else None,
+            pattern=re.compile(pattern, re.IGNORECASE) if pattern else None,
             chance=chance,
             cooldown=cooldown,
             response=response,
@@ -236,7 +236,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
 
         # Modify the rule
         rule.modify(
-            pattern=re.compile(pattern) if pattern else None,
+            pattern=re.compile(pattern, re.IGNORECASE) if pattern else None,
             chance=chance,
             cooldown=cooldown,
             response=response,
