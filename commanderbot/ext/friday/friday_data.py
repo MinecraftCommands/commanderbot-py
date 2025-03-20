@@ -253,7 +253,18 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
         return rule
 
     def check_rules(self, content: str) -> Optional[FridayRuleData]:
-        for rule in self.rules.values():
+        rules = list(self.rules.values())
+        while rules:
+            # Choose a random rule
+            idx = random.randint(0, len(rules) - 1)
+            rule = rules[idx]
+
+            # Move the last rule to the randomly chosen index
+            # Then remove the last rule
+            rules[idx] = rules[-1]
+            rules.pop()
+
+            # Check the chosen rule
             if rule.check(content):
                 return rule
 
