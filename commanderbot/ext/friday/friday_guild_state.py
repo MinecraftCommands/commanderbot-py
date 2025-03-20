@@ -236,7 +236,7 @@ class AddRuleModal(FridayModal):
             required=True,
         )
         self.pattern_field = TextInput(
-            label="Patten",
+            label="Pattern",
             style=TextStyle.short,
             placeholder="A regex pattern.",
             required=False,
@@ -295,7 +295,7 @@ class ModifyRuleModal(FridayModal):
         )
 
         self.pattern_field = TextInput(
-            label="Patten",
+            label="Pattern",
             style=TextStyle.short,
             placeholder="A regex pattern.",
             default=self.pattern_to_str(rule.pattern),
