@@ -71,6 +71,24 @@ class FridayGuildState(CogGuildState):
         await self.store.unregister_channel(self.guild, channel_id)
         await interaction.response.send_message(f"Unregistered <#{channel_id}>")
 
+    async def list_registered_channels(self, interaction: Interaction):
+        # Get all registered channels
+        total_registered_channels: int = 0
+        lines: list[str] = []
+        async for channel_id in self.store.get_registered_channels(self.guild):
+            lines.append(f"<#{channel_id}>")
+            total_registered_channels += 1
+
+        # Create registered channels list embed
+        embed = Embed(
+            title="All registered channels",
+            description="\n".join(lines) or "**None!**",
+            color=0x00ACED,
+        )
+        embed.set_footer(text=f"Channels: {total_registered_channels}")
+
+        await interaction.response.send_message(embed=embed)
+
     async def add_rule(self, interaction: Interaction):
         await interaction.response.send_modal(AddRuleModal(interaction, self))
 

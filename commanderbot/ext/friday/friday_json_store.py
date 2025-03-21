@@ -37,6 +37,12 @@ class FridayJsonStore(CogStore):
         await self.db.dirty()
 
     # @implements FridayStore
+    async def get_registered_channels(self, guild: Guild) -> AsyncIterable[ChannelID]:
+        cache = await self.db.get_cache()
+        async for channel_id in cache.get_registered_channels(guild):
+            yield channel_id
+
+    # @implements FridayStore
     async def require_rule(self, guild: Guild, name: str) -> FridayRule:
         cache = await self.db.get_cache()
         return await cache.require_rule(guild, name)

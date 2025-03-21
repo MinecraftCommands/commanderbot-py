@@ -112,31 +112,47 @@ class FridayCog(Cog, name="commanderbot.ext.friday"):
         default_permissions=Permissions(administrator=True),
     )
 
-    # @@ friday register
-    @cmd_friday.command(
+    # @@ friday channels
+    cmd_friday_channels = Group(
+        name="channels", description="Manage channels", parent=cmd_friday
+    )
+
+    # @@ friday channels register
+    @cmd_friday_channels.command(
         name="register", description="Register a channel so rules will be checked in it"
     )
     @describe(channel="The channel to register")
-    async def cmd_register(
+    async def cmd_friday_channels_register(
         self, interaction: Interaction, channel: MessageableGuildChannel | ForumChannel
     ):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].register_channel(interaction, channel.id)
 
-    # @@ friday unregister
-    @cmd_friday.command(
+    # @@ friday channels unregister
+    @cmd_friday_channels.command(
         name="unregister",
         description="Unregister a channel so rules will not be checked in it",
     )
     @describe(channel="The channel to unregister")
-    async def cmd_unregister(
+    async def cmd_friday_channels_unregister(
         self, interaction: Interaction, channel: MessageableGuildChannel | ForumChannel
     ):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].unregister_channel(interaction, channel.id)
 
+    # @@ friday channels list
+    @cmd_friday_channels.command(
+        name="list",
+        description="List all registered channels",
+    )
+    async def cmd_friday_channels_list(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].list_registered_channels(interaction)
+
     # @@ friday rules
-    cmd_friday_rules = Group(name="rules", description="Manage rules", parent=cmd_friday)
+    cmd_friday_rules = Group(
+        name="rules", description="Manage rules", parent=cmd_friday
+    )
 
     # @@ friday rules add
     @cmd_friday_rules.command(name="add", description="Add a new rule")

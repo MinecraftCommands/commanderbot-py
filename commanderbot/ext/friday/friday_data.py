@@ -187,6 +187,9 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
         # Unregister the channel
         self.channels.remove(channel_id)
 
+    def get_registered_channels(self) -> list[ChannelID]:
+        return self.channels
+
     def require_rule(self, name: str) -> FridayRuleData:
         if rule := self.rules.get(name):
             return rule
@@ -331,6 +334,11 @@ class FridayData(JsonSerializable, FromDataMixin):
     # @implements FridayStore
     async def unregister_channel(self, guild: Guild, channel_id: ChannelID):
         return self.guilds[guild.id].unregister_channel(channel_id)
+
+    # @implements FridayStore
+    async def get_registered_channels(self, guild: Guild) -> AsyncIterable[ChannelID]:
+        for channel_id in self.guilds[guild.id].get_registered_channels():
+            yield channel_id
 
     # @implements FridayStore
     async def require_rule(self, guild: Guild, name: str) -> FridayRule:
