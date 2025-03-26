@@ -35,12 +35,6 @@ class RequestError(JiraException):
         super().__init__(f"😵 An error occurred while requesting `{self.issue_id}`")
 
 
-class IssueHasNoFields(JiraException):
-    def __init__(self, issue_id: str):
-        self.issue_id: str = issue_id
-        super().__init__(f"😬 `{self.issue_id}` does not have any fields")
-
-
 class InvalidIssueFormat(JiraTransformerException):
     def __init__(self):
         super().__init__(
