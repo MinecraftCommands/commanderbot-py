@@ -67,7 +67,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `jira`:
   - Ported to slash commands
   - Made user installable
-  - Querying `jira` issues using a URL as the argument will now ignore the base URL stored in the `jira` cog and instead get it from the argument
   - Fixed an issue where the embed's status colors weren't being applied
 - `quote`:
   - Ported to slash commands
