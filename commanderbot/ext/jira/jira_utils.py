@@ -1,8 +1,17 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
-from discord.utils import format_dt
+type CustomFieldKeys = Literal["votes", "confirmation_status", "mojang_priority"]
+type CustomFields = dict[CustomFieldKeys, str]
+
+
+@dataclass
+class JiraQuery:
+    project: str
+    id: int
+    issue_id: str
 
 
 class StatusColor(Enum):
@@ -37,10 +46,9 @@ class StatusColor(Enum):
 class JiraIssue:
     issue_id: str
     url: str
-    icon_url: str
+
+    # Default fields
     summary: str
-    reporter: str
-    assignee: str
     created: datetime
     updated: datetime
     status: str
@@ -48,18 +56,9 @@ class JiraIssue:
     resolution: str
     since_version: str
     fix_version: str
-    votes: int
+    watching: int
 
-    @property
-    def fields(self) -> dict:
-        return {
-            "Reported By": self.reporter,
-            "Assigned To": self.assignee,
-            "Created": format_dt(self.created, style="R"),
-            "Updated": format_dt(self.updated, style="R"),
-            "Since Version": self.since_version,
-            "Fix Version": self.fix_version,
-            "Status": self.status,
-            "Resolution": self.resolution,
-            "Votes": self.votes,
-        }
+    # Custom fields
+    votes: int
+    confirmation_status: str
+    mojang_priority: str

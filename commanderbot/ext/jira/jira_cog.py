@@ -1,6 +1,4 @@
 import re
-from logging import Logger, getLogger
-from typing import Optional
 
 from discord import Embed, Interaction, ui
 from discord.app_commands import (
@@ -11,13 +9,15 @@ from discord.app_commands import (
     describe,
 )
 from discord.ext.commands import Bot, Cog
+from discord.utils import format_dt
 
-from commanderbot.ext.jira.jira_client import JiraClient, JiraQuery
+from commanderbot.ext.jira.jira_client import JiraClient
 from commanderbot.ext.jira.jira_exceptions import InvalidIssueFormat
-from commanderbot.ext.jira.jira_issue import JiraIssue
+from commanderbot.ext.jira.jira_options import JiraOptions
+from commanderbot.ext.jira.jira_utils import JiraIssue, JiraQuery
 from commanderbot.lib import constants
 
-JIRA_URL_PATTERN = re.compile(r"^(https?://[^/]+).*?(\w+)-(\d+)")
+JIRA_URL_PATTERN = re.compile(r"^https?://[^/]+.*?(\w+)-(\d+)")
 JIRA_ISSUE_ID_PATTERN = re.compile(r"^(\w+)-(\d+)")
 
 
@@ -29,12 +29,14 @@ class JiraQueryTransformer(Transformer):
     async def transform(self, interaction: Interaction, value: str) -> JiraQuery:
         # Throw away any request parameters
         raw_query: str = value.split("?")[0]
+
+        # Parse argument
         if matches := JIRA_URL_PATTERN.match(raw_query):
-            base_url, project, id = matches.groups()
-            return JiraQuery(base_url, f"{project.upper()}-{int(id)}")
+            project, id = matches.groups()
+            return JiraQuery(project.upper(), int(id), f"{project.upper()}-{int(id)}")
         elif matches := JIRA_ISSUE_ID_PATTERN.match(raw_query):
             project, id = matches.groups()
-            return JiraQuery(None, f"{project.upper()}-{int(id)}")
+            return JiraQuery(project.upper(), int(id), f"{project.upper()}-{int(id)}")
         else:
             raise InvalidIssueFormat
 
@@ -42,20 +44,10 @@ class JiraQueryTransformer(Transformer):
 class JiraCog(Cog, name="commanderbot.ext.jira"):
     def __init__(self, bot: Bot, **options):
         self.bot: Bot = bot
-        self.log: Logger = getLogger(self.qualified_name)
+        self.options = JiraOptions.from_data(options)
+        self.jira_client = JiraClient.from_options(self.options)
 
-        # Get the URL from the config
-        url: Optional[str] = options.get("url")
-        if not url:
-            self.log.warn(
-                "No Jira URL was given in the bot config. "
-                "You can still request Jira issues, but you'll need to use the full URL."
-            )
-
-        # Create the Jira client
-        self.jira_client = JiraClient(url)
-
-    @command(name="jira", description="Query a Jira issue")
+    @command(name="jira", description="Query an issue from Jira")
     @describe(query="The issue ID or URL to query")
     @allowed_installs(guilds=True, users=True)
     async def cmd_jira(
@@ -84,11 +76,18 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
             url=issue.url,
             color=issue.status_color.value,
         )
-
-        issue_embed.set_thumbnail(url=issue.icon_url)
-
-        for k, v in issue.fields.items():
-            issue_embed.add_field(name=k, value=v)
+        issue_embed.set_thumbnail(url=self.options.icon_url)
+        issue_embed.add_field(name="Created", value=format_dt(issue.created, "R"))
+        issue_embed.add_field(name="Updated", value=format_dt(issue.updated, "R"))
+        issue_embed.add_field(name="Since Version", value=issue.since_version)
+        issue_embed.add_field(name="Fix Version", value=issue.fix_version)
+        issue_embed.add_field(
+            name="Confirmation Status", value=issue.confirmation_status
+        )
+        issue_embed.add_field(name="Status", value=issue.status)
+        issue_embed.add_field(name="Resolution", value=issue.resolution)
+        issue_embed.add_field(name="Mojang Priority", value=issue.mojang_priority)
+        issue_embed.add_field(name="Votes", value=issue.votes)
 
         # Create view with link button
         jira_link_button: ui.View = ui.View()
