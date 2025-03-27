@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Self
 
 import aiohttp
@@ -98,12 +98,8 @@ class JiraClient:
             issue_id=query.issue_id,
             url=f"{self.base_url}/browse/{query.project}/issues/{query.issue_id}",
             summary=fields["summary"],
-            created=datetime.fromisoformat(fields["created"]).replace(
-                tzinfo=timezone.utc
-            ),
-            updated=datetime.fromisoformat(fields["updated"]).replace(
-                tzinfo=timezone.utc
-            ),
+            created=datetime.fromisoformat(fields["created"]),
+            updated=datetime.fromisoformat(fields["updated"]),
             status=fields["status"]["name"],
             status_color=StatusColor.from_str(
                 fields["status"]["statusCategory"]["colorName"]
