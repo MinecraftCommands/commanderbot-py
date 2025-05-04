@@ -1,7 +1,7 @@
 [project]
 name = "commanderbot"
 description = "A collection of utilities and extensions for discord.py bots."
-version = "0.20.0a36"
+version = "0.20.0"
 requires-python = ">=3.13,<3.14"
 authors = [
     { name = "Ersatz", email = "ersatz0077@gmail.com" },
@@ -62,3 +62,13 @@ typeCheckingMode = "basic"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[[tool.uv.index]]
+name="pypi"
+url = "https://pypi.org/simple/"
+publish-url = "https://upload.pypi.org/legacy/"
+
+[[tool.uv.index]]
+name="test-pypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
