@@ -9,7 +9,7 @@ A collection of utilities and extensions for discord.py bots.
 ## Requirements
 
 - Python 3.13+
-- discord.py 2.4+
+- discord.py 2.5+
 
 ## Running your bot
 
