@@ -57,7 +57,7 @@ class JiraClient:
     async def get_issue(self, query: JiraQuery) -> JiraIssue:
         # Fetch issue and raise an exception we got no results
         data: JsonObject = await self._fetch_issue_json(query)
-        if data["total"] != 1:
+        if len(data.get("issues", [])) != 1:
             raise IssueNotFound(query.issue_id)
 
         # Extract the issue's fields
