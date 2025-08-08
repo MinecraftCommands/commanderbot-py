@@ -22,7 +22,7 @@ __all__ = (
 RELEASE_VERSION_PATTERN = re.compile(r"\d+\.\d+(?:\.\d+)?")
 PREVIEW_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+\.\d+")
 
-IMAGE_TAG_PATTERN = re.compile(r"<img\ssrc\s*=\s*['\"]([^'\"]*?)['\"][^>]*?>")
+IMAGE_TAG_PATTERN = re.compile(r"<img.*?src=\"(.+?)\".*?>")
 
 
 @dataclass
