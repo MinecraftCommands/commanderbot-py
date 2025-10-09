@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+### Changed
+
+- Updated Python to 3.14
+- Updated discord.py to 2.6
+- Fixed an issue where the Bedrock changelog feed wasn't finding the thumbnail
+
 ## [0.20.0] - 2025-05-03
 
 ### Added
