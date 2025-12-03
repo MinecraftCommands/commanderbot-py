@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger, getLogger
-from typing import Generic, Optional, Self, TypeVar
+from typing import Optional, Self
 from urllib.parse import urlparse, urlunparse
 
 from commanderbot.lib import FromDataMixin
@@ -12,9 +12,6 @@ __all__ = (
     "FeedProviderBase",
 )
 
-OptionsType = TypeVar("OptionsType")
-CacheType = TypeVar("CacheType")
-
 
 @dataclass
 class FeedProviderOptionsBase(FromDataMixin):
@@ -22,7 +19,7 @@ class FeedProviderOptionsBase(FromDataMixin):
     icon_url: str
 
 
-class FeedProviderBase(Generic[OptionsType, CacheType], ABC):
+class FeedProviderBase[OptionsType, CacheType](ABC):
     """
     Base class for all feed providers
     """
@@ -53,17 +50,17 @@ class FeedProviderBase(Generic[OptionsType, CacheType], ABC):
     def start(self):
         # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
         self._log.info("Started polling!")
-        self._on_poll.start()
+        self._on_poll.start()  # type: ignore
 
     def stop(self):
         # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
         self._log.info("Stopped polling!")
-        self._on_poll.stop()
+        self._on_poll.stop()  # type: ignore
 
     def restart(self):
         # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
         self._log.info("Restarting...")
-        self._on_poll.restart()
+        self._on_poll.restart()  # type: ignore
 
     @abstractmethod
     async def _on_poll(self):

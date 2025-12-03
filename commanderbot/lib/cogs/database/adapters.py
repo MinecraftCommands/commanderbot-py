@@ -2,12 +2,15 @@ import asyncio
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
 from pathlib import Path
-from typing import Callable, Generic, Optional, Protocol, TypeVar
+from typing import Callable, Optional, Protocol
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.ext.asyncio.engine import AsyncConnection
 
-from commanderbot.lib.cogs.database.options import JsonFileDatabaseOptions, SQLiteDatabaseOptions
+from commanderbot.lib.cogs.database.options import (
+    JsonFileDatabaseOptions,
+    SQLiteDatabaseOptions,
+)
 from commanderbot.lib.json import json_dump_async, json_load_async
 from commanderbot.lib.types import JsonObject
 
@@ -18,26 +21,20 @@ __all__ = (
 )
 
 
-CacheType = TypeVar("CacheType")
-
-
 class SQLDatabaseAdapter(Protocol):
     """
     A protocol class for SQL databases
     """
 
-    def connect(self) -> AsyncConnection:
-        ...
+    def connect(self) -> AsyncConnection: ...
 
-    def begin(self) -> AsyncConnection:
-        ...
+    def begin(self) -> AsyncConnection: ...
 
-    def session(self) -> AsyncSession:
-        ...
+    def session(self) -> AsyncSession: ...
 
 
 @dataclass
-class JsonFileDatabaseAdapter(Generic[CacheType]):
+class JsonFileDatabaseAdapter[CacheType]:
     """
     Wraps common operations for persistent data backed by a simple JSON file.
 
