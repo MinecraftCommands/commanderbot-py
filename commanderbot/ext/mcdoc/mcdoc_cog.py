@@ -1,21 +1,22 @@
 from typing import Optional
-import aiohttp
 
+import aiohttp
 from discord import Embed, Emoji, Interaction
-from discord.app_commands import (
-    allowed_installs,
-    command,
-    describe,
-)
+from discord.app_commands import allowed_contexts, allowed_installs, command, describe
 from discord.ext import tasks
 from discord.ext.commands import Cog
 
 from commanderbot.core.commander_bot import CommanderBot
+from commanderbot.ext.mcdoc.mcdoc_exceptions import (
+    EmojiNotFoundError,
+    InvalidVersionError,
+    RequestSymbolsError,
+    RequestVersionError,
+)
+from commanderbot.ext.mcdoc.mcdoc_options import McdocOptions
 from commanderbot.ext.mcdoc.mcdoc_symbols import McdocSymbols
 from commanderbot.ext.mcdoc.mcdoc_types import McdocContext
-from commanderbot.ext.mcdoc.mcdoc_exceptions import InvalidVersionError, RequestSymbolsError, RequestVersionError, EmojiNotFoundError
-from commanderbot.ext.mcdoc.mcdoc_options import McdocOptions
-from commanderbot.lib import constants, AllowedMentions
+from commanderbot.lib import AllowedMentions, constants
 from commanderbot.lib.predicates import is_convertable_to
 
 
@@ -66,9 +67,12 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         try:
             # Try to update the version
             async with aiohttp.ClientSession(raise_for_status=True) as session:
-                async with session.get(self.options.manifest_url, headers={
-                    "User-Agent": constants.USER_AGENT,
-                }) as response:
+                async with session.get(
+                    self.options.manifest_url,
+                    headers={
+                        "User-Agent": constants.USER_AGENT,
+                    },
+                ) as response:
                     data: dict = await response.json()
                     release: str = data["latest"]["release"]
                     self._latest_version = release
@@ -97,7 +101,10 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         version="The Minecraft game version (defaults to the latest release)",
     )
     @allowed_installs(guilds=True, users=True)
-    async def cmd_mcdoc(self, interaction: Interaction, query: str, version: Optional[str]):
+    @allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def cmd_mcdoc(
+        self, interaction: Interaction, query: str, version: Optional[str]
+    ):
         # Respond to the interaction with a defer since the web request may take a while
         await interaction.response.defer()
 
@@ -110,7 +117,9 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
             version = await self._get_latest_version(version)
 
             # Validate that the version number can be used to compare
-            if not version.startswith("1.") or not is_convertable_to(version[2:], float):
+            if not version.startswith("1.") or not is_convertable_to(
+                version[2:], float
+            ):
                 raise InvalidVersionError(version)
         except Exception as ex:
             await interaction.delete_original_response()
@@ -122,8 +131,12 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
         embed: Embed = Embed(
             title=symbol.title(ctx),
             description=symbol.body(ctx),
-            color=0x2783E3, # Spyglass blue
+            color=0x2783E3,  # Spyglass blue
         )
-        embed.set_footer(text=f"vanilla-mcdoc · {version}", icon_url=self.options.icon_url)
+        embed.set_footer(
+            text=f"vanilla-mcdoc · {version}", icon_url=self.options.icon_url
+        )
 
-        await interaction.followup.send(embed=embed, allowed_mentions=AllowedMentions.none())
+        await interaction.followup.send(
+            embed=embed, allowed_mentions=AllowedMentions.none()
+        )

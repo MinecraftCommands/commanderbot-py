@@ -11,6 +11,7 @@ from discord.app_commands import (
     Group,
     Transform,
     Transformer,
+    allowed_contexts,
     allowed_installs,
     autocomplete,
     command,
@@ -103,6 +104,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
     @rename(manifest_type="type")
     @autocomplete(min_engine_version=min_engine_version_autocomplete)
     @allowed_installs(guilds=True, users=True)
+    @allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_manifest(
         self,
         interaction: Interaction,
@@ -142,9 +144,6 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         name="manifests",
         description="Manage the manifest generator",
         allowed_installs=AppInstallationType(guild=True),
-        allowed_contexts=AppCommandContext(
-            guild=True, dm_channel=True, private_channel=True
-        ),
         default_permissions=Permissions(administrator=True),
     )
 
