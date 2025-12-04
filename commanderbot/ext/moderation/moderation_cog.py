@@ -1,6 +1,6 @@
 from typing import Optional
 
-from discord import Interaction, Member, Permissions
+from discord import Interaction, Member, Permissions, User
 from discord.app_commands import (
     ContextMenu,
     allowed_contexts,
@@ -20,6 +20,7 @@ from commanderbot.ext.moderation.moderation_exceptions import (
     CannotBanElevatedUsers,
     CannotKickBotOrSelf,
     CannotKickElevatedUsers,
+    UserIsNotAMember,
 )
 from commanderbot.ext.moderation.moderation_views import ModerationResponse
 from commanderbot.lib import AllowedMentions
@@ -44,6 +45,9 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
             self.ctx_cmd_kick_compromised.name, type=self.ctx_cmd_kick_compromised.type
         )
 
+    def _user_is_not_a_member(self, user: User | Member):
+        return isinstance(user, User)
+
     def _user_is_bot_or_interaction_user(
         self, user: Member, interaction: Interaction
     ) -> bool:
@@ -64,6 +68,10 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
     async def cmd_kick(
         self, interaction: Interaction, user: Member, reason: Optional[str]
     ):
+        # Make sure the user is a member of this server
+        if self._user_is_not_a_member(user):
+            raise UserIsNotAMember
+
         # Make sure we aren't trying to kick the bot or the user running the command
         if self._user_is_bot_or_interaction_user(user, interaction):
             raise CannotKickBotOrSelf
@@ -124,6 +132,10 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         reason: Optional[str],
         delete_message_history: Optional[int],
     ):
+        # Make sure the user is a member of this server
+        if self._user_is_not_a_member(user):
+            raise UserIsNotAMember
+
         # Make sure we aren't trying to ban the bot or the user running the command
         if self._user_is_bot_or_interaction_user(user, interaction):
             raise CannotBanBotOrSelf
@@ -163,6 +175,10 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
     @default_permissions(ban_members=True)
     @bot_has_permissions(ban_members=True)
     async def cmd_kick_compromised(self, interaction: Interaction, user: Member):
+        # Make sure the user is a member of this server
+        if self._user_is_not_a_member(user):
+            raise UserIsNotAMember
+
         # Make sure we aren't trying to kick the bot or the user running the command
         if self._user_is_bot_or_interaction_user(user, interaction):
             raise CannotKickBotOrSelf
