@@ -5,17 +5,7 @@ import os
 import re
 import traceback
 from enum import Enum
-from typing import (
-    Any,
-    AsyncIterable,
-    Callable,
-    Coroutine,
-    Generator,
-    Mapping,
-    Optional,
-    TypeVar,
-    cast,
-)
+from typing import Any, AsyncIterable, Callable, Coroutine, Mapping, Optional, cast
 
 from discord import (
     AllowedMentions,
@@ -32,8 +22,6 @@ from commanderbot.lib.predicates import is_text_channel, is_thread, is_user
 from commanderbot.lib.types import MessageableChannel, RoleID, UserID
 
 CHARACTER_CAP = 1900
-
-T = TypeVar("T")
 
 
 def member_roles_from(member: User | Member, role_ids: set[RoleID]) -> set[RoleID]:
@@ -63,7 +51,7 @@ def dict_without_falsies(d: Optional[Mapping[str, Any]] = None, **kwargs):
     return {k: v for k, v in dd.items() if v}
 
 
-async def async_expand(it: AsyncIterable[T]) -> list[T]:
+async def async_expand[T](it: AsyncIterable[T]) -> list[T]:
     return [value async for value in it]
 
 

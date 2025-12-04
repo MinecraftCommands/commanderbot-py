@@ -1,7 +1,8 @@
 from typing import Optional
 
-from discord import Embed, Interaction, InteractionMessage, Member, Permissions
+from discord import Interaction, Member, Permissions, User
 from discord.app_commands import (
+    ContextMenu,
     allowed_contexts,
     allowed_installs,
     choices,
@@ -19,17 +20,33 @@ from commanderbot.ext.moderation.moderation_exceptions import (
     CannotBanElevatedUsers,
     CannotKickBotOrSelf,
     CannotKickElevatedUsers,
+    UserIsNotAMember,
 )
+from commanderbot.ext.moderation.moderation_views import ModerationResponse
+from commanderbot.lib import AllowedMentions
 
-KICK_EMOJI: str = "👢"
-BAN_EMOJI: str = "🔨"
-MESSAGE_SENT_EMOJI: str = "✉️"
-ERROR_EMOJI: str = "🔥"
+KICK_COMPROMISED_REASON = "Your account is compromised and is sending scam messages. Feel free to rejoin once you've changed your password."
 
 
 class ModerationCog(Cog, name="commanderbot.ext.moderation"):
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
+
+        # Create context menu command
+        self.ctx_cmd_kick_compromised = ContextMenu(
+            name="Kick compromised account", callback=self.cmd_kick_compromised
+        )
+
+    async def cog_load(self):
+        self.bot.tree.add_command(self.ctx_cmd_kick_compromised)
+
+    async def cog_unload(self):
+        self.bot.tree.remove_command(
+            self.ctx_cmd_kick_compromised.name, type=self.ctx_cmd_kick_compromised.type
+        )
+
+    def _user_is_not_a_member(self, user: User | Member):
+        return isinstance(user, User)
 
     def _user_is_bot_or_interaction_user(
         self, user: Member, interaction: Interaction
@@ -51,6 +68,10 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
     async def cmd_kick(
         self, interaction: Interaction, user: Member, reason: Optional[str]
     ):
+        # Make sure the user is a member of this server
+        if self._user_is_not_a_member(user):
+            raise UserIsNotAMember
+
         # Make sure we aren't trying to kick the bot or the user running the command
         if self._user_is_bot_or_interaction_user(user, interaction):
             raise CannotKickBotOrSelf
@@ -59,39 +80,29 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         if self._is_elevated(user):
             raise CannotKickElevatedUsers
 
-        # Send the kick response and retrieve it so we can reference it later
-        channel_kick_embed = Embed(
-            description=f"### {KICK_EMOJI} Kicked {user.mention}", color=0x00ACED
+        # Send the kick response to the channel
+        kick_response_view = ModerationResponse(f"👢 Kicked {user.mention}", reason)
+        await interaction.response.send_message(
+            view=kick_response_view, allowed_mentions=AllowedMentions.none()
         )
-        channel_kick_embed.add_field(
-            name="Reason", value=reason if reason else "No reason given"
-        )
-
-        await interaction.response.send_message(embed=channel_kick_embed)
-        response: InteractionMessage = await interaction.original_response()
 
         # Attempt to DM if a reason was included
         # We do this before kicking in case this is the only mutual server
         if reason:
             try:
                 guild_name: str = interaction.guild.name  # type: ignore
-                dm_kick_embed = Embed(
-                    description=f"### {KICK_EMOJI} You were kicked from {guild_name}",
-                    color=0x00ACED,
+                kick_dm_view = ModerationResponse(
+                    f"👢 You were kicked from `{guild_name}`", reason
                 )
-                dm_kick_embed.add_field(name="Reason", value=reason)
 
-                await user.send(embed=dm_kick_embed)
-                await response.add_reaction(MESSAGE_SENT_EMOJI)
+                await user.send(
+                    view=kick_dm_view, allowed_mentions=AllowedMentions.none()
+                )
             except:
                 pass
 
         # Actually kick the user
-        try:
-            await user.kick(reason=reason if reason else "No reason given")
-            await response.add_reaction(KICK_EMOJI)
-        except:
-            await response.add_reaction(ERROR_EMOJI)
+        await user.kick(reason=reason or "No reason given")
 
     @command(name="ban", description="Ban a user from this server")
     @describe(
@@ -121,6 +132,10 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         reason: Optional[str],
         delete_message_history: Optional[int],
     ):
+        # Make sure the user is a member of this server
+        if self._user_is_not_a_member(user):
+            raise UserIsNotAMember
+
         # Make sure we aren't trying to ban the bot or the user running the command
         if self._user_is_bot_or_interaction_user(user, interaction):
             raise CannotBanBotOrSelf
@@ -129,39 +144,70 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         if self._is_elevated(user):
             raise CannotBanElevatedUsers
 
-        # Send the ban response and retrieve it so we can reference it later
-        channel_ban_embed = Embed(
-            description=f"### {BAN_EMOJI} Banned {user.mention}", color=0x00ACED
+        # Send the ban response to the channel
+        ban_response_view = ModerationResponse(f"🔨 Banned {user.mention}", reason)
+        await interaction.response.send_message(
+            view=ban_response_view, allowed_mentions=AllowedMentions.none()
         )
-        channel_ban_embed.add_field(
-            name="Reason", value=reason if reason else "No reason given"
-        )
-
-        await interaction.response.send_message(embed=channel_ban_embed)
-        response: InteractionMessage = await interaction.original_response()
 
         # Attempt to DM if a reason was included
         # We do this before banning in case this is the only mutual server
         if reason:
             try:
                 guild_name: str = interaction.guild.name  # type: ignore
-                dm_ban_embed = Embed(
-                    description=f"### {BAN_EMOJI} You were banned from {guild_name}",
-                    color=0x00ACED,
+                ban_dm_view = ModerationResponse(
+                    f"🔨 You were banned from `{guild_name}`", reason
                 )
-                dm_ban_embed.add_field(name="Reason", value=reason)
-
-                await user.send(embed=dm_ban_embed)
-                await response.add_reaction(MESSAGE_SENT_EMOJI)
+                await user.send(
+                    view=ban_dm_view, allowed_mentions=AllowedMentions.none()
+                )
             except:
                 pass
 
         # Actually ban the user
+        await user.ban(
+            delete_message_seconds=delete_message_history or 0,
+            reason=reason or "No reason given",
+        )
+
+    @allowed_installs(guilds=True)
+    @allowed_contexts(guilds=True)
+    @default_permissions(ban_members=True)
+    @bot_has_permissions(ban_members=True)
+    async def cmd_kick_compromised(self, interaction: Interaction, user: Member):
+        # Make sure the user is a member of this server
+        if self._user_is_not_a_member(user):
+            raise UserIsNotAMember
+
+        # Make sure we aren't trying to kick the bot or the user running the command
+        if self._user_is_bot_or_interaction_user(user, interaction):
+            raise CannotKickBotOrSelf
+
+        # Make sure we aren't trying to kick users with elevated permissions
+        if self._is_elevated(user):
+            raise CannotKickElevatedUsers
+
+        # Send the response to the channel
+        response_view = ModerationResponse(
+            f"👢 Kicked {user.mention}", KICK_COMPROMISED_REASON
+        )
+        await interaction.response.send_message(
+            view=response_view, allowed_mentions=AllowedMentions.none()
+        )
+
+        # Attempt to DM
+        # We do this before banning in case this is the only mutual server
         try:
-            await user.ban(
-                delete_message_seconds=delete_message_history or 0,
-                reason=reason if reason else "No reason given",
+            guild_name: str = interaction.guild.name  # type: ignore
+            dm_view = ModerationResponse(
+                f"👢 You were kicked from `{guild_name}`", KICK_COMPROMISED_REASON
             )
-            await response.add_reaction(BAN_EMOJI)
+            await user.send(view=dm_view, allowed_mentions=AllowedMentions.none())
         except:
-            await response.add_reaction(ERROR_EMOJI)
+            pass
+
+        # Ban the user and delete any messages they sent in the last hour
+        await user.ban(delete_message_seconds=3600)
+
+        # Unban the user
+        await user.unban()

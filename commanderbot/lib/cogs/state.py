@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Callable, Generic, Iterable, TypeVar
+from typing import Callable, Iterable
 
 from discord import Guild
 from discord.ext.commands import Bot, Cog
@@ -80,11 +80,8 @@ class CogGuildState:
         )
 
 
-GuildStateType = TypeVar("GuildStateType", bound=CogGuildState)
-
-
 @dataclass
-class CogGuildStateManager(Generic[GuildStateType]):
+class CogGuildStateManager[GuildStateType: CogGuildState]:
     """
     A glorified dictionary that handles the lazy-initialization of guild states.
 
@@ -149,7 +146,7 @@ class CogGuildStateManager(Generic[GuildStateType]):
 
 
 @dataclass
-class GuildPartitionedCogState(CogState, Generic[GuildStateType]):
+class GuildPartitionedCogState[GuildStateType: CogGuildState](CogState):
     """
     Encapsulates the state and logic of a particular cog, for each guild.
 

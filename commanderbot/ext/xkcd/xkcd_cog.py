@@ -2,6 +2,7 @@ from discord import Embed, Interaction
 from discord.app_commands import (
     Choice,
     Range,
+    allowed_contexts,
     allowed_installs,
     autocomplete,
     command,
@@ -15,6 +16,7 @@ from commanderbot.lib import constants, utils
 
 
 @allowed_installs(guilds=True, users=True)
+@allowed_contexts(guilds=True, dms=True, private_channels=True)
 class XKCDCog(
     GroupCog,
     name="commanderbot.ext.xkcd",

@@ -19,10 +19,8 @@ __all__ = (
     "MinecraftBedrockUpdates",
 )
 
-RELEASE_VERSION_PATTERN = re.compile(r"\d+\.\d+(?:\.\d+)?")
-PREVIEW_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+\.\d+")
-
-IMAGE_TAG_PATTERN = re.compile(r"<img\ssrc\s*=\s*['\"]([^'\"]*?)['\"][^>]*?>")
+VERSION_PATTERN = re.compile(r"\d+\.\d+(?:\.\d+)?(?:\.\d+)?")
+IMAGE_TAG_PATTERN = re.compile(r"<img.*?src=\"(.+?)\".*?>")
 
 
 @dataclass
@@ -184,9 +182,7 @@ class MinecraftBedrockUpdates(FeedProviderBase[MinecraftBedrockUpdatesOptions, i
         return "java" in changelog.title.lower() or "java" in changelog.name.lower()
 
     def _get_version(self, changelog: ZendeskArticle) -> str:
-        if match := PREVIEW_VERSION_PATTERN.search(changelog.title):
-            return match.group(0)
-        elif match := RELEASE_VERSION_PATTERN.search(changelog.title):
+        if match := VERSION_PATTERN.search(changelog.title):
             return match.group(0)
         else:
             raise UnknownMinecraftVersionFormat(changelog.title)
