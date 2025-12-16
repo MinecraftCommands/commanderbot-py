@@ -34,7 +34,7 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
 
         # Create context menu command
         self.ctx_cmd_kick_compromised = ContextMenu(
-            name="Kick compromised account", callback=self.cmd_kick_compromised
+            name="Kick Compromised Account", callback=self.cmd_kick_compromised
         )
 
     async def cog_load(self):
