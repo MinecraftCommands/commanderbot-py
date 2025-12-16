@@ -180,7 +180,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         embed = Embed(
             title=update_info.title,
             url=update_info.url,
-            color=Color.minecraft_green(),
+            color=Color.minecraft_dark_green(),
             timestamp=update_info.published,
         )
         embed.set_author(
@@ -281,23 +281,26 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         embed.set_thumbnail(
             url=self.options.minecraft_java_jar_updates.release_jar_icon_url
         )
-
         embed.add_field(name="Java Version", value=f"`{jar_update_info.java_version}`")
-        embed.add_field(
-            name="Client Mappings",
-            value=f"[Link]({jar_update_info.client_mappings_url})",
-        )
-        embed.add_field(
-            name="Server Mappings",
-            value=f"[Link]({jar_update_info.server_mappings_url})",
-        )
+
+        if jar_update_info.client_mappings_url:
+            embed.add_field(
+                name="Client Mappings",
+                value=f"[Link]({jar_update_info.client_mappings_url})",
+            )
+
+        if jar_update_info.server_mappings_url:
+            embed.add_field(
+                name="Server Mappings",
+                value=f"[Link]({jar_update_info.server_mappings_url})",
+            )
 
         # Send update to subscribers
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_RELEASE_JARS,
             embed,
             self._create_mcje_jar_update_buttons(jar_update_info),
-            f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 🎉",
+            f"A jar for Minecraft: Java Edition {jar_update_info.version} has been released! 🎉",
         )
 
     # @@ Minecraft: Java Edition Snapshot Jars
@@ -314,23 +317,26 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         embed.set_thumbnail(
             url=self.options.minecraft_java_jar_updates.snapshot_jar_icon_url
         )
-
         embed.add_field(name="Java Version", value=f"`{jar_update_info.java_version}`")
-        embed.add_field(
-            name="Client Mappings",
-            value=f"[Link]({jar_update_info.client_mappings_url})",
-        )
-        embed.add_field(
-            name="Server Mappings",
-            value=f"[Link]({jar_update_info.server_mappings_url})",
-        )
+
+        if jar_update_info.client_mappings_url:
+            embed.add_field(
+                name="Client Mappings",
+                value=f"[Link]({jar_update_info.client_mappings_url})",
+            )
+
+        if jar_update_info.server_mappings_url:
+            embed.add_field(
+                name="Server Mappings",
+                value=f"[Link]({jar_update_info.server_mappings_url})",
+            )
 
         # Send update to subscribers
         await self._send_to_subscribers(
             FeedType.MINECRAFT_JAVA_SNAPSHOT_JARS,
             embed,
             self._create_mcje_jar_update_buttons(jar_update_info),
-            f"A jar has been released for Minecraft: Java Edition {jar_update_info.version}! 📸",
+            f"A jar for Minecraft: Java Edition {jar_update_info.version} has been released! 📸",
         )
 
     # @@ COMMANDS

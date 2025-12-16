@@ -27,8 +27,8 @@ class MinecraftJavaJarUpdateInfo:
     java_version: int
     client_jar_url: str
     server_jar_url: str
-    client_mappings_url: str
-    server_mappings_url: str
+    client_mappings_url: Optional[str]
+    server_mappings_url: Optional[str]
 
 
 @dataclass

@@ -66,8 +66,8 @@ class MinecraftJavaVersion(FromDataMixin):
     java_version: int
     client_jar_url: str
     server_jar_url: str
-    client_mappings_url: str
-    server_mappings_url: str
+    client_mappings_url: Optional[str]
+    server_mappings_url: Optional[str]
 
     url: Optional[str] = None
 
@@ -76,6 +76,12 @@ class MinecraftJavaVersion(FromDataMixin):
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
             release_time = datetime.fromisoformat(data["releaseTime"])
+            client_mappings_url = (
+                data["downloads"].get("client_mappings", {}).get("url")
+            )
+            server_mappings_url = (
+                data["downloads"].get("server_mappings", {}).get("url")
+            )
             return cls(
                 id=data["id"],
                 type=data["type"],
@@ -85,8 +91,8 @@ class MinecraftJavaVersion(FromDataMixin):
                 java_version=data["javaVersion"]["majorVersion"],
                 client_jar_url=data["downloads"]["client"]["url"],
                 server_jar_url=data["downloads"]["server"]["url"],
-                client_mappings_url=data["downloads"]["client_mappings"]["url"],
-                server_mappings_url=data["downloads"]["server_mappings"]["url"],
+                client_mappings_url=client_mappings_url,
+                server_mappings_url=server_mappings_url,
             )
 
     @property

@@ -90,7 +90,7 @@ class Color(discord.Color, FromDataMixin):
         return cls(0xF0313B)
 
     @classmethod
-    def minecraft_green(cls) -> Self:
+    def minecraft_dark_green(cls) -> Self:
         """A factory method that returns a :class:`Color` with a value of ``0x00AA00``.
 
         .. color:: #00AA00
