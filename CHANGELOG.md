@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+### Fixed
+
+### Removed
+
+## [0.22.0]
+
+### Fixed
+
+- Fix unsupported indexed mcdoc type ([#26](https://github.com/MinecraftCommands/commanderbot-py/pull/26))
+
 ## [0.21.0]
 
 ### Added
@@ -20,8 +30,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Updated Python to 3.14
 - Updated discord.py to 2.6
-- Fixed an issue where the Bedrock changelog feed wasn't finding the thumbnail
 - Updated the version regex the Bedrock changelog feed was using to support the new version format
+
+### Fixed
+
+- Fixed an issue where the Bedrock changelog feed wasn't finding the thumbnail
 
 ## [0.20.0] - 2025-05-03
 
@@ -397,7 +410,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Implemented `status` and `faq` extensions as an exercise for developing `commanderbot-lib`
 
-[unreleased]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.21.0...HEAD
+[unreleased]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.18.0...v0.19.0
