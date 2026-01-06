@@ -1,7 +1,7 @@
 [project]
 name = "commanderbot"
 description = "A collection of utilities and extensions for discord.py bots."
-version = "0.21.1"
+version = "0.22.0"
 requires-python = ">=3.14,<3.15"
 authors = [
     { name = "Ersatz", email = "ersatz0077@gmail.com" },
