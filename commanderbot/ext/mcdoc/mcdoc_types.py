@@ -150,6 +150,18 @@ class DispatcherType(McdocBaseType):
                     return typeDef.render(ctx)
         return super().render(ctx)
 
+
+@dataclass
+class IndexedType(McdocBaseType):
+    child: "McdocType"
+    parallelIndices: list[DynamicIndex | StaticIndex]
+
+    def suffix(self, ctx):
+        result = self.child.suffix(ctx)
+        result += f"[{','.join(i.render() for i in self.parallelIndices)}]"
+        return result
+
+
 @dataclass
 class StructTypePairField:
     key: Union[str, "McdocType"]
@@ -758,8 +770,17 @@ class TupleType(McdocBaseType):
         return f"a tuple of length {len(self.items)}"
 
 
+@dataclass
+class UnknownType(McdocBaseType):
+    kind: str
+
+    def suffix(self, ctx):
+        return f"UNKNOWN (`{self.kind}`)"
+
+
 McdocType = Union[
     DispatcherType,
+    IndexedType,
     EnumType,
     ListType,
     LiteralType,
@@ -782,6 +803,7 @@ McdocType = Union[
     UnionType,
     TemplateType,
     ConcreteType,
+    UnknownType,
 ]
 
 
@@ -791,6 +813,22 @@ def deserialize_attributes(data: dict) -> list[Attribute]:
         name = attr["name"]
         value = attr.get("value", None)
         result.append(Attribute(name=name,value=value))
+    return result
+
+
+def deserialize_parallel_indices(data: dict) -> list[DynamicIndex | StaticIndex]:
+    result: list[DynamicIndex | StaticIndex] = []
+    for index in data.get("parallelIndices", []):
+        if index["kind"] == "dynamic":
+            accessor: list[str | KeywordIndex] = []
+            for part in index["accessor"]:
+                if isinstance(part, str):
+                    accessor.append(part)
+                else:
+                    accessor.append(KeywordIndex(part["keyword"]))
+            result.append(DynamicIndex(accessor=accessor))
+        elif index["kind"] == "static":
+            result.append(StaticIndex(value=index["value"]))
     return result
 
 
@@ -810,21 +848,15 @@ def deserialize_mcdoc(data: dict) -> McdocType:
     kind = data.get("kind")
 
     if kind == "dispatcher":
-        parallelIndices: list[DynamicIndex | StaticIndex] = []
-        for index in data.get("parallelIndices", []):
-            if index["kind"] == "dynamic":
-                accessor: list[str | KeywordIndex] = []
-                for part in index["accessor"]:
-                    if isinstance(part, str):
-                        accessor.append(part)
-                    else:
-                        accessor.append(KeywordIndex(part["keyword"]))
-                parallelIndices.append(DynamicIndex(accessor=accessor))
-            elif index["kind"] == "static":
-                parallelIndices.append(StaticIndex(value=index["value"]))
         return DispatcherType(
             registry=data.get("registry", ""),
-            parallelIndices=parallelIndices,
+            parallelIndices=deserialize_parallel_indices(data),
+            attributes=deserialize_attributes(data),
+        )
+    if kind == "indexed":
+        return IndexedType(
+            child=deserialize_mcdoc(data["child"]),
+            parallelIndices=deserialize_parallel_indices(data),
             attributes=deserialize_attributes(data),
         )
     if kind == "struct":
@@ -960,4 +992,6 @@ def deserialize_mcdoc(data: dict) -> McdocType:
             typeArgs=[deserialize_mcdoc(t) for t in data["typeArgs"]],
             attributes=deserialize_attributes(data),
         )
-    raise ValueError(f"Unknown kind: {kind}")
+    return UnknownType(
+        kind=f"{kind}"
+    )
