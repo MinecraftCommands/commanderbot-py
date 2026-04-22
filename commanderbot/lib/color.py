@@ -305,6 +305,9 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
 
     # @@ INSTANCE
 
+    def to_hex(self) -> str:
+        return str(self)
+
     # @overrides discord.Colour
     @override
     def __repr__(self) -> str:
