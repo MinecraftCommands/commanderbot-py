@@ -50,7 +50,8 @@ def run():
     # Read config file
     log.info(f"Configuration file: {parsed_args.config}")
     log.debug("Parsing configuration file...")
-    config = Config.from_file(parsed_args.config)  # type: ignore
+    config = Config.model_validate_json(parsed_args.config.read_text())
+    config.log_info()
     log.debug("Successfully parsed configuration file!")
 
     # Get bot token

@@ -11,8 +11,7 @@ from discord.utils import utcnow
 
 from commanderbot.core.application_emoji_manager import ApplicationEmojiManager
 from commanderbot.core.command_tree import CachingCommandTree
-from commanderbot.core.config import Config
-from commanderbot.core.configured_extension import ConfiguredExtension
+from commanderbot.core.config import Config, ConfiguredExtension
 from commanderbot.core.error_handling import (
     AppCommandErrorHandler,
     CommandErrorHandler,

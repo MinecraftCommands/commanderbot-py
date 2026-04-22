@@ -1,130 +1,146 @@
-import json
-from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from pathlib import Path
-from typing import Any, Optional, Self
+from typing import Any, Optional, Self, override
 
-from commanderbot.core.configured_extension import ConfiguredExtension
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ModelWrapValidatorHandler,
+    PrivateAttr,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
+
 from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
 from commanderbot.lib import (
     AllowedMentions,
-    FromDataMixin,
+    AllowedMentionsAdapter,
     Intents,
-    JsonSerializable,
-    utils,
+    JsonObject,
 )
-from commanderbot.lib.types import JsonObject
 
 
-@dataclass
-class Config(JsonSerializable, FromDataMixin):
-    command_prefix: str
-    intents: Intents
-    allowed_mentions: AllowedMentions
+class ConfiguredExtension(BaseModel):
+    """
+    Represents an extension with an optional config.
 
-    extensions: dict[str, ConfiguredExtension]
-    enabled_extensions: list[ConfiguredExtension] = field(
-        init=False, default_factory=list
-    )
-    disabled_extensions: list[ConfiguredExtension] = field(
-        init=False, default_factory=list
-    )
+    Attributes
+    ----------
+    name: :class:`str`
+        The name of this extension (Should be the same as its import path).
+    required: :class:`bool`
+        Whether this extension is required or not. It doesn't affect loading/unloading/reloading this extension,
+        but you're free to choose how to handle this attribute in your code. Defaults to `False`.
+    disabled: :class:`bool`
+        Whether this extension is disabled or not. Defaults to `False`.
+    options: :class:`Optional[JsonObject]`
+        Options for this extension. Defaults to `None`.
+    """
 
-    # @implements FromDataMixin
+    name: str
+    required: bool = False
+    disabled: bool = False
+    options: Optional[JsonObject] = None
+
+    @model_validator(mode="wrap")
     @classmethod
-    def try_from_data(cls, data: Any) -> Optional[Self]:
+    def _validate_model(
+        cls, data: dict | str, handler: ModelWrapValidatorHandler
+    ) -> Self:
         if isinstance(data, dict):
-            log: Logger = getLogger(__name__)
-            log.info(f"Number of configuration keys: {len(data)}")
+            return handler(data)
+        # Extensions starting with a `$` are required.
+        elif data.startswith("$"):
+            return handler({"name": data[1:], "required": True})
+        # Extensions starting with a `!` are disabled.
+        elif data.startswith("!"):
+            return handler({"name": data[1:], "disabled": True})
+        else:
+            return handler({"name": data})
 
-            # Get command prefix
-            command_prefix: str = data["command_prefix"]
-            log.info(f"Command prefix: {command_prefix}")
+    @model_serializer(mode="wrap")
+    def _serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict | str:
+        if self.options:
+            return handler(self)
+        elif self.required:
+            return f"${self.name}"
+        elif self.disabled:
+            return f"!{self.name}"
+        else:
+            return self.name
 
-            # Process intents
-            intents = Intents.default()
-            if i := Intents.from_field_optional(data, "intents"):
-                intents = Intents.default() & i
-            if i := Intents.from_field_optional(data, "privileged_intents"):
-                intents |= Intents.privileged() & i
 
-            log.info(f"Using intents flags: {intents.value}")
+class Config(BaseModel):
+    """
+    Attributes
+    ----------
+    command_prefix :class:`str`
+        The prefix to use for prefix commands.
+    gateway_intents :class:`Intents`
+        Non-privileged intents to use. Defaults to `Intents.default()`.
+    privileged_gateway_intents :class:`Intents`
+        Privileged intents to use. Defaults to `Intents.none()`.
+    allowed_mentions :class:`AllowedMentions`
+        The allowed mentions to use. Defaults to `AllowedMentions.not_everyone()`.
+    extensions :class:`list[ConfiguredExtension]`
+        The list of extensions to use.
+    """
 
-            # Process allowed mentions
-            allowed_mentions = AllowedMentions.not_everyone()
-            if m := AllowedMentions.from_field_optional(data, "allowed_mentions"):
-                allowed_mentions = m
+    model_config = ConfigDict(serialize_by_alias=True)
 
-            log.info(f"Using allowed mentions: {allowed_mentions.to_json()}")
+    command_prefix: str
+    gateway_intents: Intents = Field(alias="intents", default_factory=Intents.default)
+    privileged_gateway_intents: Intents = Field(
+        alias="privileged_intents", default_factory=Intents.none
+    )
+    allowed_mentions: AllowedMentions = Field(
+        default_factory=AllowedMentions.not_everyone
+    )
+    extensions: list[ConfiguredExtension] = Field(default_factory=list)
 
-            # Process extensions
-            log.info("Processing extensions...")
+    _extensions_by_name: dict[str, ConfiguredExtension] = PrivateAttr(
+        default_factory=dict
+    )
+    _enabled_extensions: list[ConfiguredExtension] = PrivateAttr(default_factory=list)
+    _disabled_extensions: list[ConfiguredExtension] = PrivateAttr(default_factory=list)
 
-            raw_extensions = data.get("extensions", [])
-            extensions: dict[str, ConfiguredExtension] = {}
-            for raw_entry in raw_extensions:
-                ext = ConfiguredExtension.from_data(raw_entry)
-                extensions[ext.name] = ext
+    @property
+    def intents(self) -> Intents:
+        """
+        The intents that result from merging `gateway_intents` and `privileged_gateway_intents`.
+        """
+        return self.gateway_intents | self.privileged_gateway_intents
 
-            if extensions:
-                log.info(f"Processed {len(extensions)} extensions...")
+    @property
+    def extensions_by_name(self) -> dict[str, ConfiguredExtension]:
+        return self._extensions_by_name
+
+    @property
+    def enabled_extensions(self) -> list[ConfiguredExtension]:
+        return self._enabled_extensions
+
+    @property
+    def disabled_extensions(self) -> list[ConfiguredExtension]:
+        return self._disabled_extensions
+
+    # @overrides BaseModel
+    @override
+    def model_post_init(self, context: Any):
+        self._extensions_by_name.clear()
+        self._enabled_extensions.clear()
+        self._disabled_extensions.clear()
+        for ext in self.extensions:
+            self._extensions_by_name[ext.name] = ext
+            if ext.disabled:
+                self.disabled_extensions.append(ext)
             else:
-                log.warning("No extensions configured.")
-
-            return cls(
-                command_prefix=command_prefix,
-                intents=intents,
-                allowed_mentions=allowed_mentions,
-                extensions=extensions,
-            )
-
-    # @implements JsonSerializable
-    def to_json(self) -> Any:
-        intents: Optional[Intents] = Intents.default() & self.intents
-        privileged_intents: Intents = Intents.privileged() & self.intents
-
-        # `intents` is an optional field in the config and defaults to `Intents.default()`.
-        # So don't include it if it's value is the same as `Intents.default()`.
-        if intents == Intents.default():
-            intents = None
-
-        # `allowed_mentions` is an optional field in the config and defaults to `AllowedMentions.not_everyone()`.
-        # So don't include it if it's value is the same as `AllowedMentions.not_everyone()`.
-        allowed_mentions: Optional[AllowedMentions] = self.allowed_mentions
-        if allowed_mentions == AllowedMentions.not_everyone():
-            allowed_mentions = None
-
-        # Create the Json
-        return utils.dict_without_falsies(
-            command_prefix=self.command_prefix,
-            intents=(
-                utils.dict_without_falsies(intents.to_json()) if intents else None
-            ),
-            privileged_intents=utils.dict_without_falsies(privileged_intents.to_json()),
-            allowed_mentions=(
-                utils.dict_without_falsies(allowed_mentions.to_json())
-                if allowed_mentions
-                else None
-            ),
-            extensions=[ext.to_json() for ext in self.extensions.values()],
-        )
-
-    @classmethod
-    def from_file(cls, path: Path) -> Self:
-        raw_config: JsonObject = {}
-        with open(path) as file:
-            raw_config = json.load(file)
-
-        return cls.from_data(raw_config)
-
-    def __post_init__(self):
-        self._rebuild_extension_states()
+                self.enabled_extensions.append(ext)
 
     def _rebuild_extension_states(self):
-        self.enabled_extensions.clear()
-        self.disabled_extensions.clear()
-
-        for ext in self.extensions.values():
+        self._enabled_extensions.clear()
+        self._disabled_extensions.clear()
+        for ext in self.extensions:
             if ext.disabled:
                 self.disabled_extensions.append(ext)
             else:
@@ -145,7 +161,7 @@ class Config(JsonSerializable, FromDataMixin):
             The extension was not in the config.
         """
 
-        if ext := self.extensions.get(name):
+        if ext := self._extensions_by_name.get(name):
             return ext
         raise ExtensionNotInConfig(name)
 
@@ -205,7 +221,7 @@ class Config(JsonSerializable, FromDataMixin):
         """
 
         ext: ConfiguredExtension = self.get_extension(name)
-        if ext in self.disabled_extensions:
+        if ext in self._disabled_extensions:
             ext.disabled = False
             self._rebuild_extension_states()
 
@@ -225,6 +241,33 @@ class Config(JsonSerializable, FromDataMixin):
         """
 
         ext: ConfiguredExtension = self.get_extension(name)
-        if ext in self.enabled_extensions:
+        if ext in self._enabled_extensions:
             ext.disabled = True
             self._rebuild_extension_states()
+
+    def log_info(self):
+        log: Logger = getLogger(__name__)
+        log.info(f"Command prefix: {self.command_prefix}")
+        log.info(f"Using intents flags: {self.intents.value}")
+        log.info(
+            f"Using allowed mentions: {AllowedMentionsAdapter.dump_python(self.allowed_mentions)}"
+        )
+
+        if self.extensions:
+            log.info(
+                f"Processed {len(self.extensions)} extensions (Enabled: {len(self._enabled_extensions)} | Disabled: {len(self._disabled_extensions)})"
+            )
+        else:
+            log.warning("No extensions configured.")
+
+    @model_validator(mode="after")
+    def _validate_model(self) -> Self:
+        self.gateway_intents &= Intents.default()
+        self.privileged_gateway_intents &= Intents.privileged()
+        return self
+
+    @model_serializer(mode="wrap")
+    def _serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict:
+        self.gateway_intents &= Intents.default()
+        self.privileged_gateway_intents &= Intents.privileged()
+        return handler(self)

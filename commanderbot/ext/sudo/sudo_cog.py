@@ -16,7 +16,6 @@ from discord import (
 )
 from discord.app_commands import (
     AppCommand,
-    AppCommandContext,
     AppInstallationType,
     Choice,
     Group,
@@ -29,8 +28,7 @@ from discord.ext.commands import Bot, Cog
 from discord.utils import format_dt
 
 from commanderbot.core.commander_bot import CommanderBot
-from commanderbot.core.config import Config
-from commanderbot.core.configured_extension import ConfiguredExtension
+from commanderbot.core.config import Config, ConfiguredExtension
 from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
 from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.sudo.sudo_data import CogWithStore
@@ -406,7 +404,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
         # Turn the config into Json
         assert is_commander_bot(self.bot)
-        json_data: str = json_dumps(self.bot.config.to_json())
+        json_data: str = self.bot.config.model_dump_json(exclude_defaults=True)
         file = utils.str_to_file(json_data, "config.json")
 
         # Respond with the config file
