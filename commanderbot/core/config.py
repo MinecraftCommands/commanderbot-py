@@ -114,15 +114,39 @@ class Config(BaseModel):
 
     @property
     def extensions_by_name(self) -> dict[str, ConfiguredExtension]:
+        """
+        A dictionary of extensions where the key is the name and the value is a `ConfiguredExtension`.
+        """
         return self._extensions_by_name
 
     @property
     def enabled_extensions(self) -> list[ConfiguredExtension]:
+        """
+        A list of enabled extensions.
+        """
         return self._enabled_extensions
 
     @property
     def disabled_extensions(self) -> list[ConfiguredExtension]:
+        """
+        A list of disabled extensions.
+        """
         return self._disabled_extensions
+
+    @model_validator(mode="after")
+    def _validate_model(self) -> Self:
+        self.gateway_intents &= Intents.default()
+        self.privileged_gateway_intents &= Intents.privileged()
+        return self
+
+    @model_serializer(mode="wrap")
+    def _serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict:
+        self.gateway_intents &= Intents.default()
+        self.privileged_gateway_intents &= Intents.privileged()
+
+        # Serialize model and remove keys with falsy values
+        result: dict = handler(self)
+        return {k: v for k, v in result.items() if v}
 
     # @overrides BaseModel
     @override
@@ -145,6 +169,21 @@ class Config(BaseModel):
                 self.disabled_extensions.append(ext)
             else:
                 self.enabled_extensions.append(ext)
+
+    def log_info(self):
+        log: Logger = getLogger(__name__)
+        log.info(f"Command prefix: {self.command_prefix}")
+        log.info(f"Using intents flags: {self.intents.value}")
+        log.info(
+            f"Using allowed mentions: {AllowedMentionsAdapter.dump_python(self.allowed_mentions)}"
+        )
+
+        if self.extensions:
+            log.info(
+                f"Processed {len(self.extensions)} extensions (Enabled: {len(self._enabled_extensions)} | Disabled: {len(self._disabled_extensions)})"
+            )
+        else:
+            log.warning("No extensions configured.")
 
     def get_extension(self, name: str) -> ConfiguredExtension:
         """
@@ -244,30 +283,3 @@ class Config(BaseModel):
         if ext in self._enabled_extensions:
             ext.disabled = True
             self._rebuild_extension_states()
-
-    def log_info(self):
-        log: Logger = getLogger(__name__)
-        log.info(f"Command prefix: {self.command_prefix}")
-        log.info(f"Using intents flags: {self.intents.value}")
-        log.info(
-            f"Using allowed mentions: {AllowedMentionsAdapter.dump_python(self.allowed_mentions)}"
-        )
-
-        if self.extensions:
-            log.info(
-                f"Processed {len(self.extensions)} extensions (Enabled: {len(self._enabled_extensions)} | Disabled: {len(self._disabled_extensions)})"
-            )
-        else:
-            log.warning("No extensions configured.")
-
-    @model_validator(mode="after")
-    def _validate_model(self) -> Self:
-        self.gateway_intents &= Intents.default()
-        self.privileged_gateway_intents &= Intents.privileged()
-        return self
-
-    @model_serializer(mode="wrap")
-    def _serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict:
-        self.gateway_intents &= Intents.default()
-        self.privileged_gateway_intents &= Intents.privileged()
-        return handler(self)
