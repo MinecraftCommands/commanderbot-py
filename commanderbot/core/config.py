@@ -43,21 +43,19 @@ class ConfiguredExtension(BaseModel):
     disabled: bool = False
     options: Optional[JsonObject] = None
 
-    @model_validator(mode="wrap")
+    @model_validator(mode="before")
     @classmethod
-    def _validate_model(
-        cls, data: dict | str, handler: ModelWrapValidatorHandler
-    ) -> Self:
+    def _validate_model(cls, data: dict | str) -> dict:
         if isinstance(data, dict):
-            return handler(data)
+            return data
         # Extensions starting with a `$` are required.
         elif data.startswith("$"):
-            return handler({"name": data[1:], "required": True})
+            return {"name": data[1:], "required": True}
         # Extensions starting with a `!` are disabled.
         elif data.startswith("!"):
-            return handler({"name": data[1:], "disabled": True})
+            return {"name": data[1:], "disabled": True}
         else:
-            return handler({"name": data})
+            return {"name": data}
 
     @model_serializer(mode="wrap")
     def _serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict | str:
