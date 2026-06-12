@@ -109,11 +109,6 @@ class CogHasNoStore(SudoException):
         super().__init__(f"😬 The cog `{self.cog_name}` does not use a store")
 
 
-class UnsupportedStoreExport(SudoException):
-    def __init__(self, store: Any):
-        super().__init__(f"😬 Unsupported store export: `{type(store)}`")
-
-
 class BotHasNoAvatar(SudoException):
     def __init__(self):
         super().__init__("😵 The bot doesn't have an avatar set")

@@ -26,6 +26,7 @@ from discord.app_commands import (
 )
 from discord.ext.commands import Bot, Cog
 from discord.utils import format_dt
+from pydantic import BaseModel
 
 from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.core.config import Config, ConfiguredExtension
@@ -53,7 +54,6 @@ from commanderbot.ext.sudo.sudo_exceptions import (
     GuildIDNotFound,
     GuildSyncError,
     UnknownCog,
-    UnsupportedStoreExport,
 )
 from commanderbot.lib import (
     ConfirmationResult,
@@ -63,6 +63,7 @@ from commanderbot.lib import (
     utils,
 )
 from commanderbot.lib.app_commands import checks
+from commanderbot.lib.databases.json_db import JsonDB
 from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
@@ -430,17 +431,26 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
 
         # Export the store and respond with a followup
         match found_cog.store.db:
+            case JsonDB() as db:
+                cache: BaseModel = await db.get_cache()
+                data = cache.model_dump_json()
+
+                file = utils.str_to_file(data, f"{found_cog.qualified_name}.json")
+                await interaction.followup.send(
+                    f"📦 Exported JsonDB for `{found_cog.qualified_name}`:",
+                    file=file,
+                    ephemeral=True,
+                )
             case JsonFileDatabaseAdapter() as db:
                 cache = await db.get_cache()
-                json_data = json_dumps(db.serializer(cache))
-                file = utils.str_to_file(json_data, f"{found_cog.qualified_name}.json")
+                data = json_dumps(db.serializer(cache))
+
+                file = utils.str_to_file(data, f"{found_cog.qualified_name}.json")
                 await interaction.followup.send(
                     f"📦 Exported Json store for `{found_cog.qualified_name}`:",
                     file=file,
                     ephemeral=True,
                 )
-            case _ as db:
-                raise UnsupportedStoreExport(db)
 
     # @@ sudo avatar
 
