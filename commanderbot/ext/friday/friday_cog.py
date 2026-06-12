@@ -23,7 +23,7 @@ from commanderbot.lib import (
     is_messagable_guild_channel,
 )
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

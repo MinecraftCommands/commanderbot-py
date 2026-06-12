@@ -63,7 +63,7 @@ from commanderbot.lib import (
     utils,
 )
 from commanderbot.lib.app_commands import checks
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 class SyncTypeChoices(Enum):

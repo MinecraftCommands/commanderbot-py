@@ -17,7 +17,7 @@ from commanderbot.ext.invite.invite_state import InviteState
 from commanderbot.ext.invite.invite_store import InviteEntry, InviteStore
 from commanderbot.lib import constants, is_guild, utils
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

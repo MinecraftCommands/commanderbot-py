@@ -12,7 +12,7 @@ from commanderbot.ext.roles.roles_state import RolesState
 from commanderbot.ext.roles.roles_store import RolesStore
 from commanderbot.lib import is_guild, is_member
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

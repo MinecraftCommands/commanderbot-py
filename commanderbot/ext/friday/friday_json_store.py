@@ -7,7 +7,7 @@ from commanderbot.ext.friday.friday_data import FridayData
 from commanderbot.ext.friday.friday_store import FridayRule
 from commanderbot.lib import ChannelID, UserID
 from commanderbot.lib.cogs import CogStore
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 # @implements FridayStore

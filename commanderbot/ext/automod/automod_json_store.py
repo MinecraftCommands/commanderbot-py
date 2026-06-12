@@ -8,7 +8,7 @@ from commanderbot.ext.automod.automod_event import AutomodEvent
 from commanderbot.ext.automod.automod_store import AutomodRule
 from commanderbot.lib import JsonObject, LogOptions, RoleSet, utils
 from commanderbot.lib.cogs import CogStore
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 # @implements AutomodStore

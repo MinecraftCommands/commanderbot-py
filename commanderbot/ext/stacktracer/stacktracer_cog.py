@@ -28,7 +28,7 @@ from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
 from commanderbot.lib import Color, EventData, is_guild
 from commanderbot.lib.app_commands import ColorTransformer, EmojiTransformer, checks
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

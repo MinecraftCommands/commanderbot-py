@@ -7,7 +7,7 @@ from commanderbot.ext.feeds.providers import (
     MinecraftJavaUpdatesOptions,
 )
 from commanderbot.lib import FromDataMixin
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     DatabaseOptions,
     InMemoryDatabaseOptions,
     make_database_options,

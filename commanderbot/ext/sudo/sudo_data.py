@@ -1,11 +1,11 @@
 from typing import Protocol, runtime_checkable
 
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter, SQLDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 @runtime_checkable
 class DatabaseAdapter(Protocol):
-    db: JsonFileDatabaseAdapter | SQLDatabaseAdapter
+    db: JsonFileDatabaseAdapter
 
 
 @runtime_checkable

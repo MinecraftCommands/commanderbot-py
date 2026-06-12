@@ -6,7 +6,7 @@ from discord import ForumChannel, ForumTag, Guild
 from commanderbot.ext.help_forum.help_forum_data import HelpForumData
 from commanderbot.ext.help_forum.help_forum_store import HelpForum
 from commanderbot.lib.cogs import CogStore
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 # @implements HelpForumStore

@@ -33,7 +33,7 @@ from commanderbot.ext.help_forum.help_forum_store import HelpForumStore
 from commanderbot.lib import is_bot, is_forum_channel, is_guild, is_thread
 from commanderbot.lib.app_commands import EmojiTransformer
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,

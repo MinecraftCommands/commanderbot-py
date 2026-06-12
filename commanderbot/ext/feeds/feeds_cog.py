@@ -21,7 +21,7 @@ from commanderbot.ext.feeds.providers import (
 from commanderbot.lib import MessageableGuildChannel, is_guild
 from commanderbot.lib.app_commands import checks
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,
