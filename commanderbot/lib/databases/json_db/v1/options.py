@@ -8,7 +8,6 @@ __all__ = (
     "DatabaseOptions",
     "InMemoryDatabaseOptions",
     "JsonFileDatabaseOptions",
-    "SQLiteDatabaseOptions",
     "InvalidDatabaseOptions",
     "UnknownDatabaseType",
     "MissingDatabaseType",
@@ -40,23 +39,6 @@ class JsonFileDatabaseOptions(DatabaseOptions):
             no_init=options.get("no_init"),
             indent=options.get("indent"),
         )
-
-
-@dataclass
-class SQLiteDatabaseOptions(DatabaseOptions):
-    path: Optional[Path]
-    no_init: Optional[bool] = None
-
-    @classmethod
-    def from_dict(cls, options: JsonObject) -> Self:
-        return cls(
-            path=Path(options["path"]),
-            no_init=options.get("no_init"),
-        )
-
-    @classmethod
-    def in_memory(cls) -> Self:
-        return cls(path=None)
 
 
 class InvalidDatabaseOptions(Exception):
@@ -102,8 +84,6 @@ def make_database_options(obj: Any) -> DatabaseOptions:
                 # type of database to use.
                 if path.suffix == ".json":
                     return JsonFileDatabaseOptions(path=path)
-                if path.suffix == ".sqlite":
-                    return SQLiteDatabaseOptions(path=path)
         if isinstance(obj, dict):
             # If it's a dict, expect a `type` to be explicitly defined.
             db_type = obj.get("type")
@@ -113,8 +93,6 @@ def make_database_options(obj: Any) -> DatabaseOptions:
                 return InMemoryDatabaseOptions()
             if db_type == "json":
                 return JsonFileDatabaseOptions.from_dict(obj)
-            if db_type == "sqlite":
-                return SQLiteDatabaseOptions.from_dict(obj)
             raise UnknownDatabaseType(obj, db_type)
     except Exception as ex:
         raise InvalidDatabaseOptions(obj) from ex
