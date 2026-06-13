@@ -1,28 +1,19 @@
 import math
 from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Any, Optional, Self
+from typing import Annotated, Optional
 
 from discord import ForumChannel, ForumTag, Guild, PartialEmoji
+from pydantic import BaseModel, Field
 
 from commanderbot.ext.help_forum.help_forum_exceptions import (
     ForumChannelAlreadyRegistered,
     ForumChannelNotRegistered,
     HelpForumInvalidTag,
 )
-from commanderbot.ext.help_forum.help_forum_store import HelpForum
-from commanderbot.lib import (
-    ChannelID,
-    ForumTagID,
-    FromDataMixin,
-    GuildID,
-    JsonSerializable,
-    utils,
-)
+from commanderbot.lib import ChannelID, ForumTagID, GuildID, utils
 
 
-@dataclass
-class HelpForumForumData(JsonSerializable, FromDataMixin):
+class HelpForum(BaseModel):
     channel_id: ChannelID
     unresolved_emoji: str
     resolved_emoji: str
@@ -30,32 +21,6 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
     resolved_tag_id: ForumTagID
     threads_created: int
     resolutions: int
-
-    # @implements FromDataMixin
-    @classmethod
-    def try_from_data(cls, data: Any) -> Optional[Self]:
-        if isinstance(data, dict):
-            return cls(
-                channel_id=data["channel_id"],
-                unresolved_emoji=data["unresolved_emoji"],
-                resolved_emoji=data["resolved_emoji"],
-                unresolved_tag_id=data["unresolved_tag_id"],
-                resolved_tag_id=data["resolved_tag_id"],
-                threads_created=data["threads_created"],
-                resolutions=data["resolutions"],
-            )
-
-    # @implements JsonSerializable
-    def to_json(self) -> Any:
-        return {
-            "channel_id": self.channel_id,
-            "unresolved_emoji": self.unresolved_emoji,
-            "resolved_emoji": self.resolved_emoji,
-            "unresolved_tag_id": self.unresolved_tag_id,
-            "resolved_tag_id": self.resolved_tag_id,
-            "threads_created": self.threads_created,
-            "resolutions": self.resolutions,
-        }
 
     @property
     def partial_unresolved_emoji(self) -> PartialEmoji:
@@ -78,32 +43,10 @@ class HelpForumForumData(JsonSerializable, FromDataMixin):
         return (self.threads_created // gcd, self.resolutions // gcd)
 
 
-@dataclass
-class HelpForumGuildData(JsonSerializable, FromDataMixin):
-    help_forums: dict[ChannelID, HelpForumForumData] = field(default_factory=dict)
-
-    # @implements FromDataMixin
-    @classmethod
-    def try_from_data(cls, data: Any) -> Optional[Self]:
-        if isinstance(data, dict):
-            help_forums = {}
-            for raw_channel_id, raw_forum_data in data.get("help_forums", {}).items():
-                channel_id = int(raw_channel_id)
-                help_forums[channel_id] = HelpForumForumData.from_data(raw_forum_data)
-
-            return cls(help_forums=help_forums)
-
-    # @implements JsonSerializable
-    def to_json(self) -> Any:
-        # Omit empty help forums
-        return utils.dict_without_falsies(
-            help_forums=utils.dict_without_falsies(
-                {
-                    str(channel_id): forum_data.to_json()
-                    for channel_id, forum_data in self.help_forums.items()
-                }
-            )
-        )
+class HelpForumGuildData(BaseModel):
+    help_forums: dict[ChannelID, HelpForum] = Field(
+        default_factory=dict, exclude_if=lambda v: not v
+    )
 
     def _is_forum_registered(self, forum: ForumChannel):
         return forum.id in self.help_forums.keys()
@@ -116,14 +59,14 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         except:
             raise HelpForumInvalidTag(forum.id, tag_str)
 
-    def require_help_forum(self, forum: ForumChannel) -> HelpForumForumData:
+    def require_help_forum(self, forum: ForumChannel) -> HelpForum:
         # Returns the help forum data if it exists
         if forum_data := self.help_forums.get(forum.id):
             return forum_data
         # Otherwise, raise
         raise ForumChannelNotRegistered(forum.id)
 
-    def get_help_forum(self, forum: ForumChannel) -> Optional[HelpForumForumData]:
+    def get_help_forum(self, forum: ForumChannel) -> Optional[HelpForum]:
         return self.help_forums.get(forum.id)
 
     def register_forum_channel(
@@ -133,7 +76,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         resolved_emoji: str,
         unresolved_tag: str,
         resolved_tag: str,
-    ) -> HelpForumForumData:
+    ) -> HelpForum:
         # Check if the forum channel was already registered
         if self._is_forum_registered(forum):
             raise ForumChannelAlreadyRegistered(forum.id)
@@ -143,7 +86,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         valid_resolved_tag: ForumTag = self._require_tag(forum, resolved_tag)
 
         # Create and add a new help forum
-        forum_data = HelpForumForumData(
+        forum_data = HelpForum(
             channel_id=forum.id,
             unresolved_emoji=unresolved_emoji,
             resolved_emoji=resolved_emoji,
@@ -158,7 +101,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         # Return the newly created help forum
         return forum_data
 
-    def deregister_forum_channel(self, forum: ForumChannel) -> HelpForumForumData:
+    def deregister_forum_channel(self, forum: ForumChannel) -> HelpForum:
         # The help forum channel should exist
         forum_data = self.require_help_forum(forum)
         # Remove it
@@ -166,17 +109,13 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         # Return it
         return forum_data
 
-    def modify_unresolved_emoji(
-        self, forum: ForumChannel, emoji: str
-    ) -> HelpForumForumData:
+    def modify_unresolved_emoji(self, forum: ForumChannel, emoji: str) -> HelpForum:
         # Modify unresolved emoji for a help forum
         forum_data = self.require_help_forum(forum)
         forum_data.unresolved_emoji = emoji
         return forum_data
 
-    def modify_resolved_emoji(
-        self, forum: ForumChannel, emoji: str
-    ) -> HelpForumForumData:
+    def modify_resolved_emoji(self, forum: ForumChannel, emoji: str) -> HelpForum:
         # Modify resolved emoji for a help forum
         forum_data = self.require_help_forum(forum)
         forum_data.resolved_emoji = emoji
@@ -184,7 +123,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
 
     def modify_unresolved_tag(
         self, forum: ForumChannel, tag: str
-    ) -> tuple[HelpForumForumData, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         # Modify unresolved tag ID for a help forum
         forum_data = self.require_help_forum(forum)
         valid_tag = self._require_tag(forum, tag)
@@ -193,7 +132,7 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
 
     def modify_resolved_tag(
         self, forum: ForumChannel, tag: str
-    ) -> tuple[HelpForumForumData, ForumTag]:
+    ) -> tuple[HelpForum, ForumTag]:
         # Modify resolved tag ID for a help forum
         forum_data = self.require_help_forum(forum)
         valid_tag = self._require_tag(forum, tag)
@@ -201,52 +140,23 @@ class HelpForumGuildData(JsonSerializable, FromDataMixin):
         return (forum_data, valid_tag)
 
 
-def _guilds_defaultdict_factory() -> defaultdict[GuildID, HelpForumGuildData]:
-    return defaultdict(lambda: HelpForumGuildData())
-
-
-# @implements HelpForumStore
-@dataclass
-class HelpForumData(JsonSerializable, FromDataMixin):
-    guilds: defaultdict[GuildID, HelpForumGuildData] = field(
-        default_factory=_guilds_defaultdict_factory
+class HelpForumData(BaseModel):
+    guilds: defaultdict[
+        GuildID,
+        Annotated[HelpForumGuildData, Field(default_factory=HelpForumGuildData)],
+    ] = Field(
+        default_factory=lambda: defaultdict(HelpForumGuildData),
+        exclude_if=lambda v: not v,
     )
 
-    # @implements FromDataMixin
-    @classmethod
-    def try_from_data(cls, data: Any) -> Optional[Self]:
-        if isinstance(data, dict):
-            # Construct guild data
-            guilds = _guilds_defaultdict_factory()
-            for raw_guild_id, raw_guild_data in data.get("guilds", {}).items():
-                guild_id = int(raw_guild_id)
-                guilds[guild_id] = HelpForumGuildData.from_data(raw_guild_data)
-
-            return cls(guilds=guilds)
-
-    # @implements JsonSerializable
-    def to_json(self) -> Any:
-        # Omit empty guilds, as well as an empty list of guilds
-        return utils.dict_without_falsies(
-            guilds=utils.dict_without_falsies(
-                {
-                    str(guild_id): guild_data.to_json()
-                    for guild_id, guild_data in self.guilds.items()
-                }
-            )
-        )
-
-    # @implements HelpForumStore
     async def require_help_forum(self, guild: Guild, forum: ForumChannel) -> HelpForum:
         return self.guilds[guild.id].require_help_forum(forum)
 
-    # @implements HelpForumStore
     async def get_help_forum(
         self, guild: Guild, forum: ForumChannel
     ) -> Optional[HelpForum]:
         return self.guilds[guild.id].get_help_forum(forum)
 
-    # @implements HelpForumStore
     async def register_forum_channel(
         self,
         guild: Guild,
@@ -260,40 +170,32 @@ class HelpForumData(JsonSerializable, FromDataMixin):
             forum, unresolved_emoji, resolved_emoji, unresolved_tag, resolved_tag
         )
 
-    # @implements HelpForumStore
     async def deregister_forum_channel(
         self, guild: Guild, forum: ForumChannel
     ) -> HelpForum:
         return self.guilds[guild.id].deregister_forum_channel(forum)
 
-    # @implements HelpForumStore
     async def increment_threads_created(self, help_forum: HelpForum):
         help_forum.threads_created += 1
 
-    # @implements HelpForumStore
     async def increment_resolutions(self, help_forum: HelpForum):
         help_forum.resolutions += 1
 
-    # @implements HelpForumStore
     async def modify_unresolved_emoji(
         self, guild: Guild, forum: ForumChannel, emoji: str
     ) -> HelpForum:
         return self.guilds[guild.id].modify_unresolved_emoji(forum, emoji)
 
-
-    # @implements HelpForumStore
     async def modify_resolved_emoji(
         self, guild: Guild, forum: ForumChannel, emoji: str
     ) -> HelpForum:
         return self.guilds[guild.id].modify_resolved_emoji(forum, emoji)
 
-    # @implements HelpForumStore
     async def modify_unresolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
         return self.guilds[guild.id].modify_unresolved_tag(forum, tag)
 
-    # @implements HelpForumStore
     async def modify_resolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
