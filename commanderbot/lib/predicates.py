@@ -21,8 +21,10 @@ from discord.ext.commands import Bot
 
 from commanderbot.lib.types import (
     ConnectableChannel,
+    GuildChannel,
     MessageableChannel,
     MessageableGuildChannel,
+    ThreadableChannel,
     UserID,
 )
 
@@ -44,8 +46,10 @@ __all__ = (
     "is_dm_channel",
     "is_group_dm_channel",
     "is_category_channel",
+    "is_guild_channel",
     "is_messagable_channel",
     "is_messagable_guild_channel",
+    "is_threadable_channel",
     "is_connectable_channel",
     "is_partial_messagable",
 )
@@ -146,10 +150,19 @@ def is_category_channel(obj: object) -> TypeIs[CategoryChannel]:
     return isinstance(obj, CategoryChannel)
 
 
+def is_guild_channel(obj: object) -> TypeIs[GuildChannel]:
+    return (
+        is_text_channel(obj)
+        or is_forum_channel(obj)
+        or is_voice_channel(obj)
+        or is_stage_channel(obj)
+        or is_category_channel(obj)
+    )
+
+
 def is_messagable_channel(obj: object) -> TypeIs[MessageableChannel]:
     return (
         is_text_channel(obj)
-        or is_thread(obj)
         or is_voice_channel(obj)
         or is_stage_channel(obj)
         or is_dm_channel(obj)
@@ -158,12 +171,11 @@ def is_messagable_channel(obj: object) -> TypeIs[MessageableChannel]:
 
 
 def is_messagable_guild_channel(obj: object) -> TypeIs[MessageableGuildChannel]:
-    return (
-        is_text_channel(obj)
-        or is_thread(obj)
-        or is_voice_channel(obj)
-        or is_stage_channel(obj)
-    )
+    return is_text_channel(obj) or is_voice_channel(obj) or is_stage_channel(obj)
+
+
+def is_threadable_channel(obj: object) -> TypeIs[ThreadableChannel]:
+    return is_text_channel(obj) or is_forum_channel(obj)
 
 
 def is_connectable_channel(obj: object) -> TypeIs[ConnectableChannel]:

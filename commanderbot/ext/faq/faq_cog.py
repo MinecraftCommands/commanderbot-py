@@ -20,6 +20,7 @@ from commanderbot.lib import (
     is_bot,
     is_guild,
     is_messagable_guild_channel,
+    is_thread,
     utils,
 )
 from commanderbot.lib.cogs import CogGuildStateManager
@@ -71,7 +72,7 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         )
 
     # @@ AUTOCOMPLETE
-    
+
     async def faq_autocomplete(
         self, interaction: Interaction, value: str
     ) -> list[Choice[str]]:
@@ -159,7 +160,12 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
             return
 
         # Make sure the message was sent in a messageable channel in a guild
-        if not (message.guild and is_messagable_guild_channel(message.channel)):
+        if not message.guild:
+            return
+
+        if not (
+            is_messagable_guild_channel(message.channel) or is_thread(message.channel)
+        ):
             return
 
         await self.state[message.guild].on_message(message)

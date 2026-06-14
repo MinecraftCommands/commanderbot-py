@@ -1,7 +1,7 @@
 import re
 from itertools import chain
 
-from discord import Embed, Interaction, Member, Message, User
+from discord import Embed, Interaction, Member, Message, Thread, User
 from discord.app_commands import (
     Transform,
     allowed_contexts,
@@ -22,6 +22,7 @@ from commanderbot.lib import (
     MessageableGuildChannel,
     is_member,
     is_messagable_guild_channel,
+    is_thread,
 )
 from commanderbot.lib.app_commands import MessageTransformer
 
@@ -33,7 +34,7 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         self.bot: Bot = bot
 
     def _user_can_quote(
-        self, user: MemberOrUser, channel: MessageableGuildChannel
+        self, user: MemberOrUser, channel: MessageableGuildChannel | Thread
     ) -> bool:
         # Return early if `user` is not a guild member.
         if not is_member(user):
@@ -66,7 +67,9 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
     ):
         # Make sure the channel can be quoted from.
         message_channel = message.channel
-        if not is_messagable_guild_channel(message_channel):
+        if not (
+            is_messagable_guild_channel(message_channel) or is_thread(message_channel)
+        ):
             raise ChannelNotMessageable
 
         # Make sure the quoter has read permissions in the channel.
@@ -107,7 +110,9 @@ class QuoteCog(Cog, name="commanderbot.ext.quote"):
         attachment_urls_gen = (att.url for att in message.attachments)
         embed_urls_gen = (embed.url for embed in message.embeds if embed.url)
 
-        assert is_messagable_guild_channel(interaction.channel)
+        assert is_messagable_guild_channel(interaction.channel) or is_thread(
+            interaction.channel
+        )
         for url in chain(attachment_urls_gen, embed_urls_gen):
             await interaction.channel.send(url)
 

@@ -34,6 +34,7 @@ __all__ = (
     "GuildChannel",
     "MessageableChannel",
     "MessageableGuildChannel",
+    "ThreadableChannel",
     "ConnectableChannel",
     "TextMessage",
     "TextReaction",
@@ -68,12 +69,13 @@ Channel: TypeAlias = (
     | CategoryChannel
 )
 GuildChannel: TypeAlias = (
-    TextChannel | ForumChannel | Thread | VoiceChannel | StageChannel | CategoryChannel
+    TextChannel | ForumChannel | VoiceChannel | StageChannel | CategoryChannel
 )
 MessageableChannel: TypeAlias = (
-    TextChannel | Thread | VoiceChannel | StageChannel | DMChannel | GroupChannel
+    TextChannel | VoiceChannel | StageChannel | DMChannel | GroupChannel
 )
-MessageableGuildChannel: TypeAlias = TextChannel | Thread | VoiceChannel | StageChannel
+MessageableGuildChannel: TypeAlias = TextChannel | VoiceChannel | StageChannel
+ThreadableChannel: TypeAlias = TextChannel | ForumChannel
 ConnectableChannel: TypeAlias = VoiceChannel | StageChannel
 
 

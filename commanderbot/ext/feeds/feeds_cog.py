@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from discord import Interaction, Permissions, Role
+from discord import Interaction, Permissions, Role, Thread
 from discord.app_commands import AppCommandContext, AppInstallationType, Group, describe
 from discord.ext.commands import Bot, Cog
 
@@ -122,7 +122,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     async def cmd_feed_subscribe(
         self,
         interaction: Interaction,
-        channel: MessageableGuildChannel,
+        channel: MessageableGuildChannel | Thread,
         feed: FeedChoices,
         notification_role: Optional[Role],
         auto_pin: Optional[bool],
@@ -143,7 +143,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     async def cmd_feed_modify(
         self,
         interaction: Interaction,
-        channel: MessageableGuildChannel,
+        channel: MessageableGuildChannel | Thread,
         feed: FeedChoices,
         notification_role: Optional[Role],
         auto_pin: Optional[bool],
@@ -164,7 +164,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     async def cmd_feed_unsubscribe(
         self,
         interaction: Interaction,
-        channel: MessageableGuildChannel,
+        channel: MessageableGuildChannel | Thread,
         feed: FeedChoices,
     ):
         assert is_guild(interaction.guild)
@@ -178,7 +178,7 @@ class FeedsCog(Cog, name="commanderbot.ext.feeds"):
     )
     @describe(channel="The channel to show subscription details about")
     async def cmd_feed_details(
-        self, interaction: Interaction, channel: MessageableGuildChannel
+        self, interaction: Interaction, channel: MessageableGuildChannel | Thread
     ):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_subscription_details(

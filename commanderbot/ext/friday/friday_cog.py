@@ -1,4 +1,4 @@
-from discord import ForumChannel, Interaction, Message, Permissions
+from discord import ForumChannel, Interaction, Message, Permissions, Thread
 from discord.app_commands import (
     AppCommandContext,
     AppInstallationType,
@@ -21,6 +21,7 @@ from commanderbot.lib import (
     is_bot,
     is_guild,
     is_messagable_guild_channel,
+    is_thread,
 )
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.databases.json_db.v1 import (
@@ -95,7 +96,12 @@ class FridayCog(Cog, name="commanderbot.ext.friday"):
             return
 
         # Make sure the message was sent in a messageable channel in a guild
-        if not (message.guild and is_messagable_guild_channel(message.channel)):
+        if not message.guild:
+            return
+
+        if not (
+            is_messagable_guild_channel(message.channel) or is_thread(message.channel)
+        ):
             return
 
         await self.state[message.guild].on_message(message)
@@ -123,7 +129,9 @@ class FridayCog(Cog, name="commanderbot.ext.friday"):
     )
     @describe(channel="The channel to register")
     async def cmd_friday_channels_register(
-        self, interaction: Interaction, channel: MessageableGuildChannel | ForumChannel
+        self,
+        interaction: Interaction,
+        channel: MessageableGuildChannel | ForumChannel | Thread,
     ):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].register_channel(interaction, channel.id)
@@ -135,7 +143,9 @@ class FridayCog(Cog, name="commanderbot.ext.friday"):
     )
     @describe(channel="The channel to unregister")
     async def cmd_friday_channels_unregister(
-        self, interaction: Interaction, channel: MessageableGuildChannel | ForumChannel
+        self,
+        interaction: Interaction,
+        channel: MessageableGuildChannel | ForumChannel | Thread,
     ):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].unregister_channel(interaction, channel.id)

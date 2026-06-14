@@ -80,7 +80,6 @@ class StacktracerCog(
 
     def __init__(self, bot: Bot, **options):
         self.bot: Bot = bot
-        self.bot = bot
         self.options = StacktracerOptions.from_data(options)
         self.store: StacktracerStore = _make_store(bot, self, self.options)
         self.state = StacktracerState(

@@ -14,12 +14,13 @@ from discord import (
     Member,
     Message,
     PartialMessageable,
+    Thread,
     User,
 )
 from discord.ext.commands import Context
 
 from commanderbot.lib.predicates import is_text_channel, is_thread, is_user
-from commanderbot.lib.types import MessageableChannel, RoleID, UserID
+from commanderbot.lib.types import MessageableChannel, RoleID
 
 CHARACTER_CAP = 1900
 
@@ -130,7 +131,7 @@ def str_to_file(contents: str, file_name: str) -> File:
 
 
 async def send_message_or_file(
-    destination: MessageableChannel | PartialMessageable,
+    destination: MessageableChannel | Thread | PartialMessageable,
     content: str,
     *,
     file_callback: Callable[[], tuple[str, str, str]],
