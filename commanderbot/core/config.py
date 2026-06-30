@@ -5,7 +5,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    ModelWrapValidatorHandler,
     PrivateAttr,
     SerializerFunctionWrapHandler,
     model_serializer,
@@ -45,17 +44,18 @@ class ConfiguredExtension(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_model(cls, data: dict | str) -> dict:
-        if isinstance(data, dict):
-            return data
-        # Extensions starting with a `$` are required.
-        elif data.startswith("$"):
-            return {"name": data[1:], "required": True}
-        # Extensions starting with a `!` are disabled.
-        elif data.startswith("!"):
-            return {"name": data[1:], "disabled": True}
+    def _validate_model(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            # Extensions starting with a `$` are required.
+            if data.startswith("$"):
+                return {"name": data[1:], "required": True}
+            # Extensions starting with a `!` are disabled.
+            elif data.startswith("!"):
+                return {"name": data[1:], "disabled": True}
+            else:
+                return {"name": data}
         else:
-            return {"name": data}
+            return data
 
     @model_serializer(mode="wrap")
     def _serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict | str:
