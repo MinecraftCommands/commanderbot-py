@@ -1,33 +1,57 @@
 from dataclasses import dataclass
+from typing import override
 
-from discord import Member, TextChannel, Thread
+from discord import Member, Message, Thread, User
 
-from commanderbot.ext.automod.automod_event import AutomodEventBase
-from commanderbot.lib import TextMessage
+from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.lib.predicates import (
+    is_member,
+    is_messagable_guild_channel,
+    is_thread,
+    is_user,
+)
+from commanderbot.lib.types import MessageableGuildChannel
 
 __all__ = ("MessageSent",)
 
 
 @dataclass
-class MessageSent(AutomodEventBase):
-    _message: TextMessage
+class MessageSent(AutomodEvent):
+    _message: Message
 
     @property
-    def channel(self) -> TextChannel | Thread:
+    @override
+    def channel(self) -> MessageableGuildChannel | Thread:
+        assert is_messagable_guild_channel(self._message.channel) or is_thread(
+            self._message.channel
+        )
         return self._message.channel
 
     @property
-    def message(self) -> TextMessage:
+    @override
+    def message(self) -> Message:
         return self._message
 
     @property
+    @override
     def author(self) -> Member:
+        assert is_member(self._message.author)
         return self._message.author
 
     @property
+    @override
     def actor(self) -> Member:
+        assert is_member(self._message.author)
         return self._message.author
 
     @property
+    @override
     def member(self) -> Member:
+        assert is_member(self._message.author)
+        return self._message.author
+
+    @property
+    @override
+    def user(self) -> User:
+        assert is_user(self._message.author)
         return self._message.author

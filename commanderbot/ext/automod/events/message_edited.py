@@ -1,34 +1,61 @@
 from dataclasses import dataclass
+from typing import Optional, override
 
-from discord import Member, TextChannel, Thread
+from discord import Member, Message, Thread, User
 
-from commanderbot.ext.automod.automod_event import AutomodEventBase
-from commanderbot.lib import TextMessage
+from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.lib.predicates import (
+    is_member,
+    is_messagable_guild_channel,
+    is_thread,
+    is_user,
+)
+from commanderbot.lib.types import MessageableGuildChannel
 
 __all__ = ("MessageEdited",)
 
 
 @dataclass
-class MessageEdited(AutomodEventBase):
-    _before: TextMessage
-    _after: TextMessage
+class MessageEdited(AutomodEvent):
+    before: Message
+    """The previous version of the message."""
+
+    after: Message
+    """The current version of the message."""
 
     @property
-    def channel(self) -> TextChannel | Thread:
-        return self._after.channel
+    @override
+    def channel(self) -> MessageableGuildChannel | Thread:
+        assert is_messagable_guild_channel(self.after.channel) or is_thread(
+            self.after.channel
+        )
+        return self.after.channel
 
     @property
-    def message(self) -> TextMessage:
-        return self._after
+    @override
+    def message(self) -> Message:
+        return self.after
 
     @property
+    @override
     def author(self) -> Member:
-        return self._after.author
+        assert is_member(self.after.author)
+        return self.after.author
 
     @property
+    @override
     def actor(self) -> Member:
-        return self._after.author
+        assert is_member(self.after.author)
+        return self.after.author
 
     @property
+    @override
     def member(self) -> Member:
-        return self._after.author
+        assert is_member(self.after.author)
+        return self.after.author
+
+    @property
+    @override
+    def user(self) -> Optional[User]:
+        assert is_user(self.after.author)
+        return self.after.author
