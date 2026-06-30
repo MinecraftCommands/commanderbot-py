@@ -1,21 +1,15 @@
-from dataclasses import dataclass
+from typing import Literal
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger
 from commanderbot.ext.automod.triggers.message import Message
-from commanderbot.lib import JsonObject
+
+__all__ = ("MessageSent",)
 
 
-@dataclass
 class MessageSent(Message):
     """
-    Fires when an `on_message` event is received.
-
-    See: https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_message
+    Triggers when a message is sent.
     """
 
+    type: Literal["message_sent"] = "message_sent"
     event_types = (events.MessageSent,)
-
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return MessageSent.from_data(data)

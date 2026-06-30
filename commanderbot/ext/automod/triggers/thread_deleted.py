@@ -10,16 +10,16 @@ from commanderbot.ext.automod.guards import (
 from commanderbot.ext.automod.types import AutomodRuleRef
 from commanderbot.ext.automod.trigger import AutomodTrigger
 
-__all__ = ("ThreadCreated",)
+__all__ = ("ThreadDeleted",)
 
 
-class ThreadCreated(AutomodTrigger):
+class ThreadDeleted(AutomodTrigger):
     """
-    Triggers when a thread is created.
+    Triggers when a thread is deleted.
     """
 
-    type: Literal["thread_created"] = "thread_created"
-    event_types = (events.ThreadCreated,)
+    type: Literal["thread_deleted"] = "thread_deleted"
+    event_types = (events.ThreadDeleted,)
 
     parent_categories: Optional[CategoriesGuard] = None
     """The parent categories to match against. If empty, all parent categories will match."""
@@ -32,7 +32,7 @@ class ThreadCreated(AutomodTrigger):
 
     @override
     async def ignore(self, rule: AutomodRuleRef, event: AutomodEvent) -> bool:
-        assert isinstance(event, events.ThreadCreated)
+        assert isinstance(event, events.ThreadDeleted)
 
         # The thread must have a parent
         parent = event.thread.parent

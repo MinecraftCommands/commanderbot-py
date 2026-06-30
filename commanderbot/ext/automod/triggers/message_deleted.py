@@ -1,21 +1,15 @@
-from dataclasses import dataclass
+from typing import Literal
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger
 from commanderbot.ext.automod.triggers.message import Message
-from commanderbot.lib import JsonObject
+
+__all__ = ("MessageDeleted",)
 
 
-@dataclass
 class MessageDeleted(Message):
     """
-    Fires when an `on_message_delete` event is received.
-
-    See: https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_message_delete
+    Triggers when a message is deleted.
     """
 
+    type: Literal["message_deleted"] = "message_deleted"
     event_types = (events.MessageDeleted,)
-
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return MessageDeleted.from_data(data)

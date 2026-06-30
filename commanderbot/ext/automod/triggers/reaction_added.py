@@ -1,34 +1,15 @@
-from dataclasses import dataclass
+from typing import Literal
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger
 from commanderbot.ext.automod.triggers.reaction import Reaction
-from commanderbot.lib import JsonObject
+
+__all__ = ("ReactionAdded",)
 
 
-@dataclass
 class ReactionAdded(Reaction):
     """
-    Fires when an `on_reaction_add` event is received.
-
-    See: https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_reaction_add
-
-    Attributes
-    ----------
-    reactions
-        The reactions to match against. If empty, all reactions will match.
-    channel_types
-        The channel types to match against. If empty, all channel types will match.
-    channels
-        The channels to match against. If empty, all channels will match.
-    author_roles
-        The author roles to match against. If empty, all roles will match.
-    actor_roles
-        The actor roles to match against. If empty, all roles will match.
+    Triggers when a reaction is added.
     """
 
+    type: Literal["reaction_added"] = "reaction_added"
     event_types = (events.ReactionAdded,)
-
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return ReactionAdded.from_data(data)

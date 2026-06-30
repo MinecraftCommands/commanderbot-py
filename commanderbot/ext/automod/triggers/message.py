@@ -1,89 +1,55 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger, AutomodTriggerBase
-from commanderbot.lib import JsonObject
-from commanderbot.lib.guards import ChannelsGuard, ChannelTypesGuard, RolesGuard
+from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.guards import (
+    CategoriesGuard,
+    ChannelsGuard,
+    ChannelTypesGuard,
+    RolesGuard,
+)
+from commanderbot.ext.automod.types import AutomodRuleRef
+from commanderbot.ext.automod.trigger import AutomodTrigger
 
-ST = TypeVar("ST")
+__all__ = ("Message",)
 
 
-@dataclass
-class Message(AutomodTriggerBase):
+class Message(AutomodTrigger):
     """
-    Fires when an `on_message` or `on_message_edit` event is received.
-
-    See:
-    - https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_message
-    - https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_message_edit
-
-    Attributes
-    ----------
-    content
-        The exact message content to match. If provided, the message must match one of
-        these strings exactly. For more complex/flexible matching logic, consider using
-        the `message_content_contains` or `message_content_matches` conditions.
-    channel_types
-        The channel types to match against. If empty, all channel types will match.
-    channels
-        The channels to match against. If empty, all channels will match.
-    author_roles
-        The author roles to match against. If empty, all roles will match.
+    Triggers when a message is sent or edited.
     """
 
+    type: Literal["message"] = "message"
     event_types = (events.MessageSent, events.MessageEdited)
 
-    content: Optional[list[str]] = None
+    categories: Optional[CategoriesGuard] = None
+    """The categories to match against. If empty, all categories will match."""
+
     channel_types: Optional[ChannelTypesGuard] = None
+    """The channel types to match against. If empty, all channel types will match."""
+
     channels: Optional[ChannelsGuard] = None
+    """The channels to match against. If empty, all channels will match."""
+
     author_roles: Optional[RolesGuard] = None
+    """The author roles to match against. If empty, all roles will match."""
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        content = data.get("content")
-        if isinstance(content, str):
-            content = [content]
-        channel_types = ChannelTypesGuard.from_field_optional(data, "channel_types")
-        channels = ChannelsGuard.from_field_optional(data, "channels")
-        author_roles = RolesGuard.from_field_optional(data, "author_roles")
-        return cls(
-            description=data.get("description"),
-            content=content,
-            channel_types=channel_types,
-            channels=channels,
-            author_roles=author_roles,
+    @override
+    async def ignore(self, rule: AutomodRuleRef, event: AutomodEvent) -> bool:
+        assert isinstance(
+            event, (events.MessageSent, events.MessageEdited, events.MessageDeleted)
         )
 
-    def ignore_by_content(self, event: AutomodEvent) -> bool:
-        if (self.content is None) or (event.message is None):
-            return False
-        return event.message.content not in self.content
+        if self.categories and self.categories.ignore(event.category):
+            return True
 
-    def ignore_by_channel_type(self, event: AutomodEvent) -> bool:
-        if self.channel_types is None:
-            return False
-        return self.channel_types.ignore(event.channel)
+        if self.channel_types and self.channel_types.ignore(event.channel):
+            return True
 
-    def ignore_by_channel(self, event: AutomodEvent) -> bool:
-        if self.channels is None:
-            return False
-        return self.channels.ignore(event.channel)
+        if self.channels and self.channels.ignore(event.channel):
+            return True
 
-    def ignore_by_author_role(self, event: AutomodEvent) -> bool:
-        if self.author_roles is None:
-            return False
-        return self.author_roles.ignore(event.author)
+        if self.author_roles and self.author_roles.ignore(event.author):
+            return True
 
-    def ignore(self, event: AutomodEvent) -> bool:
-        return (
-            self.ignore_by_content(event)
-            or self.ignore_by_channel_type(event)
-            or self.ignore_by_channel(event)
-            or self.ignore_by_author_role(event)
-        )
-
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return Message.from_data(data)
+        return False
