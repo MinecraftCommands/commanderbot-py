@@ -2,6 +2,7 @@ from .allowed_mentions import *
 from .color import *
 from .constants import *
 from .dialogs import *
+from .enums import *
 from .event_data import *
 from .exceptions import *
 from .from_data_mixin import *
@@ -11,8 +12,8 @@ from .json import *
 from .json_serializable import *
 from .log_options import *
 from .pattern_wrapper import *
+from .predicates import *
 from .role_set import *
 from .shallow_formatter import *
-from .predicates import *
 from .types import *
 from .value_formatter import *

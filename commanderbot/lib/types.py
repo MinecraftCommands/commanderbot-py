@@ -1,4 +1,4 @@
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from discord import (
     CategoryChannel,
@@ -20,13 +20,16 @@ from discord.ext.commands import Context, MessageConverter
 __all__ = (
     "IDType",
     "GuildID",
+    "CategoryID",
     "ChannelID",
+    "ThreadID",
     "MessageID",
     "RoleID",
     "UserID",
     "ForumTagID",
     "AppCommandID",
     "EmojiID",
+    "DiscordAutomodRuleID",
     "RawOptions",
     "JsonObject",
     "MemberOrUser",
@@ -36,6 +39,7 @@ __all__ = (
     "MessageableGuildChannel",
     "ThreadableChannel",
     "ConnectableChannel",
+    "ChannelTypeNames",
     "TextMessage",
     "TextReaction",
 )
@@ -44,13 +48,16 @@ __all__ = (
 IDType: TypeAlias = int
 
 GuildID: TypeAlias = IDType
+CategoryID: TypeAlias = IDType
 ChannelID: TypeAlias = IDType
+ThreadID: TypeAlias = IDType
 MessageID: TypeAlias = IDType
 RoleID: TypeAlias = IDType
 UserID: TypeAlias = IDType
 ForumTagID: TypeAlias = IDType
 AppCommandID: TypeAlias = IDType
 EmojiID: TypeAlias = IDType
+DiscordAutomodRuleID: TypeAlias = IDType
 
 RawOptions: TypeAlias = Any
 
@@ -77,6 +84,69 @@ MessageableChannel: TypeAlias = (
 MessageableGuildChannel: TypeAlias = TextChannel | VoiceChannel | StageChannel
 ThreadableChannel: TypeAlias = TextChannel | ForumChannel
 ConnectableChannel: TypeAlias = VoiceChannel | StageChannel
+
+ChannelTypeNames: TypeAlias = Literal[
+    "text",
+    "news",
+    "forum",
+    "media",
+    "news_thread",
+    "public_thread",
+    "private_thread",
+    "voice",
+    "stage_voice",
+    "private",
+    "group",
+    "category",
+]
+"""
+Contains all enumerator names from `discord.ChannelType`.
+
+https://discordpy.readthedocs.io/en/latest/api.html#discord.ChannelType
+"""
+
+MemberFlagsNames: TypeAlias = Literal[
+    "automod_quarantined_guild_tag",
+    "automod_quarantined_username",
+    "bypasses_verification",
+    "completed_home_actions",
+    "completed_onboarding",
+    "did_rejoin",
+    "dm_settings_upsell_acknowledged",
+    "guest",
+    "started_home_actions",
+    "started_onboarding",
+]
+"""
+Contains all member flag names from `discord.MemberFlags`
+
+https://discordpy.readthedocs.io/en/latest/api.html#memberflags
+"""
+
+PublicUserFlagsNames: TypeAlias = Literal[
+    "active_developer",
+    "bot_http_interactions",
+    "bug_hunter",
+    "bug_hunter_level_2",
+    "discord_certified_moderator",
+    "early_supporter",
+    "hypesquad",
+    "hypesquad_balance",
+    "hypesquad_bravery",
+    "hypesquad_brilliance",
+    "partner",
+    "spammer",
+    "staff",
+    "system",
+    "team_user",
+    "verified_bot",
+    "verified_bot_developer",
+]
+"""
+Contains all public user flag names from `discord.PublicUserFlags`
+
+https://discordpy.readthedocs.io/en/latest/api.html#publicuserflags
+"""
 
 
 class TextMessage(Message):
