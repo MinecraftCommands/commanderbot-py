@@ -7,7 +7,7 @@ from typing import Any, Optional
 from discord import CategoryChannel, Member, Message, Reaction, Thread, User
 from discord.ext.commands import Bot
 
-from commanderbot.ext.automod.event._types import AutomodGuildStateRef
+from commanderbot.ext.automod.types import AutomodGuildStateRef
 from commanderbot.lib.predicates import is_thread
 from commanderbot.lib.types import GuildChannel
 
