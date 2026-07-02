@@ -1,13 +1,12 @@
 from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.guards import (
     CategoriesGuard,
     ChannelsGuard,
     ChannelTypesGuard,
 )
-from commanderbot.ext.automod.types import AutomodRuleRef
 from commanderbot.ext.automod.trigger import AutomodTrigger
 
 __all__ = ("ThreadCreated",)
@@ -31,11 +30,11 @@ class ThreadCreated(AutomodTrigger):
     """The parent channels to match against. If empty, all channels will match."""
 
     @override
-    async def ignore(self, rule: AutomodRuleRef, event: AutomodEvent) -> bool:
-        assert isinstance(event, events.ThreadCreated)
+    async def ignore(self, context: AutomodContext) -> bool:
+        assert isinstance(context.event, events.ThreadCreated)
 
         # The thread must have a parent
-        parent = event.thread.parent
+        parent = context.event.thread.parent
         if not parent:
             return True
 

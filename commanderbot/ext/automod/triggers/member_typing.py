@@ -1,14 +1,13 @@
 from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.guards import (
     CategoriesGuard,
     ChannelsGuard,
     ChannelTypesGuard,
     RolesGuard,
 )
-from commanderbot.ext.automod.types import AutomodRuleRef
 from commanderbot.ext.automod.trigger import AutomodTrigger
 
 __all__ = ("MemberTyping",)
@@ -35,19 +34,19 @@ class MemberTyping(AutomodTrigger):
     """The roles to match against. If empty, all roles will match."""
 
     @override
-    async def ignore(self, rule: AutomodRuleRef, event: AutomodEvent) -> bool:
-        assert isinstance(event, events.MemberTyping)
+    async def ignore(self, context: AutomodContext) -> bool:
+        assert isinstance(context.event, events.MemberTyping)
 
-        if self.categories and self.categories.ignore(event.category):
+        if self.categories and self.categories.ignore(context.event.category):
             return True
 
-        if self.channel_types and self.channel_types.ignore(event.channel):
+        if self.channel_types and self.channel_types.ignore(context.event.channel):
             return True
 
-        if self.channels and self.channels.ignore(event.channel):
+        if self.channels and self.channels.ignore(context.event.channel):
             return True
 
-        if self.roles and self.roles.ignore(event.member):
+        if self.roles and self.roles.ignore(context.event.member):
             return True
 
         return False

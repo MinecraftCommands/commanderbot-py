@@ -1,9 +1,8 @@
 from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.guards import FlagsGuard, RolesGuard
-from commanderbot.ext.automod.types import AutomodRuleRef
 from commanderbot.ext.automod.trigger import AutomodTrigger
 
 __all__ = ("MemberGainedFlags",)
@@ -24,7 +23,8 @@ class MemberGainedFlags(AutomodTrigger):
     """The roles to match against. If empty, all roles will match."""
 
     @override
-    async def ignore(self, rule: AutomodRuleRef, event: AutomodEvent) -> bool:
+    async def ignore(self, context: AutomodContext) -> bool:
+        event = context.event
         assert isinstance(event, events.MemberUpdated)
 
         if self.flags and not self.flags.gained_any(event.before, event.after):

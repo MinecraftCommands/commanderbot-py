@@ -1,10 +1,9 @@
 from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.guards import DiscordAutomodRulesGuard, RolesGuard
 from commanderbot.ext.automod.trigger import AutomodTrigger
-from commanderbot.ext.automod.types import AutomodRuleRef
 
 __all__ = ("DiscordAutomodBlockedMemberInteractions",)
 
@@ -26,13 +25,13 @@ class DiscordAutomodBlockedMemberInteractions(AutomodTrigger):
     """The roles of the blocked user to match against. If empty, all roles will match."""
 
     @override
-    async def ignore(self, rule: AutomodRuleRef, event: AutomodEvent) -> bool:
-        assert isinstance(event, events.DiscordAutomodBlockedMemberInteractions)
+    async def ignore(self, context: AutomodContext) -> bool:
+        assert isinstance(context.event, events.DiscordAutomodBlockedMemberInteractions)
 
-        if self.rules and self.rules.ignore(event.rule_id):
+        if self.rules and self.rules.ignore(context.event.rule_id):
             return True
 
-        if self.roles and self.roles.ignore(event.member):
+        if self.roles and self.roles.ignore(context.event.member):
             return True
 
         return False

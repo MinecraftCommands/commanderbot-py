@@ -3,14 +3,13 @@ from typing import Literal, Optional, override
 from discord import Member, Role, User
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.guards import (
     CategoriesGuard,
     ChannelsGuard,
     ChannelTypesGuard,
     RolesGuard,
 )
-from commanderbot.ext.automod.types import AutomodRuleRef
 from commanderbot.ext.automod.trigger import AutomodTrigger
 
 __all__ = ("MentionsRemovedFromMessage",)
@@ -45,7 +44,8 @@ class MentionsRemovedFromMessage(AutomodTrigger):
     """The roles of the victim users to match against. If empty, all roles will match."""
 
     @override
-    async def ignore(self, rule: AutomodRuleRef, event: AutomodEvent) -> bool:
+    async def ignore(self, context: AutomodContext) -> bool:
+        event = context.event
         assert isinstance(event, (events.MessageEdited, events.MessageDeleted))
 
         if self.categories and self.categories.ignore(event.category):
@@ -115,39 +115,31 @@ class MentionsRemovedFromMessage(AutomodTrigger):
             return True
 
         # Add removed mentions fields to event
-        event.set_metadata(
-            rule.name,
-            "removed_mentions",
-            " ".join((m.mention for m in removed_mentions)),
+        context.set_metadata(
+            "removed_mentions", " ".join((m.mention for m in removed_mentions))
         )
-        event.set_metadata(
-            rule.name,
-            "removed_mention_names",
-            " ".join((f"`{m}`" for m in removed_mentions)),
+        context.set_metadata(
+            "removed_mention_names", " ".join((f"`{m}`" for m in removed_mentions))
         )
 
         # Add removed user mentions fields to event
         if removed_user_mentions:
-            event.set_metadata(
-                rule.name,
-                "removed_user_mentions",
+            context.set_metadata(
+                "removed_user_mention_names",
                 " ".join((m.mention for m in removed_user_mentions)),
             )
-            event.set_metadata(
-                rule.name,
-                "removed_user_mention_names",
+            context.set_metadata(
+                "removed_user_mentions",
                 " ".join((f"`{m}`" for m in removed_user_mentions)),
             )
 
         # Add removed role mentions fields to event
         if removed_role_mentions:
-            event.set_metadata(
-                rule.name,
+            context.set_metadata(
                 "removed_role_mentions",
                 " ".join((m.mention for m in removed_role_mentions)),
             )
-            event.set_metadata(
-                rule.name,
+            context.set_metadata(
                 "removed_role_mention_names",
                 " ".join((f"`{m}`" for m in removed_role_mentions)),
             )
