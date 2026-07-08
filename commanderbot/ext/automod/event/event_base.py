@@ -1,12 +1,9 @@
 from abc import ABC
 from dataclasses import dataclass
-from logging import Logger
 from typing import Optional
 
 from discord import CategoryChannel, Member, Message, Reaction, Thread, User
-from discord.ext.commands import Bot
 
-from commanderbot.ext.automod.types import AutomodGuildStateRef
 from commanderbot.lib.predicates import is_thread
 from commanderbot.lib.types import GuildChannel
 
@@ -18,10 +15,6 @@ class AutomodEvent(ABC):
     """
     Base class for all automod events.
     """
-
-    state: AutomodGuildStateRef
-    bot: Bot
-    log: Logger
 
     @property
     def channel(self) -> Optional[GuildChannel | Thread]:
