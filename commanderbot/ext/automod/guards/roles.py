@@ -3,7 +3,7 @@ from typing import Iterable, Optional
 from discord import Member, Role, User
 from pydantic import BaseModel, ConfigDict, Field
 
-from commanderbot.lib.predicates import is_user
+from commanderbot.lib.predicates import is_member
 from commanderbot.lib.types import RoleID
 
 __all__ = ("RolesGuard",)
@@ -40,14 +40,14 @@ class RolesGuard(BaseModel):
             return False
 
         # Ignore users since they don't have roles
-        if is_user(member):
+        if not is_member(member):
             return True
 
         roles = {role.id for role in member.roles}
         return self._ignore_by_includes(roles) or self._ignore_by_excludes(roles)
 
     def member_matches(self, member: User | Member) -> bool:
-        if is_user(member):
+        if not is_member(member):
             return False
 
         # If `include` roles are defined, check if the member has *any* of them
