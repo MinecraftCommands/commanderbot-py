@@ -4,9 +4,9 @@ from pydantic import Field
 
 from commanderbot.ext.automod import triggers
 
-__all__ = ("AutomodTriggerCollection",)
+__all__ = ("AutomodTriggerType",)
 
-type AutomodTriggers = (
+type _AutomodTriggerType = (
     triggers.DiscordAutomodBlockedMemberInteractions
     | triggers.DiscordAutomodBlockedMessage
     | triggers.DiscordAutomodTimedOut
@@ -29,7 +29,4 @@ type AutomodTriggers = (
     | triggers.UserUnbanned
 )
 
-AutomodTriggerCollection = Annotated[
-    list[Annotated[AutomodTriggers, Field(discriminator="type")]],
-    Field(default_factory=list),
-]
+type AutomodTriggerType = Annotated[_AutomodTriggerType, Field(discriminator="type")]

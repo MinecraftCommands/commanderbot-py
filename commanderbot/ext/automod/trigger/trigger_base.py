@@ -32,10 +32,6 @@ class AutomodTrigger(ABC, BaseModel):
     async def poll(self, context: AutomodContext) -> bool:
         """Checks whether an event activates the trigger."""
 
-        # Skip event if the trigger is disabled
-        if self.disabled:
-            return False
-
         # Skip event if it's not an event we're listening for
         event_type = type(context.event)
         if event_type not in self.event_types:
