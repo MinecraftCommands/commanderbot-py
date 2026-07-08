@@ -1,21 +1,19 @@
-from typing import Any, Literal, TypeAlias
+from datetime import timedelta
+from typing import Annotated, Any, Literal, TypeAlias
 
 from discord import (
     CategoryChannel,
     DMChannel,
     ForumChannel,
     GroupChannel,
-    Guild,
     Member,
-    Message,
-    Reaction,
     StageChannel,
     TextChannel,
     Thread,
     User,
     VoiceChannel,
 )
-from discord.ext.commands import Context, MessageConverter
+from pydantic import WithJsonSchema
 
 __all__ = (
     "IDType",
@@ -40,8 +38,7 @@ __all__ = (
     "ThreadableChannel",
     "ConnectableChannel",
     "ChannelTypeNames",
-    "TextMessage",
-    "TextReaction",
+    "Timedelta",
 )
 
 
@@ -149,39 +146,32 @@ https://discordpy.readthedocs.io/en/latest/api.html#publicuserflags
 """
 
 
-class TextMessage(Message):
-    """
-    A [Message] in a [TextChannel] or [Thread].
-
-    This is a dummy class that can be used in casts to convince static analysis that
-    this [Message] does indeed contain a [TextChannel] and [Guild].
-
-    This is not intended to be used anywhere other than type-hinting.
-    """
-
-    channel: TextChannel | Thread
-    guild: Guild
-
-    @classmethod
-    async def convert(cls, ctx: Context, argument: Any):
-        """
-        Attempt to convert the given argument into a `Role` from within a `Guild`.
-
-        Note that discord.py's built-in `Role` is special-cased, so what we do here is
-        explicitly make this subclass convertible and then just return the underlying
-        `Role` anyway.
-        """
-        return await MessageConverter().convert(ctx, argument)
-
-
-class TextReaction(Reaction):
-    """
-    A [Reaction] to a [Message] in a [TextChannel].
-
-    This is a dummy class that can be used in casts to convince static analysis that
-    this [Reaction] does indeed contain a [TextMessage].
-
-    This is not intended to be used anywhere other than type-hinting.
-    """
-
-    message: TextMessage
+Timedelta = Annotated[
+    timedelta,
+    WithJsonSchema(
+        {
+            "anyOf": [
+                {
+                    "type": "number",
+                    "examples": [5, 1.0, 3.5],
+                },
+                {
+                    "type": "string",
+                    "format": "iso-8061-duration",
+                    "pattern": r"^[+-]?P(?:(?:\d+W)|(?=.*(?:\d+[YMDHMS]))(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?:\d+H(?:\d+M(?:\d+S)?)?|\d+M(?:\d+S)?|\d+S))?)$",
+                    "examples": ["PT5H30M", "PT2DT5H15M10S", "P2Y5M2W1DT4H20M"],
+                },
+                {
+                    "type": "string",
+                    "format": "duration",
+                    "pattern": r"^[+-]?\s*(?:(?:\d+)\s*(?i:(?:days?|d))\s*,?\s*)?\d{2}:\d{2}:\d{2}(?:\.\d+)?$",
+                    "examples": ["05:30:00", "2 days, 5:15:00", "5d, 4:20:00"],
+                },
+            ]
+        },
+        mode="validation",
+    ),
+]
+"""
+An alias for `datetime.timedelta`, but with a Json schema for Pydantic. 
+"""
