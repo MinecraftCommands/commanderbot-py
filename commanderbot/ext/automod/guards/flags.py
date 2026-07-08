@@ -25,10 +25,13 @@ class FlagsGuard(BaseModel):
             yield from ((k, v) for k, v in actor.flags)
         yield from ((k, v) for k, v in actor.public_flags)
 
-    def has_any(self, actor: Actor) -> bool:
+    def has_any(self, actor: Actor, *, count: int = 1) -> bool:
+        set_flags: int = 0
         for flag_name, value in self._get_flags(actor):
             if flag_name in self.flags and value:
-                return True
+                set_flags += 1
+                if set_flags == count:
+                    return True
         return False
 
     def has_all(self, actor: Actor) -> bool:
