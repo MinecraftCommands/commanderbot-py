@@ -22,7 +22,7 @@ class ReactionsGuard(BaseModel):
     """The reactions to exclude. A reaction will match if it's not in this set."""
 
     count: Optional[IntegerRangeGuard] = None
-    """The number of reactions to check for."""
+    """The number of times the reaction was made."""
 
     def _ignore_by_includes(self, reaction: Reaction) -> bool:
         if self.include:
