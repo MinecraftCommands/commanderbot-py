@@ -114,7 +114,7 @@ class MentionsRemovedFromMessage(AutomodTrigger):
         if not removed_mentions:
             return True
 
-        # Add removed mentions fields to event
+        # Add removed mentions fields to context
         context.set_metadata(
             "removed_mentions", " ".join((m.mention for m in removed_mentions))
         )
@@ -122,7 +122,7 @@ class MentionsRemovedFromMessage(AutomodTrigger):
             "removed_mention_names", " ".join((f"`{m}`" for m in removed_mentions))
         )
 
-        # Add removed user mentions fields to event
+        # Add removed user mentions fields to context
         if removed_user_mentions:
             context.set_metadata(
                 "removed_user_mention_names",
@@ -133,7 +133,7 @@ class MentionsRemovedFromMessage(AutomodTrigger):
                 " ".join((f"`{m}`" for m in removed_user_mentions)),
             )
 
-        # Add removed role mentions fields to event
+        # Add removed role mentions fields to context
         if removed_role_mentions:
             context.set_metadata(
                 "removed_role_mentions",

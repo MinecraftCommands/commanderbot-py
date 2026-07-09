@@ -10,7 +10,7 @@ __all__ = ("MemberGainedFlags",)
 
 class MemberGainedFlags(AutomodTrigger):
     """
-    Triggers when a `discord.Member` gains certain flags.
+    Triggers when a member gains certain flags.
     """
 
     type: Literal["member_gained_flags"] = "member_gained_flags"

@@ -11,16 +11,18 @@ __all__ = ("RolesGuard",)
 
 class RolesGuard(BaseModel):
     """
-    Checks whether a member matches a set of roles.
+    Checks whether a member/role matches a set of roles.
     """
 
     model_config = ConfigDict(use_attribute_docstrings=True)
 
     include: set[RoleID] = Field(default_factory=set)
-    """The roles to include. A member will match if they have at least one of these."""
+    """The roles to include. A role will match if it's in this set."""
 
     exclude: set[RoleID] = Field(default_factory=set)
-    """The roles to exclude. A member will match if they have none of these."""
+    """
+    The roles to exclude. A role will match if it's not in this set.
+    """
 
     def _ignore_by_includes(self, roles: set[RoleID]) -> bool:
         if self.include:

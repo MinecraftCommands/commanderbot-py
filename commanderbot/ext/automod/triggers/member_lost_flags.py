@@ -10,7 +10,7 @@ __all__ = ("MemberLostFlags",)
 
 class MemberLostFlags(AutomodTrigger):
     """
-    Triggers when a `discord.Member` loses certain flags.
+    Triggers when a member loses certain flags.
     """
 
     type: Literal["member_lost_flags"] = "member_lost_flags"
