@@ -1,52 +1,36 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import IntegerRange, JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+from commanderbot.ext.automod.guards import IntegerRangeGuard
 
-ST = TypeVar("ST")
+__all__ = ("MessageHasLinks",)
 
 
-@dataclass
-class MessageHasLinks(AutomodConditionBase):
+class MessageHasLinks(AutomodCondition):
     """
     Check if the message has links.
-
-    Attributes
-    ----------
-    count
-        The number of links to check for, if bounded.
     """
+
+    type: Literal["message_has_links"] = "message_has_links"
+
+    count: Optional[IntegerRangeGuard] = None
+    """The number of links to check for. If empty, the message only needs a single link."""
 
     # TODO Implement a configurable set of allowed domains? #enhance
     # TODO Implement configurable unicode normalization? #enhance
 
-    count: Optional[IntegerRange] = None
-
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        count = IntegerRange.from_field_optional(data, "count")
-        return cls(
-            description=data.get("description"),
-            count=count,
-        )
-
-    async def check(self, event: AutomodEvent) -> bool:
-        message = event.message
-        if (message is None) or not message.content:
+    @override
+    async def check(self, context: AutomodContext) -> bool:
+        message = context.event.message
+        if not message:
             return False
-        content = str(message.content)
-        count_http = content.count("http://")
-        count_https = content.count("https://")
-        count_links = count_http + count_https
-        if self.count is not None:
-            return self.count.includes(count_links)
-        return count_links > 0
 
+        content = message.content
+        http_count = content.count("http://")
+        https_count = content.count("https://")
+        link_count = http_count + https_count
 
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return MessageHasLinks.from_data(data)
+        if self.count:
+            return self.count.includes(link_count)
+        return link_count > 0

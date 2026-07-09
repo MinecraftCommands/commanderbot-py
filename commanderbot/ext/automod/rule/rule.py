@@ -1,10 +1,10 @@
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.ext.automod.automod_context import AutomodContext
-from commanderbot.ext.automod.trigger import AutomodTriggerCollection
+from commanderbot.ext.automod.condition import AutomodConditionType
+from commanderbot.ext.automod.trigger import AutomodTriggerType
 
 __all__ = ("AutomodRule",)
 
@@ -25,26 +25,35 @@ class AutomodRule(BaseModel):
     disabled: Optional[bool] = None
     """Is the rule disabled?"""
 
-    triggers: AutomodTriggerCollection
+    triggers: list[AutomodTriggerType] = Field(default_factory=list, min_length=1)
     """A list of triggers that cause the rule to run."""
+
+    conditions: list[AutomodConditionType] = Field(default_factory=list)
+    """A list of conditions that must *all* pass for the actions to run."""
 
     async def _poll_triggers(self, context: AutomodContext) -> bool:
         for trigger in self.triggers:
+            if trigger.disabled:
+                continue
             if await trigger.poll(context):
                 return True
         return False
 
     async def _check_conditions(self, context: AutomodContext) -> bool:
+        for condition in self.conditions:
+            if condition.disabled:
+                continue
+            if not await condition.check(context):
+                return False
         return True
 
     async def _apply_actions(self, context: AutomodContext):
         return
 
-    async def run(self, event: AutomodEvent) -> bool:
+    async def run(self, context: AutomodContext) -> bool:
         if self.disabled:
             return False
 
-        context = AutomodContext(self, event)
         if not await self._poll_triggers(context):
             return False
 
@@ -53,3 +62,7 @@ class AutomodRule(BaseModel):
 
         await self._apply_actions(context)
         return True
+
+
+# We need to rebuild the model because the conditions and actions have circular references
+AutomodRule.model_rebuild()

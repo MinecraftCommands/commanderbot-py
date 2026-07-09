@@ -1,32 +1,22 @@
-from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import Literal, Optional, override
 
 from discord import Member
 
-from commanderbot.ext.automod.automod_condition import AutomodCondition
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.conditions.abc.target_roles_base import (
-    TargetRolesBase,
-)
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.conditions.abc import TargetRoles
+from commanderbot.lib.predicates import is_member
 
-ST = TypeVar("ST")
+__all__ = ("ActorRoles",)
 
 
-@dataclass
-class ActorRoles(TargetRolesBase):
+class ActorRoles(TargetRoles):
     """
     Check if the actor in context has certain roles.
-
-    Attributes
-    ----------
-    roles
-        The roles to match against.
     """
 
-    def get_target(self, event: AutomodEvent) -> Optional[Member]:
-        return event.actor
+    type: Literal["actor_roles"] = "actor_roles"
 
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return ActorRoles.from_data(data)
+    @override
+    def get_target(self, context: AutomodContext) -> Optional[Member]:
+        if (member := context.event.actor) and is_member(member):
+            return member

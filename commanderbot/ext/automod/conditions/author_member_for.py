@@ -1,34 +1,22 @@
-from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import Literal, Optional, override
 
 from discord import Member
 
-from commanderbot.ext.automod.automod_condition import AutomodCondition
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.conditions.abc.target_member_for_base import (
-    TargetMemberForBase,
-)
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.conditions.abc import TargetMemberFor
+from commanderbot.lib.predicates import is_member
 
-ST = TypeVar("ST")
+__all__ = ("AuthorMemberFor",)
 
 
-@dataclass
-class AuthorMemberFor(TargetMemberForBase):
+class AuthorMemberFor(TargetMemberFor):
     """
     Check if the author has been on the server for a certain amount of time.
-
-    Attributes
-    ----------
-    at_least
-        The lower bound to check against, if any.
-    at_most
-        The upper bound to check against, if any.
     """
 
-    def get_target(self, event: AutomodEvent) -> Optional[Member]:
-        return event.author
+    type: Literal["author_member_for"] = "author_member_for"
 
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return AuthorMemberFor.from_data(data)
+    @override
+    def get_target(self, context: AutomodContext) -> Optional[Member]:
+        if (member := context.event.author) and is_member(member):
+            return member

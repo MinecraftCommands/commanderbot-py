@@ -1,34 +1,22 @@
-from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import Literal, Optional, override
 
-from discord import Member
+from discord import User
 
-from commanderbot.ext.automod.automod_condition import AutomodCondition
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.conditions.abc.target_account_age_base import (
-    TargetAccountAgeBase,
-)
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.conditions.abc import TargetAccountAge
+from commanderbot.lib.predicates import is_user
 
-ST = TypeVar("ST")
+__all__ = ("AuthorAccountAge",)
 
 
-@dataclass
-class AuthorAccountAge(TargetAccountAgeBase):
+class AuthorAccountAge(TargetAccountAge):
     """
     Check if the author's account is a certain age.
-
-    Attributes
-    ----------
-    more_than
-        The lower bound to check against, if any.
-    less_than
-        The upper bound to check against, if any.
     """
 
-    def get_target(self, event: AutomodEvent) -> Optional[Member]:
-        return event.author
+    type: Literal["author_account_age"] = "author_account_age"
 
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return AuthorAccountAge.from_data(data)
+    @override
+    def get_target(self, context: AutomodContext) -> Optional[User]:
+        if (user := context.event.author) and is_user(user):
+            return user

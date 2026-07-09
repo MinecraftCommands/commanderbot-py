@@ -1,25 +1,22 @@
-from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import Literal, Optional, override
 
-from discord import Member
+from discord import User
 
-from commanderbot.ext.automod.automod_condition import AutomodCondition
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.conditions.abc.target_is_bot_base import TargetIsBotBase
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.conditions.abc import TargetIsBot
+from commanderbot.lib.predicates import is_user
 
-ST = TypeVar("ST")
+__all__ = ("AuthorIsBot",)
 
 
-@dataclass
-class AuthorIsBot(TargetIsBotBase):
+class AuthorIsBot(TargetIsBot):
     """
     Check if the author in context is a bot.
     """
 
-    def get_target(self, event: AutomodEvent) -> Optional[Member]:
-        return event.author
+    type: Literal["author_is_bot"] = "author_is_bot"
 
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return AuthorIsBot.from_data(data)
+    @override
+    def get_target(self, context: AutomodContext) -> Optional[User]:
+        if (user := context.event.author) and is_user(user):
+            return user

@@ -1,45 +1,31 @@
-from dataclasses import dataclass
-from typing import Type, TypeVar
+from typing import TYPE_CHECKING, Literal, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-    deserialize_conditions,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from pydantic import Field
 
-ST = TypeVar("ST")
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+
+__all__ = ("NoneOf",)
+
+if TYPE_CHECKING:
+    from commanderbot.ext.automod.condition import AutomodConditionType
 
 
-@dataclass
-class NoneOf(AutomodConditionBase):
+class NoneOf(AutomodCondition):
     """
-    Passes if and only if none of the sub-conditions pass.
-
-    Attributes
-    ----------
-    conditions
-        The sub-conditions to check.
+    Check if no sub-conditions pass.
     """
 
-    conditions: tuple[AutomodCondition]
+    type: Literal["none_of"] = "none_of"
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        raw_conditions = data["conditions"]
-        conditions = deserialize_conditions(raw_conditions)
-        return cls(
-            description=data.get("description"),
-            conditions=conditions,
-        )
+    conditions: list[AutomodConditionType] = Field(default_factory=list, min_length=1)
+    """The sub-conditions to check."""
 
-    async def check(self, event: AutomodEvent) -> bool:
+    @override
+    async def check(self, context: AutomodContext) -> bool:
         for condition in self.conditions:
-            if await condition.check(event):
+            if condition.disabled:
+                continue
+            if await condition.check(context):
                 return False
         return True
-
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return NoneOf.from_data(data)
