@@ -57,7 +57,7 @@ class AutomodRule(BaseModel):
         if not await self._poll_triggers(context):
             return False
 
-        if not self._check_conditions(context):
+        if not await self._check_conditions(context):
             return False
 
         await self._apply_actions(context)
