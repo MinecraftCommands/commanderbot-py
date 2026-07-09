@@ -39,6 +39,7 @@ __all__ = (
     "ConnectableChannel",
     "ChannelTypeNames",
     "Timedelta",
+    "UnicodeNormalizationForms",
 )
 
 
@@ -158,14 +159,14 @@ Timedelta = Annotated[
                 {
                     "type": "string",
                     "format": "iso-8061-duration",
-                    "pattern": r"^[+-]?P(?:(?:\d+W)|(?=.*(?:\d+[YMDHMS]))(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?:\d+H(?:\d+M(?:\d+S)?)?|\d+M(?:\d+S)?|\d+S))?)$",
+                    "pattern": r"^[+-]?P(?:(?:\d+W)|(?=.*(?:\d+[YMWDHMS]))(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?(?:T(?:\d+H(?:\d+M(?:\d+S)?)?|\d+M(?:\d+S)?|\d+S))?)",
                     "examples": ["PT5H30M", "PT2DT5H15M10S", "P2Y5M2W1DT4H20M"],
                 },
                 {
                     "type": "string",
                     "format": "duration",
                     "pattern": r"^[+-]?\s*(?:(?:\d+)\s*(?i:(?:days?|d))\s*,?\s*)?\d{2}:\d{2}:\d{2}(?:\.\d+)?$",
-                    "examples": ["05:30:00", "2 days, 5:15:00", "5d, 4:20:00"],
+                    "examples": ["05:30:00", "2 days, 05:15:00", "5d, 04:20:00"],
                 },
             ]
         },
@@ -175,3 +176,5 @@ Timedelta = Annotated[
 """
 An alias for `datetime.timedelta`, but with a Json schema for Pydantic. 
 """
+
+UnicodeNormalizationForms: TypeAlias = Literal["NFC", "NFD", "NFKC", "NFKD"]
