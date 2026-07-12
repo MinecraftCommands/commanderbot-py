@@ -6,6 +6,7 @@ __all__ = (
     "COMMANDERBOT_VERSION",
     "DISCORD_PY_VERSION",
     "PYTHON_VERSION",
+    "SUPPORTS_OCR",
     "USER_AGENT",
     "MAX_MESSAGE_LENGTH",
     "MAX_EMBED_TITLE_LENGTH",
@@ -22,6 +23,13 @@ DISCORD_PY_VERSION: str = version("discord.py")
 PYTHON_VERSION: str = (
     f"{sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
 )
+
+try:
+    import tesserocr
+except:
+    SUPPORTS_OCR: bool = False
+else:
+    SUPPORTS_OCR: bool = True
 
 USER_AGENT: str = (
     f"CommanderBuff/{COMMANDERBOT_VERSION} (By the Minecraft Commands community)"
