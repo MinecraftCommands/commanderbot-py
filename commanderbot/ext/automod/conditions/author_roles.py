@@ -11,7 +11,7 @@ __all__ = ("AuthorRoles",)
 
 class AuthorRoles(TargetRoles):
     """
-    Check if the author in context has certain roles.
+    Check if the author has certain roles.
     """
 
     type: Literal["author_roles"] = "author_roles"

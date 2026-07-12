@@ -11,7 +11,7 @@ __all__ = ("ActorIsNotBot",)
 
 class ActorIsNotBot(TargetIsNotBot):
     """
-    Check if the actor in context is not a bot.
+    Check if the actor is not a bot.
     """
 
     type: Literal["actor_is_not_bot"] = "actor_is_not_bot"

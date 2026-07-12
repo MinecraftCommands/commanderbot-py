@@ -11,7 +11,7 @@ __all__ = ("AuthorIsNotSelf",)
 
 class AuthorIsNotSelf(TargetIsSelf):
     """
-    Check if the author in context is not the bot itself.
+    Check if the author is not the bot itself.
     """
 
     type: Literal["author_is_not_self"] = "author_is_not_self"

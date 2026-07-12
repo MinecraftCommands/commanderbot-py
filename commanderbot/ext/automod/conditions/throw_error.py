@@ -9,6 +9,8 @@ __all__ = ("ThrowError",)
 class ThrowError(AutomodCondition):
     """
     Throw an error when checking the condition.
+
+    Intended for testing and debugging.
     """
 
     type: Literal["throw_error"] = "throw_error"

@@ -1,7 +1,7 @@
 import unicodedata
-from typing import Literal, Optional, Self, override
+from typing import Any, Literal, Optional, override
 
-from pydantic import Field, PositiveInt, model_validator
+from pydantic import Field, PositiveInt
 
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.condition import AutomodCondition
@@ -39,11 +39,10 @@ class MessageContentContains(AutomodCondition):
     normalization_form: UnicodeNormalizationForms = Field(default="NFKD")
     """If enabled, the type of normalization to apply. Defaults to NFKD."""
 
-    @model_validator(mode="after")
-    def _validate_model(self) -> Self:
+    @override
+    def model_post_init(self, context: Any):
         if self.ignore_case:
             self.contains = {s.lower() for s in self.contains}
-        return self
 
     @override
     async def check(self, context: AutomodContext) -> bool:
