@@ -11,7 +11,7 @@ __all__ = ("RolesGuard",)
 
 class RolesGuard(BaseModel):
     """
-    Checks whether a member/role matches a set of roles.
+    Checks whether a role or a member's roles matches a set of roles.
     """
 
     model_config = ConfigDict(use_attribute_docstrings=True)
