@@ -107,7 +107,7 @@ def is_convertable_to(obj: Any, ty: Any) -> bool:
 
 
 def is_user(obj: object) -> TypeIs[User]:
-    return isinstance(obj, User)
+    return isinstance(obj, (User, Member))
 
 
 def is_member(obj: object) -> TypeIs[Member]:
