@@ -23,7 +23,7 @@ class AutomodCondition(ABC, BaseModel):
     description: Optional[str] = None
     """Describe what the condition does."""
 
-    disabled: Optional[bool] = None
+    disabled: bool = False
     """Is the condition disabled?"""
 
     @abstractmethod

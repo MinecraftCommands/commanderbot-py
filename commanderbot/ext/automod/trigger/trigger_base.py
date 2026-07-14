@@ -24,7 +24,7 @@ class AutomodTrigger(ABC, BaseModel):
     description: Optional[str] = None
     """Describe what the trigger does."""
 
-    disabled: Optional[bool] = None
+    disabled: bool = False
     """Is the trigger disabled?"""
 
     event_types: ClassVar[tuple[type[AutomodEvent], ...]] = tuple()
