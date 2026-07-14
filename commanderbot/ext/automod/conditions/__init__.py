@@ -27,5 +27,8 @@ from .message_mentions_roles import *
 from .message_mentions_users import *
 from .none_of import *
 from .random_chance import *
+from .randomize import *
+from .return_false import *
+from .return_true import *
 from .throw_error import *
 from .wait import *

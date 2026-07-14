@@ -36,6 +36,9 @@ type _AutomodConditionType = (
     | conditions.MessageMentionsUsers
     | conditions.NoneOf
     | conditions.RandomChance
+    | conditions.Randomize
+    | conditions.ReturnFalse
+    | conditions.ReturnTrue
     | conditions.ThrowError
     | conditions.Wait
 )
