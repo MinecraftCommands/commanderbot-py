@@ -14,7 +14,7 @@ class AuthorRoles(TargetRoles):
     Check if the author has certain roles.
     """
 
-    type: Literal["author_roles"] = "author_roles"
+    type: Literal["author_roles"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[Member]:

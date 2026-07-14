@@ -11,5 +11,5 @@ class MemberLeft(AutomodTrigger):
     Triggers when a member leaves the guild.
     """
 
-    type: Literal["member_left"] = "member_left"
+    type: Literal["member_left"]
     event_types = (events.MemberLeft,)

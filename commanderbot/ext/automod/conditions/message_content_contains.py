@@ -15,7 +15,7 @@ class MessageContentContains(AutomodCondition):
     Check if the message content contains a number of substrings.
     """
 
-    type: Literal["message_content_contains"] = "message_content_contains"
+    type: Literal["message_content_contains"]
 
     contains: set[str] = Field(default_factory=set, min_length=1)
     """
@@ -30,10 +30,10 @@ class MessageContentContains(AutomodCondition):
     found. If empty, all substrings must be found.
     """
 
-    ignore_case: Optional[bool] = None
+    ignore_case: bool = False
     """Whether to ignore upper vs lower case."""
 
-    use_normalization: Optional[bool] = None
+    use_normalization: bool = False
     """Whether to use unicode normalization or process the string as-is."""
 
     normalization_form: UnicodeNormalizationForms = Field(default="NFKD")

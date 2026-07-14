@@ -17,7 +17,7 @@ class ThreadDeleted(AutomodTrigger):
     Triggers when a thread is deleted.
     """
 
-    type: Literal["thread_deleted"] = "thread_deleted"
+    type: Literal["thread_deleted"]
     event_types = (events.ThreadDeleted,)
 
     parent_categories: Optional[CategoriesGuard] = None

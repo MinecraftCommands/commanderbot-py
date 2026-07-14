@@ -12,7 +12,7 @@ class MessageHasAttachments(AutomodCondition):
     Check if the message has attachments.
     """
 
-    type: Literal["message_has_attachments"] = "message_has_attachments"
+    type: Literal["message_has_attachments"]
 
     count: Optional[IntegerRangeGuard] = None
     """The number of attachments to check for. If empty, the message only needs a single attachment."""

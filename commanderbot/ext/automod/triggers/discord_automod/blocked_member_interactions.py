@@ -13,9 +13,7 @@ class DiscordAutomodBlockedMemberInteractions(AutomodTrigger):
     Triggers when Discord's automod blocks member interactions.
     """
 
-    type: Literal["discord_automod_blocked_member_interactions"] = (
-        "discord_automod_blocked_member_interactions"
-    )
+    type: Literal["discord_automod_blocked_member_interactions"]
     event_types = (events.DiscordAutomodBlockedMemberInteractions,)
 
     rules: Optional[DiscordAutomodRulesGuard] = None

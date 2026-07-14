@@ -14,7 +14,7 @@ class ActorIsNotBot(TargetIsNotBot):
     Check if the actor is not a bot.
     """
 
-    type: Literal["actor_is_not_bot"] = "actor_is_not_bot"
+    type: Literal["actor_is_not_bot"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[User]:

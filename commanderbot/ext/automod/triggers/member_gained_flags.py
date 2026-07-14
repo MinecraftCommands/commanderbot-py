@@ -13,7 +13,7 @@ class MemberGainedFlags(AutomodTrigger):
     Triggers when a member gains certain flags.
     """
 
-    type: Literal["member_gained_flags"] = "member_gained_flags"
+    type: Literal["member_gained_flags"]
     event_types = (events.MemberUpdated,)
 
     flags: Optional[FlagsGuard] = None

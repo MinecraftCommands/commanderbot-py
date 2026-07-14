@@ -14,7 +14,7 @@ class ActorRoles(TargetRoles):
     Check if the actor has certain roles.
     """
 
-    type: Literal["actor_roles"] = "actor_roles"
+    type: Literal["actor_roles"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[Member]:

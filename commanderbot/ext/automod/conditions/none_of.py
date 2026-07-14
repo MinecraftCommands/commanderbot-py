@@ -16,7 +16,7 @@ class NoneOf(AutomodCondition):
     Check if no sub-conditions pass.
     """
 
-    type: Literal["none_of"] = "none_of"
+    type: Literal["none_of"]
 
     conditions: list[AutomodConditionType] = Field(default_factory=list, min_length=1)
     """The sub-conditions to check."""

@@ -11,5 +11,5 @@ class MemberJoined(AutomodTrigger):
     Triggers when a member joins the guild.
     """
 
-    type: Literal["member_joined"] = "member_joined"
+    type: Literal["member_joined"]
     event_types = (events.MemberJoined,)

@@ -16,7 +16,7 @@ class AnyOf(AutomodCondition):
     Check if a number of sub-conditions pass (logical OR).
     """
 
-    type: Literal["any_of"] = "any_of"
+    type: Literal["any_of"]
 
     conditions: list[AutomodConditionType] = Field(default_factory=list, min_length=1)
     """The sub-conditions to check."""

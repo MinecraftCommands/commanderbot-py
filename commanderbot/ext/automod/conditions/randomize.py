@@ -31,7 +31,7 @@ class Randomize(AutomodCondition):
     Check a random sub-condition.
     """
 
-    type: Literal["randomize"] = "randomize"
+    type: Literal["randomize"]
 
     conditions: list[AutomodConditionType | WeightedCondition] = Field(
         default_factory=list, min_length=1

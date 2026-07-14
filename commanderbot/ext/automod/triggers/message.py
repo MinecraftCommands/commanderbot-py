@@ -18,7 +18,7 @@ class Message(AutomodTrigger):
     Triggers when a message is sent or edited.
     """
 
-    type: Literal["message"] = "message"
+    type: Literal["message"]
     event_types = (events.MessageSent, events.MessageEdited)
 
     categories: Optional[CategoriesGuard] = None

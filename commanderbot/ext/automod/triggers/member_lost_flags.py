@@ -13,7 +13,7 @@ class MemberLostFlags(AutomodTrigger):
     Triggers when a member loses certain flags.
     """
 
-    type: Literal["member_lost_flags"] = "member_lost_flags"
+    type: Literal["member_lost_flags"]
     event_types = (events.MemberUpdated,)
 
     flags: Optional[FlagsGuard] = None

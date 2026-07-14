@@ -19,7 +19,7 @@ class DiscordAutomodBlockedMessage(AutomodTrigger):
     Triggers when Discord's automod blocks a message.
     """
 
-    type: Literal["discord_automod_blocked_message"] = "discord_automod_blocked_message"
+    type: Literal["discord_automod_blocked_message"]
     event_types = (events.DiscordAutomodBlockedMessage,)
 
     rules: Optional[DiscordAutomodRulesGuard] = None

@@ -16,7 +16,7 @@ class MessageContentMatches(AutomodCondition):
     Check if the message content matches a number of regular expressions.
     """
 
-    type: Literal["message_content_matches"] = "message_content_matches"
+    type: Literal["message_content_matches"]
 
     matches: set[re.Pattern] = Field(default_factory=set, min_length=1)
     """
@@ -31,10 +31,10 @@ class MessageContentMatches(AutomodCondition):
     matched. If unspecified, all patterns must be matched.
     """
 
-    use_search: Optional[bool] = None
+    use_search: bool = False
     """Whether to search the entire string instead of using an anchored match."""
 
-    use_normalization: Optional[bool] = None
+    use_normalization: bool = False
     """Whether to use unicode normalization or process the string as-is."""
 
     normalization_form: UnicodeNormalizationForms = Field(default="NFKD")

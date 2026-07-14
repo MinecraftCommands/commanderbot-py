@@ -11,5 +11,5 @@ class MessageEdited(Message):
     Triggers when a message is edited.
     """
 
-    type: Literal["message_edited"] = "message_edited"
+    type: Literal["message_edited"]
     event_types = (events.MessageEdited,)

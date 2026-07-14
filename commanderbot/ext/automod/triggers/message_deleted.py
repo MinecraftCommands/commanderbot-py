@@ -11,5 +11,5 @@ class MessageDeleted(Message):
     Triggers when a message is deleted.
     """
 
-    type: Literal["message_deleted"] = "message_deleted"
+    type: Literal["message_deleted"]
     event_types = (events.MessageDeleted,)

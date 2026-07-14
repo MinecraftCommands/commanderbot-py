@@ -12,7 +12,7 @@ class MessageHasLinks(AutomodCondition):
     Check if the message has links.
     """
 
-    type: Literal["message_has_links"] = "message_has_links"
+    type: Literal["message_has_links"]
 
     count: Optional[IntegerRangeGuard] = None
     """The number of links to check for. If empty, the message only needs a single link."""

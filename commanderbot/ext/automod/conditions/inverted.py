@@ -14,7 +14,7 @@ class Inverted(AutomodCondition):
     Inverts the result of a sub-condition.
     """
 
-    type: Literal["inverted"] = "inverted"
+    type: Literal["inverted"]
 
     condition: AutomodConditionType
     """The sub-condition to check."""

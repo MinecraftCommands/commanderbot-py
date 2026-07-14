@@ -12,7 +12,7 @@ class MessageHasEmbeds(AutomodCondition):
     Check if the message has embeds.
     """
 
-    type: Literal["message_has_embeds"] = "message_has_embeds"
+    type: Literal["message_has_embeds"]
 
     count: Optional[IntegerRangeGuard] = None
     """The number of embeds to check for. If empty, the message only needs a single embed."""

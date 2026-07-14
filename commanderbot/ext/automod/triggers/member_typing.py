@@ -18,7 +18,7 @@ class MemberTyping(AutomodTrigger):
     Triggers when a user is typing.
     """
 
-    type: Literal["member_typing"] = "member_typing"
+    type: Literal["member_typing"]
     event_types = (events.MemberTyping,)
 
     categories: Optional[CategoriesGuard] = None

@@ -11,5 +11,5 @@ class ReactionAdded(Reaction):
     Triggers when a reaction is added.
     """
 
-    type: Literal["reaction_added"] = "reaction_added"
+    type: Literal["reaction_added"]
     event_types = (events.ReactionAdded,)

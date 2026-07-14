@@ -13,7 +13,7 @@ class DiscordAutomodTimedOut(AutomodTrigger):
     Triggers when Discord's automod times out a member.
     """
 
-    type: Literal["discord_automod_timed_out"] = "discord_automod_timed_out"
+    type: Literal["discord_automod_timed_out"]
     event_types = (events.DiscordAutomodTimedOut,)
 
     rules: Optional[DiscordAutomodRulesGuard] = None

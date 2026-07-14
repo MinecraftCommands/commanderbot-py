@@ -16,7 +16,7 @@ class AllOf(AutomodCondition):
     Check if all sub-conditions pass (logical AND).
     """
 
-    type: Literal["all_of"] = "all_of"
+    type: Literal["all_of"]
 
     conditions: list[AutomodConditionType] = Field(default_factory=list, min_length=1)
     """The sub-conditions to check."""

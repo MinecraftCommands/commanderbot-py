@@ -12,7 +12,7 @@ class MessageMentionsUsers(AutomodCondition):
     Check if the message contains user mentions.
     """
 
-    type: Literal["message_mentions_users"] = "message_mentions_users"
+    type: Literal["message_mentions_users"]
 
     roles: Optional[RolesGuard] = None
     """The roles of the mentioned users to match against. If empty, all roles will match."""

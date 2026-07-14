@@ -13,7 +13,7 @@ class AuthorHasAnyFlags(TargetHasAnyFlags):
     Check if the author has a number of flags from a selection.
     """
 
-    type: Literal["author_has_any_flags"] = "author_has_any_flags"
+    type: Literal["author_has_any_flags"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[User | Member]:

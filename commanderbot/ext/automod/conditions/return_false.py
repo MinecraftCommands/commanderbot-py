@@ -11,7 +11,7 @@ class ReturnFalse(AutomodCondition):
     A condition that is always false.
     """
 
-    type: Literal["return_false"] = "return_false"
+    type: Literal["return_false"]
 
     @override
     async def check(self, context: AutomodContext) -> bool:

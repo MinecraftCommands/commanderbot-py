@@ -13,7 +13,7 @@ class ThrowError(AutomodCondition):
     Intended for testing and debugging.
     """
 
-    type: Literal["throw_error"] = "throw_error"
+    type: Literal["throw_error"]
 
     error: str
     """A human-readable error message."""

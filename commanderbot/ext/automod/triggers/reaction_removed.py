@@ -11,5 +11,5 @@ class ReactionRemoved(Reaction):
     Triggers when a reaction is removed.
     """
 
-    type: Literal["reaction_removed"] = "reaction_removed"
+    type: Literal["reaction_removed"]
     event_types = (events.ReactionRemoved,)

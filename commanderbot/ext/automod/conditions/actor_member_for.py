@@ -14,7 +14,7 @@ class ActorMemberFor(TargetMemberFor):
     Check if the actor has been on the server for a certain amount of time.
     """
 
-    type: Literal["actor_member_for"] = "actor_member_for"
+    type: Literal["actor_member_for"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[Member]:

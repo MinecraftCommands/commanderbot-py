@@ -11,5 +11,5 @@ class UserBanned(AutomodTrigger):
     Triggers when a user is banned.
     """
 
-    type: Literal["user_banned"] = "user_banned"
+    type: Literal["user_banned"]
     event_types = (events.UserBanned,)

@@ -12,7 +12,7 @@ class MessageMentionsRoles(AutomodCondition):
     Check if the message contains role mentions.
     """
 
-    type: Literal["message_mentions_roles"] = "message_mentions_roles"
+    type: Literal["message_mentions_roles"]
 
     roles: Optional[RolesGuard] = None
     """The roles to match against. If empty, all roles will match."""

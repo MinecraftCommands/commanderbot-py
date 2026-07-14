@@ -12,7 +12,7 @@ class MessageHasMentions(AutomodCondition):
     Check if the message has mentions.
     """
 
-    type: Literal["message_has_mentions"] = "message_has_mentions"
+    type: Literal["message_has_mentions"]
 
     count: Optional[IntegerRangeGuard] = None
     """The number of mentions to check for. If empty, the message only needs a single mention."""

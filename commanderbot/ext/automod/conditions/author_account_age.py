@@ -14,7 +14,7 @@ class AuthorAccountAge(TargetAccountAge):
     Check if the author's account is a certain age.
     """
 
-    type: Literal["author_account_age"] = "author_account_age"
+    type: Literal["author_account_age"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[User]:

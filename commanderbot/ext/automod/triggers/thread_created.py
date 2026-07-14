@@ -17,7 +17,7 @@ class ThreadCreated(AutomodTrigger):
     Triggers when a thread is created.
     """
 
-    type: Literal["thread_created"] = "thread_created"
+    type: Literal["thread_created"]
     event_types = (events.ThreadCreated,)
 
     parent_categories: Optional[CategoriesGuard] = None

@@ -14,7 +14,7 @@ class RandomChance(AutomodCondition):
     Generate a random number between `0.0` and `1.0` and check if it's below `chance`.
     """
 
-    type: Literal["random_chance"] = "random_chance"
+    type: Literal["random_chance"]
 
     chance: float = Field(ge=0.0, le=1.0)
     """A number between `0.0` and `1.0` (inclusive)."""

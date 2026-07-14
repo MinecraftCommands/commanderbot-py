@@ -22,7 +22,7 @@ class MentionsRemovedFromMessage(AutomodTrigger):
     This can be used for detecting suspected ghost pings.
     """
 
-    type: Literal["mentions_removed_from_message"] = "mentions_removed_from_message"
+    type: Literal["mentions_removed_from_message"]
     event_types = (events.MessageEdited, events.MessageDeleted)
 
     categories: Optional[CategoriesGuard] = None

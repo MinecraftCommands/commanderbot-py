@@ -19,7 +19,7 @@ class Reaction(AutomodTrigger):
     Triggers when a member reacts to a message.
     """
 
-    type: Literal["reaction"] = "reaction"
+    type: Literal["reaction"]
     event_types = (events.ReactionAdded, events.ReactionRemoved)
 
     reactions: Optional[ReactionsGuard] = None

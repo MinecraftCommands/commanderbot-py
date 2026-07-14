@@ -14,7 +14,7 @@ class AuthorIsSelf(TargetIsSelf):
     Check if the author is the bot itself.
     """
 
-    type: Literal["author_is_self"] = "author_is_self"
+    type: Literal["author_is_self"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[User]:

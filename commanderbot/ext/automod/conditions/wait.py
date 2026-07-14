@@ -13,7 +13,7 @@ class Wait(AutomodCondition):
     Wait a certain amount of time before continuing.
     """
 
-    type: Literal["wait"] = "wait"
+    type: Literal["wait"]
 
     delay: Timedelta
     """

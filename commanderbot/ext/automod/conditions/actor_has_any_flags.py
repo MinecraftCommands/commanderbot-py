@@ -13,7 +13,7 @@ class ActorHasAnyFlags(TargetHasAnyFlags):
     Check if the actor has a number of flags from a selection.
     """
 
-    type: Literal["actor_has_any_flags"] = "actor_has_any_flags"
+    type: Literal["actor_has_any_flags"]
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[User | Member]:

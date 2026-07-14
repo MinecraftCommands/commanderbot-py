@@ -11,5 +11,5 @@ class UserUnbanned(AutomodTrigger):
     Triggers when a user is unbanned.
     """
 
-    type: Literal["user_unbanned"] = "user_unbanned"
+    type: Literal["user_unbanned"]
     event_types = (events.UserUnbanned,)
