@@ -19,6 +19,8 @@ class JsonFileDatabaseOptions(BaseModel):
     path: Path
     no_init: bool = False
     indent: Optional[int] = None
+    exclude_defaults: bool = True
+    exclude_none: bool = False
 
 
 def validate_options(data: Optional[str | dict]) -> dict:

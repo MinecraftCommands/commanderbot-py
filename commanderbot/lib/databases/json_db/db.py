@@ -58,7 +58,7 @@ class JsonDB[CacheType: BaseModel]:
         path: Path = self.options.path
         try:
             # Attempt read the file.
-            return self.options.path.read_text()
+            return self.options.path.read_text(encoding="utf-8")
         except FileNotFoundError as ex:
             if self.options.no_init:
                 # If the file doesn't exist, and we've been specifically told not to
@@ -70,7 +70,7 @@ class JsonDB[CacheType: BaseModel]:
                     f"Initializing database file because it doesn't already exist: {path}"
                 )
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text("{}")
+                path.write_text("{}", encoding="utf-8")
                 return "{}"
 
     def _write(self, data: str):
@@ -78,7 +78,7 @@ class JsonDB[CacheType: BaseModel]:
         Write the given data to the database file.
         """
         assert is_json_file_options(self.options)
-        self.options.path.write_text(data)
+        self.options.path.write_text(data, encoding="utf-8")
 
     async def get_cache(self) -> CacheType:
         """
@@ -101,5 +101,9 @@ class JsonDB[CacheType: BaseModel]:
         cache: CacheType = await self.get_cache()
         async with self.__cache_lock:
             if is_json_file_options(self.options):
-                data: str = cache.model_dump_json(indent=self.options.indent)
+                data: str = cache.model_dump_json(
+                    indent=self.options.indent,
+                    exclude_defaults=self.options.exclude_defaults,
+                    exclude_none=self.options.exclude_none,
+                )
                 await asyncio.to_thread(self._write, data)
