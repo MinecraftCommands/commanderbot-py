@@ -22,7 +22,7 @@ class AllowedMentions(discord.AllowedMentions, FromDataMixin, JsonSerializable):
 
     # @@ FACTORIES
 
-    _FACTORIES: ClassVar[dict[str, Callable[[], Self]]] = {}
+    _factories: ClassVar[dict[str, Callable[[], Self]]] = {}
 
     # @overrides discord.AllowedMentions
     @override
@@ -118,7 +118,7 @@ class AllowedMentions(discord.AllowedMentions, FromDataMixin, JsonSerializable):
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
         def from_factory(factory_name: str) -> Self:
-            if factory := cls._FACTORIES.get(factory_name):
+            if factory := cls._factories.get(factory_name):
                 try:
                     return factory()
                 except Exception as ex:
@@ -141,7 +141,7 @@ class AllowedMentions(discord.AllowedMentions, FromDataMixin, JsonSerializable):
 
         from_factory_schema = core_schema.chain_schema(
             [
-                core_schema.str_schema(),
+                core_schema.literal_schema([*cls._factories]),
                 core_schema.no_info_plain_validator_function(from_factory),
             ]
         )
@@ -177,7 +177,7 @@ for name, func in inspect.getmembers(AllowedMentions, inspect.ismethod):
     signature = inspect.signature(func)
     doc_str = inspect.getdoc(func) or ""
     if len(signature.parameters) == 0 and "A factory method that returns a" in doc_str:
-        AllowedMentions._FACTORIES[name] = func
+        AllowedMentions._factories[name] = func
 
 
 AllowedMentionsAdapter = TypeAdapter(AllowedMentions)

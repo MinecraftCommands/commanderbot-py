@@ -21,7 +21,7 @@ class Intents(discord.Intents, FromDataMixin, JsonSerializable):
 
     # @@ FACTORIES
 
-    _FACTORIES: ClassVar[dict[str, Callable[[], Self]]] = {}
+    _factories: ClassVar[dict[str, Callable[[], Self]]] = {}
 
     # @overrides discord.Intents
     @override
@@ -87,7 +87,7 @@ class Intents(discord.Intents, FromDataMixin, JsonSerializable):
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
         def from_factory(factory_name: str) -> Self:
-            if factory := cls._FACTORIES.get(factory_name):
+            if factory := cls._factories.get(factory_name):
                 try:
                     return factory()
                 except Exception as ex:
@@ -133,17 +133,17 @@ class Intents(discord.Intents, FromDataMixin, JsonSerializable):
         return core_schema.json_or_python_schema(
             json_schema=core_schema.union_schema(
                 [
-                    from_int_schema,
                     from_factory_schema,
                     from_dict_schema,
+                    from_int_schema,
                 ]
             ),
             python_schema=core_schema.union_schema(
                 [
                     core_schema.is_instance_schema(cls),
-                    from_int_schema,
                     from_factory_schema,
                     from_dict_schema,
+                    from_int_schema,
                 ]
             ),
             serialization=core_schema.plain_serializer_function_ser_schema(to_dict),
@@ -156,7 +156,7 @@ for name, func in inspect.getmembers(Intents, inspect.ismethod):
     signature = inspect.signature(func)
     doc_str = inspect.getdoc(func) or ""
     if len(signature.parameters) == 0 and "A factory method that creates a" in doc_str:
-        Intents._FACTORIES[name] = func
+        Intents._factories[name] = func
 
 IntentsAdapter = TypeAdapter(Intents)
 """

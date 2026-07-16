@@ -21,7 +21,7 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
 
     # @@ FACTORIES
 
-    _FACTORIES: ClassVar[dict[str, Callable[[], Self]]] = {}
+    _factories: ClassVar[dict[str, Callable[[], Self]]] = {}
 
     # @overrides discord.Colour
     @override
@@ -45,7 +45,7 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
             color_filter if case_sensitive else color_filter.lower()
         )
         colors: dict[str, Color] = {}
-        for name, func in cls._FACTORIES.items():
+        for name, func in cls._factories.items():
             # Skip factory function if its name doesn't contain the color filter.
             func_name: str = name if case_sensitive else name.lower()
             if color_filter and color_filter not in func_name:
@@ -336,7 +336,7 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
         def from_factory(factory_name: str) -> Self:
-            if factory := cls._FACTORIES.get(factory_name):
+            if factory := cls._factories.get(factory_name):
                 try:
                     return factory()
                 except Exception as ex:
@@ -359,7 +359,7 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
 
         from_factory_schema = core_schema.chain_schema(
             [
-                core_schema.str_schema(),
+                core_schema.literal_schema([*cls._factories]),
                 core_schema.no_info_plain_validator_function(from_factory),
             ]
         )
@@ -397,21 +397,21 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
         return core_schema.json_or_python_schema(
             json_schema=core_schema.union_schema(
                 [
-                    from_int_schema,
-                    from_str_schema,
                     from_factory_schema,
                     from_rgb_dict_schema,
                     from_hsv_dict_schema,
+                    from_str_schema,
+                    from_int_schema,
                 ]
             ),
             python_schema=core_schema.union_schema(
                 [
                     core_schema.is_instance_schema(cls),
-                    from_int_schema,
-                    from_str_schema,
                     from_factory_schema,
                     from_rgb_dict_schema,
                     from_hsv_dict_schema,
+                    from_str_schema,
+                    from_int_schema,
                 ]
             ),
             serialization=core_schema.plain_serializer_function_ser_schema(
@@ -426,7 +426,7 @@ for name, func in inspect.getmembers(Color, inspect.ismethod):
     signature = inspect.signature(func)
     doc_str = inspect.getdoc(func) or ""
     if len(signature.parameters) == 0 and "value of ``0x" in doc_str:
-        Color._FACTORIES[name] = func
+        Color._factories[name] = func
 
 ColorAdapter = TypeAdapter(Color)
 """
