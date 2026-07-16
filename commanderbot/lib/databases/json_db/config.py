@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Literal, Optional, TypeIs
+from typing import Annotated, Any, Literal, Optional, TypeIs
 
 from pydantic import BaseModel, BeforeValidator, Field
 
@@ -11,11 +11,11 @@ __all__ = (
 
 
 class InMemoryDatabaseOptions(BaseModel):
-    type: Literal["in_memory"] = "in_memory"
+    type: Literal["in_memory"]
 
 
 class JsonFileDatabaseOptions(BaseModel):
-    type: Literal["json_file"] = "json_file"
+    type: Literal["json_file"]
     path: Path
     no_init: bool = False
     indent: Optional[int] = None
@@ -23,7 +23,7 @@ class JsonFileDatabaseOptions(BaseModel):
     exclude_none: bool = False
 
 
-def validate_options(data: Optional[str | dict]) -> dict:
+def validate_options(data: Any) -> Any:
     if data is None:
         return {"type": "in_memory"}
     elif isinstance(data, str):
@@ -33,7 +33,10 @@ def validate_options(data: Optional[str | dict]) -> dict:
 
 JsonDBOptions = Annotated[
     InMemoryDatabaseOptions | JsonFileDatabaseOptions,
-    Field(default_factory=InMemoryDatabaseOptions, discriminator="type"),
+    Field(
+        discriminator="type",
+        default_factory=lambda: InMemoryDatabaseOptions(type="in_memory"),
+    ),
     BeforeValidator(validate_options),
 ]
 
