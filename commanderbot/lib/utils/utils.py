@@ -120,13 +120,13 @@ def message_to_file(message: Message, filename: Optional[str] = None) -> File:
             embed_json = json.dumps(embed.to_dict(), indent=2)
             file_lines.append(f"\n```json\n{embed_json}\n```")
     file_content = "\n".join(file_lines)
-    fp = cast(Any, io.StringIO(file_content))
+    fp = io.BytesIO(file_content.encode())
     file = File(fp=fp, filename=filename)
     return file
 
 
-def str_to_file(contents: str, file_name: str) -> File:
-    fp = cast(Any, io.StringIO(contents))
+def str_to_file(content: str, file_name: str) -> File:
+    fp = io.BytesIO(content.encode())
     return File(fp=fp, filename=file_name)
 
 
@@ -159,7 +159,7 @@ async def send_message_or_file(
         return await destination.send(content, allowed_mentions=allowed_mentions)
     else:
         alt_content, file_content, file_name = file_callback()
-        fp = cast(Any, io.StringIO(file_content))
+        fp = io.BytesIO(file_content.encode())
         file = File(fp=fp, filename=file_name)
         return await destination.send(
             alt_content,
