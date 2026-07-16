@@ -23,7 +23,7 @@ class EditThread(AutomodAction):
     name: Optional[str] = None
     """The new name of the thread."""
 
-    tags: set[ForumTagID] = Field(default_factory=set)
+    tags: set[ForumTagID] = Field(default_factory=set, max_length=5)
     """
     The new tags to apply to the thread. This only works if the thread is part of a forum.
     There can only be up to 5 tags applied to a thread.
