@@ -1,28 +1,23 @@
-from dataclasses import dataclass
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+
+__all__ = ("ThrowError",)
 
 
-@dataclass
-class ThrowError(AutomodActionBase):
+class ThrowError(AutomodAction):
     """
     Throw an error when running the action.
 
     Intended for testing and debugging.
-
-    Attributes
-    ----------
-    error
-        A human-readable error message.
     """
 
+    type: Literal["throw_error"]
+
     error: str
+    """A human-readable error message."""
 
-    async def apply(self, event: AutomodEvent):
+    @override
+    async def apply(self, context: AutomodContext):
         raise Exception(self.error)
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return ThrowError.from_data(data)

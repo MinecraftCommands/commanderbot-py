@@ -1,20 +1,19 @@
-from dataclasses import dataclass
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+
+__all__ = ("RemoveAllReactions",)
 
 
-@dataclass
-class RemoveAllReactions(AutomodActionBase):
+class RemoveAllReactions(AutomodAction):
     """
     Remove all reactions from the message in context.
     """
 
-    async def apply(self, event: AutomodEvent):
-        if message := event.message:
+    type: Literal["remove_all_reactions"]
+
+    @override
+    async def apply(self, context: AutomodContext):
+        if message := context.event.message:
             await message.clear_reactions()
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return RemoveAllReactions.from_data(data)

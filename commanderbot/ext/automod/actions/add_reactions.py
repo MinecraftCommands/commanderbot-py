@@ -1,28 +1,25 @@
-from dataclasses import dataclass
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from pydantic import Field
+
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+
+__all__ = ("AddReactions",)
 
 
-@dataclass
-class AddReactions(AutomodActionBase):
+class AddReactions(AutomodAction):
     """
     Add reactions to the message in context.
-
-    Attributes
-    ----------
-    reactions
-        The reactions to add.
     """
 
-    reactions: tuple[str]
+    type: Literal["add_reactions"]
 
-    async def apply(self, event: AutomodEvent):
-        if message := event.message:
+    reactions: set[str] = Field(default_factory=set, min_length=1)
+    """The reactions to add."""
+
+    @override
+    async def apply(self, context: AutomodContext):
+        if message := context.event.message:
             for reaction in self.reactions:
                 await message.add_reaction(reaction)
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return AddReactions.from_data(data)

@@ -1,20 +1,19 @@
-from dataclasses import dataclass
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+
+__all__ = ("DeleteMessage",)
 
 
-@dataclass
-class DeleteMessage(AutomodActionBase):
+class DeleteMessage(AutomodAction):
     """
     Delete the message in context.
     """
 
-    async def apply(self, event: AutomodEvent):
-        if message := event.message:
+    type: Literal["delete_message"]
+
+    @override
+    async def apply(self, context: AutomodContext):
+        if message := context.event.message:
             await message.delete()
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return DeleteMessage.from_data(data)

@@ -1,32 +1,22 @@
-from dataclasses import dataclass
-from typing import Optional
+from typing import Literal, Optional, override
 
 from discord import Member
 
-from commanderbot.ext.automod.actions.abc.add_roles_to_target_base import (
-    AddRolesToTargetBase,
-)
-from commanderbot.ext.automod.automod_action import AutomodAction
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.actions.abc import AddRolesToTarget
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.lib.predicates import is_member
+
+__all__ = ("AddRolesToActor",)
 
 
-@dataclass
-class AddRolesToActor(AddRolesToTargetBase):
+class AddRolesToActor(AddRolesToTarget):
     """
     Add roles to the actor in context.
-
-    Attributes
-    ----------
-    roles
-        The roles to add.
-    reason
-        The reason why roles were added, if any.
     """
 
-    def get_target(self, event: AutomodEvent) -> Optional[Member]:
-        return event.actor
+    type: Literal["add_roles_to_actor"]
 
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return AddRolesToActor.from_data(data)
+    @override
+    def get_target(self, context: AutomodContext) -> Optional[Member]:
+        if (member := context.event.member) and is_member(member):
+            return member
