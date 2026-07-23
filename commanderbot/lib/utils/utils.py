@@ -104,8 +104,8 @@ def format_context_cause(ctx: Context | Interaction) -> str:
     return " ".join(parts)
 
 
-def message_to_file(message: Message, filename: Optional[str] = None) -> File:
-    filename = filename or "message.md"
+def message_to_file(message: Message, file_name: Optional[str] = None) -> File:
+    file_name = file_name or "message.md"
     file_lines = []
     if message.content:
         file_lines.append(message.content)
@@ -121,7 +121,7 @@ def message_to_file(message: Message, filename: Optional[str] = None) -> File:
             file_lines.append(f"\n```json\n{embed_json}\n```")
     file_content = "\n".join(file_lines)
     fp = io.BytesIO(file_content.encode())
-    file = File(fp=fp, filename=filename)
+    file = File(fp=fp, filename=file_name)
     return file
 
 
