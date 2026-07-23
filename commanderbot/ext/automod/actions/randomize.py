@@ -33,9 +33,7 @@ class Randomize(AutomodAction):
 
     type: Literal["randomize"]
 
-    actions: list[AutomodActionType | WeightedAction] = Field(
-        default_factory=list, min_length=1
-    )
+    actions: list[AutomodActionType | WeightedAction] = Field(min_length=1)
     """The sub-actions to pick from."""
 
     def _roll(self) -> Optional[AutomodActionType]:

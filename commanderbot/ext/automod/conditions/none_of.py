@@ -18,7 +18,7 @@ class NoneOf(AutomodCondition):
 
     type: Literal["none_of"]
 
-    conditions: list[AutomodConditionType] = Field(default_factory=list, min_length=1)
+    conditions: list[AutomodConditionType] = Field(min_length=1)
     """The sub-conditions to check."""
 
     @override

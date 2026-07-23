@@ -26,13 +26,13 @@ class AutomodRule(BaseModel):
     disabled: Optional[bool] = None
     """Is the rule disabled?"""
 
-    triggers: list[AutomodTriggerType] = Field(default_factory=list, min_length=1)
+    triggers: list[AutomodTriggerType] = Field(min_length=1)
     """A list of triggers that cause the rule to run."""
 
     conditions: list[AutomodConditionType] = Field(default_factory=list)
     """A list of conditions that must *all* pass for the actions to run."""
 
-    actions: list[AutomodActionType] = Field(default_factory=list, min_length=1)
+    actions: list[AutomodActionType] = Field(min_length=1)
     """A list of actions that will all run if the conditions pass."""
 
     async def _poll_triggers(self, context: AutomodContext) -> bool:

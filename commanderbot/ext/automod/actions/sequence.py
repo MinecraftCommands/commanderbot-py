@@ -18,7 +18,7 @@ class Sequence(AutomodAction):
 
     type: Literal["sequence"]
 
-    actions: list[AutomodActionType] = Field(default_factory=list, min_length=1)
+    actions: list[AutomodActionType] = Field(min_length=1)
     """The sub-actions to apply."""
 
     @override

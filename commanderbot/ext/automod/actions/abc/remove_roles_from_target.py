@@ -12,7 +12,7 @@ __all__ = ("RemoveRolesFromTarget",)
 
 
 class RemoveRolesFromTarget(AutomodAction):
-    roles: set[RoleID] = Field(default_factory=set, min_length=1)
+    roles: set[RoleID] = Field(min_length=1)
     """The roles to remove."""
 
     reason: Optional[str] = None

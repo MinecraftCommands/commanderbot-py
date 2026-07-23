@@ -15,7 +15,7 @@ class RemoveOwnReactions(AutomodAction):
 
     type: Literal["remove_own_reactions"]
 
-    reactions: set[str] = Field(default_factory=set, min_length=1)
+    reactions: set[str] = Field(min_length=1)
     """The reactions to remove."""
 
     @override

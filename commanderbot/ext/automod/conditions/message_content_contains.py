@@ -17,7 +17,7 @@ class MessageContentContains(AutomodCondition):
 
     type: Literal["message_content_contains"]
 
-    contains: set[str] = Field(default_factory=set, min_length=1)
+    contains: set[str] = Field(min_length=1)
     """
     The substrings to find. Unless `count` is specified, all substrings must be
     found in order to pass.

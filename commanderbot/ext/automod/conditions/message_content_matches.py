@@ -18,7 +18,7 @@ class MessageContentMatches(AutomodCondition):
 
     type: Literal["message_content_matches"]
 
-    matches: set[re.Pattern] = Field(default_factory=set, min_length=1)
+    matches: set[re.Pattern] = Field(min_length=1)
     """
     The patterns (regular expressions) to match. Unless `count` is specified, all
     patterns must be matched in order to pass.

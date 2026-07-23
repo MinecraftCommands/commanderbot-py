@@ -33,9 +33,7 @@ class Randomize(AutomodCondition):
 
     type: Literal["randomize"]
 
-    conditions: list[AutomodConditionType | WeightedCondition] = Field(
-        default_factory=list, min_length=1
-    )
+    conditions: list[AutomodConditionType | WeightedCondition] = Field(min_length=1)
     """The sub-conditions to pick from."""
 
     def _roll(self) -> Optional[AutomodConditionType]:
