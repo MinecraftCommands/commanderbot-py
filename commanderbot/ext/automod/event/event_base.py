@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import CategoryChannel, Member, Message, Reaction, Thread, User
+from discord import Attachment, CategoryChannel, Member, Message, Reaction, Thread, User
 
 from commanderbot.lib.predicates import is_thread
 from commanderbot.lib.types import GuildChannel
@@ -37,6 +37,12 @@ class AutomodEvent(ABC):
     def message(self) -> Optional[Message]:
         """Return the relevant message, if any."""
         return None
+
+    @property
+    def attachments(self) -> Optional[list[Attachment]]:
+        """Return the relevant attachments, if any."""
+        if message := self.message:
+            return message.attachments
 
     @property
     def reaction(self) -> Optional[Reaction]:

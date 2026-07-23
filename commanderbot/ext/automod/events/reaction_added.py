@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import override
 
-from discord import Member, Message, Reaction, Thread, User
+from discord import Attachment, Member, Message, Reaction, Thread, User
 
 from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.lib.predicates import is_messagable_guild_channel, is_thread, is_user
@@ -27,6 +27,11 @@ class ReactionAdded(AutomodEvent):
     @override
     def message(self) -> Message:
         return self.reaction.message
+
+    @property
+    @override
+    def attachments(self) -> list[Attachment]:
+        return self.reaction.message.attachments
 
     @property
     @override

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, override
 
-from discord import Member, Message, Thread, User
+from discord import Attachment, Member, Message, Thread, User
 
 from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.lib.predicates import (
@@ -35,6 +35,11 @@ class MessageEdited(AutomodEvent):
     @override
     def message(self) -> Message:
         return self.after
+
+    @property
+    @override
+    def attachments(self) -> list[Attachment]:
+        return self.after.attachments
 
     @property
     @override
