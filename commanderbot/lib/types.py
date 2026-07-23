@@ -28,6 +28,7 @@ __all__ = (
     "AppCommandID",
     "EmojiID",
     "DiscordAutomodRuleID",
+    "AttachmentID",
     "RawOptions",
     "JsonObject",
     "MemberOrUser",
@@ -40,6 +41,9 @@ __all__ = (
     "ChannelTypeNames",
     "Timedelta",
     "UnicodeNormalizationForms",
+    "MimeTypes",
+    "TesseractLanguages",
+    "TesseractScripts",
 )
 
 
@@ -56,6 +60,7 @@ ForumTagID: TypeAlias = IDType
 AppCommandID: TypeAlias = IDType
 EmojiID: TypeAlias = IDType
 DiscordAutomodRuleID: TypeAlias = IDType
+AttachmentID: TypeAlias = IDType
 
 RawOptions: TypeAlias = Any
 
@@ -178,3 +183,53 @@ An alias for `datetime.timedelta`, but with a Json schema for Pydantic.
 """
 
 UnicodeNormalizationForms: TypeAlias = Literal["NFC", "NFD", "NFKC", "NFKD"]
+
+MimeTypes: TypeAlias = Literal[
+    "application",
+    "audio",
+    "example",
+    "font",
+    "haptics",
+    "image",
+    "message",
+    "model",
+    "multipart",
+    "text",
+    "video",
+]
+"""
+All registered MIME types (https://en.wikipedia.org/wiki/Media_type#Types).
+"""
+
+# fmt: off
+TesseractLanguages: TypeAlias = Literal[
+    "afr", "amh", "ara", "asm", "aze", "aze_cyrl", "bel", "ben", "bod", "bos",
+    "bre", "bul", "cat", "ceb", "ces", "chi_sim", "chi_sim_vert", "chi_tra", "chi_tra_vert", "chr",
+    "cos", "cym", "dan", "deu", "deu_latf", "div", "dzo", "ell", "eng", "enm",
+    "epo", "est", "eus", "fao", "fas", "fil", "fin", "fra", "frm", "fry",
+    "gla", "gle", "glg", "grc", "guj", "hat", "heb", "hin", "hrv", "hun",
+    "hye", "iku", "ind", "isl", "ita", "ita_old", "jav", "jpn", "jpn_vert", "kan",
+    "kat", "kat_old", "kaz", "khm", "kir", "kmr", "kor", "kor_vert", "lao",
+    "lat", "lav", "lit", "ltz", "mal", "mar", "mkd", "mlt", "mon", "mri",
+    "msa", "mya", "nep", "nld", "nor", "oci", "ori", "pan", "pol", "por",
+    "pus", "que", "ron", "rus", "san", "sin", "slk", "slv", "snd", "spa",
+    "spa_old", "sqi", "srp", "srp_latn", "sun", "swa", "swe", "syr", "tam", "tat",
+    "tel", "tgk", "tha", "tir", "ton", "tur", "uig", "ukr", "urd", "uzb",
+    "uzb_cyrl", "vie", "yid", "yor",
+]
+"""
+All languages that Tesseract supports (https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html).
+"""
+# fmt: on
+
+# fmt: off
+TesseractScripts: TypeAlias = Literal[
+    "arab", "armn", "beng", "cans", "cher", "cyrl", "deva", "ethi", "frak", "geor",
+    "grek", "gujr", "guru", "hans", "hans-vert", "hant", "hant-vert", "hang", "hang-vert", "hebr",
+    "jpan", "jpan-vert", "knda", "khmr", "laoo", "latn", "mlym", "mymr", "orya", "sinh",
+    "syrc", "taml", "telu", "thaa", "thai", "tibt", "viet",
+]
+"""
+All scripts that Tesseract supports (https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html).
+"""
+# fmt: on
