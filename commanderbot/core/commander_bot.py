@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
 from typing import Any, Optional, Type
@@ -41,10 +42,6 @@ class CommanderBot(Bot):
         self.config: Config = config
         self._sync_tree_on_login: bool = sync_tree_on_login
 
-        # Remember when we started and the last time we connected.
-        self._started_at: datetime = utcnow()
-        self._connected_since: Optional[datetime] = None
-
         # Create an error handling component.
         self.error_handling = ErrorHandling(log=self.log)
         self.tree.on_error = self.on_app_command_error
@@ -52,13 +49,12 @@ class CommanderBot(Bot):
         # Create application emoji manager.
         self.application_emojis = ApplicationEmojiManager(self)
 
-    @property
-    def started_at(self) -> datetime:
-        return self._started_at
+        # Create a process pool that anything can use.
+        self.pool = ProcessPoolExecutor()
 
-    @property
-    def connected_since(self) -> Optional[datetime]:
-        return self._connected_since
+        # Remember when we started and the last time we connected.
+        self.started_at: datetime = utcnow()
+        self.connected_since: Optional[datetime] = None
 
     @property
     def uptime(self) -> Optional[timedelta]:
