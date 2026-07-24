@@ -101,10 +101,10 @@ class LogMessage(AutomodAction):
                     log_container.add_item(ui.File(file))
 
             # Attach media if it needs to be attached
-            if self.attach_media:
+            if self.attach_media and (attachments := context.event.attachments):
                 gallery = ui.MediaGallery()
                 has_media: bool = False
-                for attachment in message.attachments:
+                for attachment in attachments:
                     content_type = attachment.content_type
                     if content_type and content_type.startswith(("image", "video")):
                         has_media = True

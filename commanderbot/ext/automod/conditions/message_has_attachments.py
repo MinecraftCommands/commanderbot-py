@@ -19,11 +19,15 @@ class MessageHasAttachments(AutomodCondition):
 
     @override
     async def check(self, context: AutomodContext) -> bool:
-        message = context.event.message
-        if not message:
+        # We need to have attachments in context
+        attachments = context.event.attachments
+        if not attachments:
             return False
 
-        attachment_count = len(message.attachments)
+        # Check if the number of attachments is in the range
         if self.count:
+            attachment_count = len(attachments)
             return self.count.includes(attachment_count)
-        return attachment_count > 0
+
+        # Otherwise, return `True` since we have some number of attachments
+        return True
