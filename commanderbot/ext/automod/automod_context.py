@@ -3,15 +3,19 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Iterable, cast
+from typing import TYPE_CHECKING, Any, Iterable, Optional, cast
 
-from discord import Member, User
+import numpy as np
+from discord import Attachment, Member, User
 from discord.ext.commands import Bot
 from discord.utils import format_dt, utcnow
+from imagehash import ImageHash, phash
+from PIL import Image
 
 from commanderbot.ext.automod.event import AutomodEvent
-from commanderbot.ext.automod.types import ContextFields
+from commanderbot.ext.automod.types import ContextAttachment, ContextMetadataFields
 from commanderbot.lib.predicates import is_member
+from commanderbot.lib.types import MimeTypes
 
 __all__ = ("AutomodContext",)
 
@@ -40,22 +44,67 @@ class AutomodContext:
     event: AutomodEvent
     """The event that the rule is processing."""
 
+    _cached_attachments: list[AutomodContextAttachment] = field(
+        init=False, default_factory=list
+    )
+    """A cache for any attachments."""
+
     _metadata: dict[str, Any] = field(init=False, default_factory=dict)
     """Any additional data attached to the execution context."""
 
-    def set_metadata(self, key: str, value: Any):
+    def __post_init__(self):
+        if attachments := self.event.attachments:
+            for att in attachments:
+                self._cached_attachments.append(AutomodContextAttachment(att))
+
+    def set_metadata(self, key: ContextMetadataFields, value: Any):
         """Add metadata to the execution context"""
         self._metadata[key] = value
 
-    def remove_metadata(self, key: str):
+    def get_metadata(self, key: ContextMetadataFields) -> Optional[Any]:
+        """Get metadata from the execution context."""
+        return self._metadata.get(key)
+
+    def remove_metadata(self, key: ContextMetadataFields):
         """Remove metadata from the execution context"""
         del self._metadata[key]
 
-    def get_fields(self, *, unsafe: bool = False) -> dict[ContextFields, Any]:
+    async def fetch_attachments(self) -> list[ContextAttachment]:
+        """
+        Fetch all attachments from the execution context.
+
+        This will also cache the attachment's data so it only needs to be
+        fetched once.
+        """
+        attachments: list[ContextAttachment] = []
+        for attachment in self._cached_attachments:
+            if resolved := attachment.get() or await attachment.fetch():
+                attachments.append(resolved)
+        return attachments
+
+    async def fetch_attachments_with_type(
+        self, content_type: Optional[MimeTypes]
+    ) -> list[ContextAttachment]:
+        """
+        Fetch all attachments from the execution context with a certain MIME type
+        (https://en.wikipedia.org/wiki/Media_type#Types).
+
+        This will also cache the attachment's data so it only needs to be
+        fetched once.
+        """
+        attachments: list[ContextAttachment] = []
+        for attachment in self._cached_attachments:
+            if not attachment.has_content_type(content_type):
+                continue
+            if resolved := attachment.get() or await attachment.fetch():
+                attachments.append(resolved)
+        return attachments
+
+    def get_fields(self, *, unsafe: bool = False) -> dict[str, Any]:
         """Get the full context data as key/value pairs."""
         if unsafe:
-            return dict(chain(self._yield_safe_fields(), self._yield_unsafe_fields()))  # type: ignore
-        return dict(self._yield_safe_fields())  # type: ignore
+            return dict(chain(self._yield_safe_fields(), self._yield_unsafe_fields()))
+        return dict(self._yield_safe_fields())
 
     def format_content(
         self, content: str, *, default="`Unknown`", unsafe: bool = False
@@ -175,6 +224,9 @@ class AutomodContext:
         if message := self.event.message:
             yield ("message", message)
 
+        if attachments := self.event.attachments:
+            yield ("attachments", attachments)
+
         if reaction := self.event.reaction:
             yield ("reaction", reaction)
 
@@ -193,3 +245,54 @@ class AutomodContext:
         yield from (
             (k, v) for k, v in self._metadata.items() if not self._is_value_safe(v)
         )
+
+
+@dataclass
+class AutomodContextAttachment:
+    """
+    A very minimal wrapper around a `discord.Attachment` that caches
+    attachment data when fetched. Image attachments also have their
+    perceptual hash calculated.
+    """
+
+    _attachment: Attachment
+    _data: Optional[bytes] = field(init=False, default=None)
+    _phash: Optional[ImageHash] = field(init=False, default=None)
+
+    @property
+    def _content_type(self) -> Optional[str]:
+        return self._attachment.content_type
+
+    def has_content_type(self, content_type: Optional[MimeTypes]) -> bool:
+        if self._content_type is None or content_type is None:
+            return self._content_type is content_type
+        return self._content_type.startswith(content_type)
+
+    def get(self) -> Optional[ContextAttachment]:
+        if self._data is not None:
+            return (self._attachment, self._data, self._phash)
+
+    async def fetch(self) -> Optional[ContextAttachment]:
+        if self._data is not None:
+            return self.get()
+
+        if data := await self._fetch_data():
+            self._data = data
+            if self.has_content_type("image"):
+                buffer = np.frombuffer(self._data, np.uint8)
+                image = Image.fromarray(buffer)
+                self._phash = phash(image)
+            return self.get()
+
+    async def _fetch_data(self) -> Optional[bytes]:
+        try:
+            # Try fetching from the regular URL
+            return await self._attachment.read()
+        except Exception:
+            pass
+
+        try:
+            # If that didn't work, try the proxy URL
+            return await self._attachment.read(use_cached=True)
+        except Exception:
+            pass

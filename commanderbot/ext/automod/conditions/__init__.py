@@ -16,6 +16,7 @@ from .author_is_not_self import *
 from .author_is_self import *
 from .author_member_for import *
 from .author_roles import *
+from .image_attachments_contain import *
 from .inverted import *
 from .message_content_contains import *
 from .message_content_matches import *

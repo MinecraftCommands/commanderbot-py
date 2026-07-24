@@ -25,6 +25,7 @@ type _AutomodConditionType = (
     | conditions.AuthorIsNotSelf
     | conditions.AuthorMemberFor
     | conditions.AuthorRoles
+    | conditions.ImageAttachmentsContain
     | conditions.Inverted
     | conditions.MessageContentContains
     | conditions.MessageContentMatches
