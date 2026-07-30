@@ -9,9 +9,9 @@ from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.automod_exceptions import OCRNotSupported
 from commanderbot.ext.automod.condition import AutomodCondition
-from commanderbot.ext.automod.types import ContextAttachment
 from commanderbot.lib.constants import SUPPORTS_OCR
 from commanderbot.lib.types import (
+    AttachmentID,
     TesseractLanguages,
     TesseractScripts,
     UnicodeNormalizationForms,
@@ -88,10 +88,13 @@ class ImageAttachmentsContain(AutomodCondition):
 
         return False
 
-    async def _ocr(
-        self, context: AutomodContext, attachments: list[ContextAttachment]
-    ) -> Optional[ContextAttachment]:
-        # Create `lang` scring from languages and scripts
+    async def _ocr(self, context: AutomodContext) -> Optional[AttachmentID]:
+        # We need image attachments in context
+        attachments = await context.fetch_attachments_with_type("image")
+        if not attachments:
+            return
+
+        # Create `lang` string from languages and scripts
         lang: str = "+".join((v for v in chain(self.languages, self.scripts)))
 
         # Submit OCR tasks to the process pool
@@ -99,18 +102,18 @@ class ImageAttachmentsContain(AutomodCondition):
         pool = context.bot.pool
         loop = asyncio.get_running_loop()
         tasks = [
-            loop.run_in_executor(pool, get_text, data, lang, idx)
-            for idx, (_, data, _) in enumerate(attachments)
+            loop.run_in_executor(pool, get_text, data, lang, attachment.id)
+            for (attachment, data, _) in attachments
         ]
 
         # Check OCR results as they come in
         try:
             for task in asyncio.as_completed(tasks, timeout=self.timeout):
                 if result := await task:
-                    text, idx = result
+                    text, attachment_id = result
                     # Check if the text passes the condition and return the attachment
                     if self._check_ocr_result(text):
-                        return attachments[idx]
+                        return attachment_id
         finally:
             for task in tasks:
                 if not task.done():
@@ -122,17 +125,9 @@ class ImageAttachmentsContain(AutomodCondition):
         if not SUPPORTS_OCR:
             raise OCRNotSupported
 
-        # We need image attachments in context
-        attachments = await context.fetch_attachments_with_type("image")
-        if not attachments:
-            return False
-
         # OCR image attachments
-        if attachment := await self._ocr(context, attachments):
-            # Add attachment to metadata
-            passed_ocr = context.get_metadata("passed_ocr_condition") or []
-            passed_ocr.append(attachment)
-            context.set_metadata("passed_ocr_condition", passed_ocr)
+        if attachment_id := await self._ocr(context):
+            context.metadata.passed_ocr_condition.append(attachment_id)
             return True
 
         # If we got this far, none of the attachments passed the condition

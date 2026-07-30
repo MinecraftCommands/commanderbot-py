@@ -5,6 +5,8 @@ import numpy as np
 from cv2.typing import MatLike
 from tesserocr import OEM, PSM, PyTessBaseAPI
 
+from commanderbot.lib.types import AttachmentID
+
 __all__ = ("get_text",)
 
 
@@ -13,12 +15,14 @@ def get_text(image_data: bytes, lang: str) -> Optional[str]: ...
 
 
 @overload
-def get_text(image_data: bytes, lang: str, idx: int) -> Optional[tuple[str, int]]: ...
+def get_text(
+    image_data: bytes, lang: str, attachment_id: AttachmentID
+) -> Optional[tuple[str, AttachmentID]]: ...
 
 
 def get_text(
-    image_data: bytes, lang: str, idx: Optional[int] = None
-) -> Optional[str | tuple[str, int]]:
+    image_data: bytes, lang: str, attachment_id: Optional[AttachmentID] = None
+) -> Optional[str | tuple[str, AttachmentID]]:
     # Turn the bytes into a Numpy array
     buffer = np.frombuffer(image_data, np.uint8)
     image = cv2.imdecode(buffer, cv2.IMREAD_COLOR_RGB)
@@ -42,7 +46,7 @@ def get_text(
             bytes_per_line=bytes_per_line,
         )
         if text := api.GetUTF8Text():
-            return (text, idx) if idx is not None else text
+            return (text, attachment_id) if attachment_id is not None else text
 
 
 def preprocess(image: MatLike) -> MatLike:
