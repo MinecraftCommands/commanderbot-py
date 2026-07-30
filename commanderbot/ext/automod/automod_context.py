@@ -1,6 +1,6 @@
 import string
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from itertools import chain
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Iterable, Optional, cast
@@ -13,9 +13,9 @@ from imagehash import ImageHash, phash
 from PIL import Image
 
 from commanderbot.ext.automod.event import AutomodEvent
-from commanderbot.ext.automod.types import ContextAttachment, ContextMetadataFields
+from commanderbot.ext.automod.types import ContextAttachment
 from commanderbot.lib.predicates import is_member
-from commanderbot.lib.types import MimeTypes
+from commanderbot.lib.types import AttachmentID, MimeTypes
 
 __all__ = ("AutomodContext",)
 
@@ -24,6 +24,23 @@ if TYPE_CHECKING:
     from commanderbot.ext.automod.rule import AutomodRule
 
 SAFE_TYPES: tuple[type, ...] = (bool, int, float, str)
+
+
+@dataclass
+class AutomodContextMetadata:
+    attachment_data: dict[AttachmentID, bytes] = field(default_factory=dict)
+    image_attachment_hashes: dict[AttachmentID, ImageHash] = field(default_factory=dict)
+    passed_ocr_condition: list[AttachmentID] = field(default_factory=list)
+    mentioned_roles: Optional[str] = None
+    mentioned_role_names: Optional[str] = None
+    mentioned_users: Optional[str] = None
+    mentioned_user_names: Optional[str] = None
+    removed_mentions: Optional[str] = None
+    removed_mention_names: Optional[str] = None
+    removed_user_mention_names: Optional[str] = None
+    removed_user_mentions: Optional[str] = None
+    removed_role_mentions: Optional[str] = None
+    removed_role_mention_names: Optional[str] = None
 
 
 @dataclass
@@ -44,30 +61,10 @@ class AutomodContext:
     event: AutomodEvent
     """The event that the rule is processing."""
 
-    _cached_attachments: list[AutomodContextAttachment] = field(
-        init=False, default_factory=list
+    metadata: AutomodContextMetadata = field(
+        init=False, default_factory=AutomodContextMetadata
     )
-    """A cache for any attachments."""
-
-    _metadata: dict[str, Any] = field(init=False, default_factory=dict)
     """Any additional data attached to the execution context."""
-
-    def __post_init__(self):
-        if attachments := self.event.attachments:
-            for att in attachments:
-                self._cached_attachments.append(AutomodContextAttachment(att))
-
-    def set_metadata(self, key: ContextMetadataFields, value: Any):
-        """Add metadata to the execution context"""
-        self._metadata[key] = value
-
-    def get_metadata(self, key: ContextMetadataFields) -> Optional[Any]:
-        """Get metadata from the execution context."""
-        return self._metadata.get(key)
-
-    def remove_metadata(self, key: ContextMetadataFields):
-        """Remove metadata from the execution context"""
-        del self._metadata[key]
 
     async def fetch_attachments(self) -> list[ContextAttachment]:
         """
@@ -76,10 +73,19 @@ class AutomodContext:
         This will also cache the attachment's data so it only needs to be
         fetched once.
         """
+
+        # Return if we have no attachments in context
+        if not self.event.attachments:
+            return []
+
         attachments: list[ContextAttachment] = []
-        for attachment in self._cached_attachments:
-            if resolved := attachment.get() or await attachment.fetch():
-                attachments.append(resolved)
+        for attachment in self.event.attachments:
+            if data := self.metadata.attachment_data.get(attachment.id):
+                hash = self.metadata.image_attachment_hashes.get(attachment.id)
+                attachments.append((attachment, data, hash))
+            elif result := await self._fetch_attachment(attachment):
+                data, hash = result
+                attachments.append((attachment, data, hash))
         return attachments
 
     async def fetch_attachments_with_type(
@@ -92,13 +98,62 @@ class AutomodContext:
         This will also cache the attachment's data so it only needs to be
         fetched once.
         """
+
+        # Return if we have no attachments in context
+        if not self.event.attachments:
+            return []
+
         attachments: list[ContextAttachment] = []
-        for attachment in self._cached_attachments:
-            if not attachment.has_content_type(content_type):
+        for attachment in self.event.attachments:
+            if not self._attachment_has_content_type(attachment, content_type):
                 continue
-            if resolved := attachment.get() or await attachment.fetch():
-                attachments.append(resolved)
+            elif data := self.metadata.attachment_data.get(attachment.id):
+                hash = self.metadata.image_attachment_hashes.get(attachment.id)
+                attachments.append((attachment, data, hash))
+            elif result := await self._fetch_attachment(attachment):
+                data, hash = result
+                attachments.append((attachment, data, hash))
         return attachments
+
+    def _attachment_has_content_type(
+        self, attachment: Attachment, content_type: Optional[MimeTypes]
+    ) -> bool:
+        if attachment.content_type is None or content_type is None:
+            return attachment.content_type is content_type
+        return attachment.content_type.startswith(content_type)
+
+    async def _fetch_attachment(
+        self, attachment: Attachment
+    ) -> Optional[tuple[bytes, Optional[ImageHash]]]:
+        if data := await self._fetch_attachment_data(attachment):
+            # Store attachment data
+            self.metadata.attachment_data[attachment.id] = data
+
+            # Return early if this isn't an image attachment
+            if not self._attachment_has_content_type(attachment, "image"):
+                return (data, None)
+
+            # Calculate phash
+            buffer = np.frombuffer(data, np.uint8)
+            image = Image.fromarray(buffer)
+            hash = phash(image)
+
+            # Store image attachment phash
+            self.metadata.image_attachment_hashes[attachment.id] = hash
+            return (data, hash)
+
+    async def _fetch_attachment_data(self, attachment: Attachment) -> Optional[bytes]:
+        try:
+            # Try fetching from the regular URL
+            return await attachment.read()
+        except Exception:
+            pass
+
+        try:
+            # If that didn't work, try the proxy URL
+            return await attachment.read(use_cached=True)
+        except Exception:
+            pass
 
     def get_fields(self, *, unsafe: bool = False) -> dict[str, Any]:
         """Get the full context data as key/value pairs."""
@@ -181,7 +236,9 @@ class AutomodContext:
             yield from self._yield_safe_user_fields(user, "user")
 
         # Yield metadata fields
-        yield from ((k, v) for k, v in self._metadata.items() if self._is_value_safe(v))
+        yield from (
+            (k, v) for k, v in asdict(self.metadata).items() if self._is_value_safe(v)
+        )
 
     def _yield_safe_user_fields(
         self, user: User, prefix: str
@@ -243,56 +300,7 @@ class AutomodContext:
             yield ("user", user)
 
         yield from (
-            (k, v) for k, v in self._metadata.items() if not self._is_value_safe(v)
+            (k, v)
+            for k, v in asdict(self.metadata).items()
+            if not self._is_value_safe(v)
         )
-
-
-@dataclass
-class AutomodContextAttachment:
-    """
-    A very minimal wrapper around a `discord.Attachment` that caches
-    attachment data when fetched. Image attachments also have their
-    perceptual hash calculated.
-    """
-
-    _attachment: Attachment
-    _data: Optional[bytes] = field(init=False, default=None)
-    _phash: Optional[ImageHash] = field(init=False, default=None)
-
-    @property
-    def _content_type(self) -> Optional[str]:
-        return self._attachment.content_type
-
-    def has_content_type(self, content_type: Optional[MimeTypes]) -> bool:
-        if self._content_type is None or content_type is None:
-            return self._content_type is content_type
-        return self._content_type.startswith(content_type)
-
-    def get(self) -> Optional[ContextAttachment]:
-        if self._data is not None:
-            return (self._attachment, self._data, self._phash)
-
-    async def fetch(self) -> Optional[ContextAttachment]:
-        if self._data is not None:
-            return self.get()
-
-        if data := await self._fetch_data():
-            self._data = data
-            if self.has_content_type("image"):
-                buffer = np.frombuffer(self._data, np.uint8)
-                image = Image.fromarray(buffer)
-                self._phash = phash(image)
-            return self.get()
-
-    async def _fetch_data(self) -> Optional[bytes]:
-        try:
-            # Try fetching from the regular URL
-            return await self._attachment.read()
-        except Exception:
-            pass
-
-        try:
-            # If that didn't work, try the proxy URL
-            return await self._attachment.read(use_cached=True)
-        except Exception:
-            pass

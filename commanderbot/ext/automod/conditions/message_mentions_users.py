@@ -44,11 +44,11 @@ class MessageMentionsUsers(AutomodCondition):
             return False
 
         # Add mentioned users metadata to context
-        context.set_metadata(
-            "mentioned_users", " ".join((user.mention for user in mentioned_users))
+        context.metadata.mentioned_users = " ".join(
+            (user.mention for user in mentioned_users)
         )
-        context.set_metadata(
-            "mentioned_user_names", " ".join((f"`{user}`" for user in mentioned_users))
+        context.metadata.mentioned_user_names = " ".join(
+            (f"`{user}`" for user in mentioned_users)
         )
 
         # If we got this far, the message has user mentions we care about

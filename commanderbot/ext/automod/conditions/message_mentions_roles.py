@@ -44,11 +44,11 @@ class MessageMentionsRoles(AutomodCondition):
             return False
 
         # Add mentioned roles metadata to context
-        context.set_metadata(
-            "mentioned_roles", " ".join((role.mention for role in mentioned_roles))
+        context.metadata.mentioned_roles = " ".join(
+            (role.mention for role in mentioned_roles)
         )
-        context.set_metadata(
-            "mentioned_role_names", " ".join((f"`{role}`" for role in mentioned_roles))
+        context.metadata.mentioned_role_names = " ".join(
+            (f"`{role}`" for role in mentioned_roles)
         )
 
         # If we got this far, the message has role mentions we care about

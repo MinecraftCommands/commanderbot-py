@@ -115,33 +115,29 @@ class MentionsRemovedFromMessage(AutomodTrigger):
             return True
 
         # Add removed mentions fields to context
-        context.set_metadata(
-            "removed_mentions", " ".join((m.mention for m in removed_mentions))
+        context.metadata.removed_mentions = " ".join(
+            (m.mention for m in removed_mentions)
         )
-        context.set_metadata(
-            "removed_mention_names", " ".join((f"`{m}`" for m in removed_mentions))
+        context.metadata.removed_mention_names = " ".join(
+            (f"`{m}`" for m in removed_mentions)
         )
 
         # Add removed user mentions fields to context
         if removed_user_mentions:
-            context.set_metadata(
-                "removed_user_mention_names",
-                " ".join((m.mention for m in removed_user_mentions)),
+            context.metadata.removed_mentions = " ".join(
+                (m.mention for m in removed_user_mentions)
             )
-            context.set_metadata(
-                "removed_user_mentions",
-                " ".join((f"`{m}`" for m in removed_user_mentions)),
+            context.metadata.removed_mention_names = " ".join(
+                (f"`{m}`" for m in removed_user_mentions)
             )
 
         # Add removed role mentions fields to context
         if removed_role_mentions:
-            context.set_metadata(
-                "removed_role_mentions",
-                " ".join((m.mention for m in removed_role_mentions)),
+            context.metadata.removed_role_mentions = " ".join(
+                (m.mention for m in removed_role_mentions)
             )
-            context.set_metadata(
-                "removed_role_mention_names",
-                " ".join((f"`{m}`" for m in removed_role_mentions)),
+            context.metadata.removed_user_mention_names = " ".join(
+                (f"`{m}`" for m in removed_role_mentions)
             )
 
         # If we got this far, we had removed mentions
