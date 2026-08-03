@@ -30,7 +30,7 @@ SAFE_TYPES: tuple[type, ...] = (bool, int, float, str)
 class AutomodContextMetadata:
     attachment_data: dict[AttachmentID, bytes] = field(default_factory=dict)
     image_attachment_hashes: dict[AttachmentID, ImageHash] = field(default_factory=dict)
-    passed_ocr_condition: list[AttachmentID] = field(default_factory=list)
+    flagged_image_attachments: list[AttachmentID] = field(default_factory=list)
     mentioned_roles: Optional[str] = None
     mentioned_role_names: Optional[str] = None
     mentioned_users: Optional[str] = None

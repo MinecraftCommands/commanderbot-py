@@ -127,7 +127,7 @@ class ImageAttachmentsContain(AutomodCondition):
 
         # OCR image attachments
         if attachment_id := await self._ocr(context):
-            context.metadata.passed_ocr_condition.append(attachment_id)
+            context.metadata.flagged_image_attachments.append(attachment_id)
             return True
 
         # If we got this far, none of the attachments passed the condition

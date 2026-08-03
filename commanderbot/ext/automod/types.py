@@ -96,7 +96,7 @@ type ContextEventFields = Literal[
 type ContextMetadataFields = Literal[
     "attachment_data",
     "image_attachment_hashes"
-    "passed_ocr_condition",
+    "flagged_image_attachments",
     "mentioned_roles",
     "mentioned_role_names",
     "mentioned_users",
