@@ -3,7 +3,7 @@ from typing import Optional, overload
 import cv2
 import numpy as np
 from cv2.typing import MatLike
-from tesserocr import OEM, PSM, PyTessBaseAPI
+from tesserocr import OEM, PSM, RIL, PyResultIterator, PyTessBaseAPI, iterate_level
 
 from commanderbot.lib.types import AttachmentID
 
@@ -45,8 +45,24 @@ def get_text(
             bytes_per_pixel=bytes_per_pixel,
             bytes_per_line=bytes_per_line,
         )
-        if text := api.GetUTF8Text():
-            return (text, attachment_id) if attachment_id is not None else text
+
+        # Iterate over every word in the image (in order) and add them to an array
+        words: list[str] = []
+        page_iter = api.GetIterator()
+        for word_iter in iterate_level(page_iter, RIL.WORD):
+            try:
+                assert isinstance(word_iter, PyResultIterator)
+                if word := word_iter.GetUTF8Text(RIL.WORD).strip():
+                    words.append(word)
+            except:
+                pass
+
+        # Return any words we found as a string
+        if words:
+            text = " ".join(words)
+            if attachment_id:
+                return (text, attachment_id)
+            return text
 
 
 def preprocess(image: MatLike) -> MatLike:
