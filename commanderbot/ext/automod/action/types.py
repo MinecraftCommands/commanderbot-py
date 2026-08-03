@@ -10,6 +10,7 @@ type _AutomodActionType = (
     actions.AddReactions
     | actions.AddRolesToActor
     | actions.AddRolesToAuthor
+    | actions.AddToBucket
     | actions.AddUsersToThread
     | actions.DeleteMessage
     | actions.DMMember
