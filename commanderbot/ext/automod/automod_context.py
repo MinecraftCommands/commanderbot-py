@@ -5,17 +5,20 @@ from itertools import chain
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Iterable, Optional, cast
 
+import imagehash
 import numpy as np
 from discord import Attachment, Member, User
 from discord.ext.commands import Bot
 from discord.utils import format_dt, utcnow
-from imagehash import ImageHash, phash
+from imagehash import ImageHash
+from mime_enum import MimeType, try_parse
 from PIL import Image
 
+from commanderbot.ext.automod.constants import IMAGE_MIME_TYPES
 from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.ext.automod.types import ContextAttachment
 from commanderbot.lib.predicates import is_member
-from commanderbot.lib.types import AttachmentID, MimeTypes
+from commanderbot.lib.types import AttachmentID
 
 __all__ = ("AutomodContext",)
 
@@ -29,8 +32,10 @@ SAFE_TYPES: tuple[type, ...] = (bool, int, float, str)
 @dataclass
 class AutomodContextMetadata:
     attachment_data: dict[AttachmentID, bytes] = field(default_factory=dict)
-    image_attachment_hashes: dict[AttachmentID, ImageHash] = field(default_factory=dict)
-    flagged_image_attachments: list[AttachmentID] = field(default_factory=list)
+    image_attachment_phashes: dict[AttachmentID, ImageHash] = field(
+        default_factory=dict
+    )
+    flagged_attachments: list[AttachmentID] = field(default_factory=list)
     mentioned_roles: Optional[str] = None
     mentioned_role_names: Optional[str] = None
     mentioned_users: Optional[str] = None
@@ -81,18 +86,18 @@ class AutomodContext:
         attachments: list[ContextAttachment] = []
         for attachment in self.event.attachments:
             if data := self.metadata.attachment_data.get(attachment.id):
-                hash = self.metadata.image_attachment_hashes.get(attachment.id)
-                attachments.append((attachment, data, hash))
+                phash = self.metadata.image_attachment_phashes.get(attachment.id)
+                attachments.append((attachment, data, phash))
             elif result := await self._fetch_attachment(attachment):
-                data, hash = result
-                attachments.append((attachment, data, hash))
+                data, phash = result
+                attachments.append((attachment, data, phash))
         return attachments
 
     async def fetch_attachments_with_type(
-        self, content_type: Optional[MimeTypes]
+        self, *content_types: Optional[MimeType]
     ) -> list[ContextAttachment]:
         """
-        Fetch all attachments from the execution context with a certain MIME type
+        Fetch all attachments from the execution context with a certain MIME types
         (https://en.wikipedia.org/wiki/Media_type#Types).
 
         This will also cache the attachment's data so it only needs to be
@@ -105,22 +110,36 @@ class AutomodContext:
 
         attachments: list[ContextAttachment] = []
         for attachment in self.event.attachments:
-            if not self._attachment_has_content_type(attachment, content_type):
+            # Parse content type
+            content_type: Optional[MimeType] = None
+            if attachment.content_type is not None:
+                content_type = try_parse(attachment.content_type)
+
+            # Skip attachment if it has the wrong content type
+            if content_type not in content_types:
                 continue
-            elif data := self.metadata.attachment_data.get(attachment.id):
-                hash = self.metadata.image_attachment_hashes.get(attachment.id)
-                attachments.append((attachment, data, hash))
+
+            # Otherwise, get/fetch it
+            if data := self.metadata.attachment_data.get(attachment.id):
+                phash = self.metadata.image_attachment_phashes.get(attachment.id)
+                attachments.append((attachment, data, phash))
             elif result := await self._fetch_attachment(attachment):
-                data, hash = result
-                attachments.append((attachment, data, hash))
+                data, phash = result
+                attachments.append((attachment, data, phash))
         return attachments
 
-    def _attachment_has_content_type(
-        self, attachment: Attachment, content_type: Optional[MimeTypes]
-    ) -> bool:
-        if attachment.content_type is None or content_type is None:
-            return attachment.content_type is content_type
-        return attachment.content_type.startswith(content_type)
+    def _is_image_attachment(self, attachment: Attachment) -> bool:
+        # Return if the attachment doesn't have a content type
+        if attachment.content_type is None:
+            return False
+
+        # Parse content type
+        content_type: Optional[MimeType] = try_parse(attachment.content_type)
+        if content_type is None:
+            return False
+
+        # Check if the attachment is an image
+        return content_type in IMAGE_MIME_TYPES
 
     async def _fetch_attachment(
         self, attachment: Attachment
@@ -130,17 +149,17 @@ class AutomodContext:
             self.metadata.attachment_data[attachment.id] = data
 
             # Return early if this isn't an image attachment
-            if not self._attachment_has_content_type(attachment, "image"):
+            if not self._is_image_attachment(attachment):
                 return (data, None)
 
             # Calculate phash
             buffer = np.frombuffer(data, np.uint8)
             image = Image.fromarray(buffer)
-            hash = phash(image)
+            phash = imagehash.phash(image)
 
             # Store image attachment phash
-            self.metadata.image_attachment_hashes[attachment.id] = hash
-            return (data, hash)
+            self.metadata.image_attachment_phashes[attachment.id] = phash
+            return (data, phash)
 
     async def _fetch_attachment_data(self, attachment: Attachment) -> Optional[bytes]:
         try:

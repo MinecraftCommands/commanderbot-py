@@ -41,7 +41,6 @@ __all__ = (
     "ChannelTypeNames",
     "Timedelta",
     "UnicodeNormalizationForms",
-    "MimeTypes",
     "TesseractLanguages",
     "TesseractScripts",
 )
@@ -184,22 +183,6 @@ An alias for `datetime.timedelta`, but with a Json schema for Pydantic.
 
 UnicodeNormalizationForms: TypeAlias = Literal["NFC", "NFD", "NFKC", "NFKD"]
 
-MimeTypes: TypeAlias = Literal[
-    "application",
-    "audio",
-    "example",
-    "font",
-    "haptics",
-    "image",
-    "message",
-    "model",
-    "multipart",
-    "text",
-    "video",
-]
-"""
-All registered MIME types (https://en.wikipedia.org/wiki/Media_type#Types).
-"""
 
 # fmt: off
 TesseractLanguages: TypeAlias = Literal[

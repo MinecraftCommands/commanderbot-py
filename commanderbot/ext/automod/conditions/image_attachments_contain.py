@@ -9,6 +9,7 @@ from commanderbot.core.utils import is_commander_bot
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.automod_exceptions import OCRNotSupported
 from commanderbot.ext.automod.condition import AutomodCondition
+from commanderbot.ext.automod.constants import IMAGE_MIME_TYPES
 from commanderbot.lib.constants import SUPPORTS_OCR
 from commanderbot.lib.types import (
     AttachmentID,
@@ -90,7 +91,7 @@ class ImageAttachmentsContain(AutomodCondition):
 
     async def _ocr(self, context: AutomodContext) -> Optional[AttachmentID]:
         # We need image attachments in context
-        attachments = await context.fetch_attachments_with_type("image")
+        attachments = await context.fetch_attachments_with_type(*IMAGE_MIME_TYPES)
         if not attachments:
             return
 
@@ -127,7 +128,7 @@ class ImageAttachmentsContain(AutomodCondition):
 
         # OCR image attachments
         if attachment_id := await self._ocr(context):
-            context.metadata.flagged_image_attachments.append(attachment_id)
+            context.metadata.flagged_attachments.append(attachment_id)
             return True
 
         # If we got this far, none of the attachments passed the condition
