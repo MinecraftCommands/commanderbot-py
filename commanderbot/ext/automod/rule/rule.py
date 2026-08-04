@@ -70,6 +70,14 @@ class AutomodRule(BaseModel):
         await self._apply_actions(context)
         return True
 
+    def __hash__(self) -> int:
+        return hash((self.__class__, self.name))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, AutomodRule):
+            return False
+        return self.name == other.name
+
 
 # We need to rebuild the model because the conditions and actions have circular references
 AutomodRule.model_rebuild()
