@@ -18,6 +18,7 @@ type _AutomodTriggerType = (
     | triggers.MemberLostFlags
     | triggers.MessageDeleted
     | triggers.MessageEdited
+    | triggers.MessageFrequency
     | triggers.MessageSent
     | triggers.Message
     | triggers.Reaction

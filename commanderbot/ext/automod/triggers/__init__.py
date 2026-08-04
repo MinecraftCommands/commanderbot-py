@@ -10,6 +10,7 @@ from .mentions_removed_from_message import *
 from .message import *
 from .message_deleted import *
 from .message_edited import *
+from .message_frequency import *
 from .message_sent import *
 from .reaction import *
 from .reaction_added import *
