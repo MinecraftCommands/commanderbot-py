@@ -91,8 +91,8 @@ class ImageAttachmentsContain(AutomodCondition):
 
     async def _ocr(self, context: AutomodContext) -> Optional[AttachmentID]:
         # We need image attachments in context
-        attachments = await context.fetch_attachments_with_type(*IMAGE_MIME_TYPES)
-        if not attachments:
+        image_attachments = await context.fetch_attachments_with_type(*IMAGE_MIME_TYPES)
+        if not image_attachments:
             return
 
         # Create `lang` string from languages and scripts
@@ -104,7 +104,7 @@ class ImageAttachmentsContain(AutomodCondition):
         loop = asyncio.get_running_loop()
         tasks = [
             loop.run_in_executor(pool, get_text, data, lang, attachment.id)
-            for (attachment, data, _) in attachments
+            for (attachment, data, _) in image_attachments
         ]
 
         # Check OCR results as they come in
