@@ -14,13 +14,13 @@ class HelpForumStore(CogStore):
 
     async def require_help_forum(self, guild: Guild, forum: ForumChannel) -> HelpForum:
         cache = await self.db.get_cache()
-        return await cache.require_help_forum(guild, forum)
+        return cache.require_help_forum(guild, forum)
 
     async def get_help_forum(
         self, guild: Guild, forum: ForumChannel
     ) -> Optional[HelpForum]:
         cache = await self.db.get_cache()
-        return await cache.get_help_forum(guild, forum)
+        return cache.get_help_forum(guild, forum)
 
     async def register_forum_channel(
         self,
@@ -32,7 +32,7 @@ class HelpForumStore(CogStore):
         resolved_tag: str,
     ) -> HelpForum:
         cache = await self.db.get_cache()
-        help_forum = await cache.register_forum_channel(
+        help_forum = cache.register_forum_channel(
             guild, forum, unresolved_emoji, resolved_emoji, unresolved_tag, resolved_tag
         )
         await self.db.commit()
@@ -42,25 +42,25 @@ class HelpForumStore(CogStore):
         self, guild: Guild, forum: ForumChannel
     ) -> HelpForum:
         cache = await self.db.get_cache()
-        help_forum = await cache.deregister_forum_channel(guild, forum)
+        help_forum = cache.deregister_forum_channel(guild, forum)
         await self.db.commit()
         return help_forum
 
     async def increment_threads_created(self, help_forum: HelpForum):
         cache = await self.db.get_cache()
-        await cache.increment_threads_created(help_forum)
+        cache.increment_threads_created(help_forum)
         await self.db.commit()
 
     async def increment_resolutions(self, help_forum: HelpForum):
         cache = await self.db.get_cache()
-        await cache.increment_resolutions(help_forum)
+        cache.increment_resolutions(help_forum)
         await self.db.commit()
 
     async def modify_unresolved_emoji(
         self, guild: Guild, forum: ForumChannel, emoji: str
     ) -> HelpForum:
         cache = await self.db.get_cache()
-        help_forum = await cache.modify_unresolved_emoji(guild, forum, emoji)
+        help_forum = cache.modify_unresolved_emoji(guild, forum, emoji)
         await self.db.commit()
         return help_forum
 
@@ -68,7 +68,7 @@ class HelpForumStore(CogStore):
         self, guild: Guild, forum: ForumChannel, emoji: str
     ) -> HelpForum:
         cache = await self.db.get_cache()
-        help_forum = await cache.modify_resolved_emoji(guild, forum, emoji)
+        help_forum = cache.modify_resolved_emoji(guild, forum, emoji)
         await self.db.commit()
         return help_forum
 
@@ -76,7 +76,7 @@ class HelpForumStore(CogStore):
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
         cache = await self.db.get_cache()
-        result = await cache.modify_unresolved_tag(guild, forum, tag)
+        result = cache.modify_unresolved_tag(guild, forum, tag)
         await self.db.commit()
         return result
 
@@ -84,6 +84,6 @@ class HelpForumStore(CogStore):
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
         cache = await self.db.get_cache()
-        result = await cache.modify_resolved_tag(guild, forum, tag)
+        result = cache.modify_resolved_tag(guild, forum, tag)
         await self.db.commit()
         return result

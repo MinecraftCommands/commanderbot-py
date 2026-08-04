@@ -149,15 +149,15 @@ class HelpForumData(BaseModel):
         exclude_if=lambda v: not v,
     )
 
-    async def require_help_forum(self, guild: Guild, forum: ForumChannel) -> HelpForum:
+    def require_help_forum(self, guild: Guild, forum: ForumChannel) -> HelpForum:
         return self.guilds[guild.id].require_help_forum(forum)
 
-    async def get_help_forum(
+    def get_help_forum(
         self, guild: Guild, forum: ForumChannel
     ) -> Optional[HelpForum]:
         return self.guilds[guild.id].get_help_forum(forum)
 
-    async def register_forum_channel(
+    def register_forum_channel(
         self,
         guild: Guild,
         forum: ForumChannel,
@@ -170,33 +170,33 @@ class HelpForumData(BaseModel):
             forum, unresolved_emoji, resolved_emoji, unresolved_tag, resolved_tag
         )
 
-    async def deregister_forum_channel(
+    def deregister_forum_channel(
         self, guild: Guild, forum: ForumChannel
     ) -> HelpForum:
         return self.guilds[guild.id].deregister_forum_channel(forum)
 
-    async def increment_threads_created(self, help_forum: HelpForum):
+    def increment_threads_created(self, help_forum: HelpForum):
         help_forum.threads_created += 1
 
-    async def increment_resolutions(self, help_forum: HelpForum):
+    def increment_resolutions(self, help_forum: HelpForum):
         help_forum.resolutions += 1
 
-    async def modify_unresolved_emoji(
+    def modify_unresolved_emoji(
         self, guild: Guild, forum: ForumChannel, emoji: str
     ) -> HelpForum:
         return self.guilds[guild.id].modify_unresolved_emoji(forum, emoji)
 
-    async def modify_resolved_emoji(
+    def modify_resolved_emoji(
         self, guild: Guild, forum: ForumChannel, emoji: str
     ) -> HelpForum:
         return self.guilds[guild.id].modify_resolved_emoji(forum, emoji)
 
-    async def modify_unresolved_tag(
+    def modify_unresolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
         return self.guilds[guild.id].modify_unresolved_tag(forum, tag)
 
-    async def modify_resolved_tag(
+    def modify_resolved_tag(
         self, guild: Guild, forum: ForumChannel, tag: str
     ) -> tuple[HelpForum, ForumTag]:
         return self.guilds[guild.id].modify_resolved_tag(forum, tag)
