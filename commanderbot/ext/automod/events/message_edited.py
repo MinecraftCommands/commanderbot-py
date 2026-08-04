@@ -61,6 +61,6 @@ class MessageEdited(AutomodEvent):
 
     @property
     @override
-    def user(self) -> Optional[User]:
+    def user(self) -> User:
         assert is_user(self.after.author)
         return self.after.author
