@@ -45,6 +45,7 @@ def get_text(
             bytes_per_pixel=bytes_per_pixel,
             bytes_per_line=bytes_per_line,
         )
+        api.Recognize()
 
         # Iterate over every word in the image (in order) and add them to an array
         words: list[str] = []
