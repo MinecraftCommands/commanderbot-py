@@ -35,6 +35,6 @@ class AutomodBucket(ABC, BaseModel):
         pass
 
     @abstractmethod
-    async def clear(self):
+    def clear(self):
         """Clear all data in the bucket."""
         pass

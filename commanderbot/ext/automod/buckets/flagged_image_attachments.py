@@ -34,7 +34,7 @@ class FlaggedImageAttachments(AutomodBucket):
     """
 
     attachments: dict[AttachmentID, FlaggedImageAttachment] = Field(
-        default_factory=dict
+        default_factory=dict, exclude_if=lambda v: not v
     )
 
     def _clean_up(self):
@@ -84,5 +84,5 @@ class FlaggedImageAttachments(AutomodBucket):
             self.attachments[image_attachment.id] = flagged
 
     @override
-    async def clear(self):
+    def clear(self):
         self.attachments.clear()
