@@ -225,6 +225,7 @@ dependencies = [
     { name = "imagehash" },
     { name = "jsonpath-ng" },
     { name = "mccq" },
+    { name = "mime-enum" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
     { name = "pillow" },
@@ -254,9 +255,10 @@ requires-dist = [
     { name = "colorlog", specifier = ">=6.10.0" },
     { name = "discord-py", specifier = ">=2.7.0" },
     { name = "emoji", specifier = ">=2.0.0" },
-    { name = "imagehash", specifier = ">=4.3.2" },
+    { name = "imagehash", specifier = ">=4.3.0" },
     { name = "jsonpath-ng", specifier = ">=1.7.0" },
     { name = "mccq", specifier = ">=1.0.0" },
+    { name = "mime-enum", specifier = ">=0.0.3" },
     { name = "numpy", specifier = ">=2.5.0" },
     { name = "opencv-python-headless", specifier = ">=5.0.0.0" },
     { name = "pillow", specifier = ">=12.3.0" },
@@ -401,6 +403,15 @@ source = { registry = "https://pypi.org/simple/" }
 sdist = { url = "https://files.pythonhosted.org/packages/67/f5/bc206c34e413a6359643cee0a54668ef29bcd12e61b4cace0c3d97802258/mccq-1.0.2.tar.gz", hash = "sha256:13c29a494f0c467fe6cbd0d3be02e2dfdc9bcf9d1edeb5c1bb259cb742c44db3", size = 12074, upload-time = "2018-11-21T15:29:43.581Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/6b/f517a39126424af1e9fea52536b063268afcac07e2d00ff487b4adc8d537/mccq-1.0.2-py3-none-any.whl", hash = "sha256:abfad271f10b3a77149276024de35f82b56732df280f206335a15a539f3f5c54", size = 17400, upload-time = "2018-11-21T15:29:41.966Z" },
+]
+
+[[package]]
+name = "mime-enum"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple/" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/b9/8c2e4f48c201143fa6a4fe5c4dd5c588c9ad151a667b8905598c9ffe9488/mime_enum-0.0.3.tar.gz", hash = "sha256:9ba84c74a2edc8d62ac4ac9ab57d18050b6c4620fb9d22b0908a32a10d7fb83a", size = 125421, upload-time = "2026-05-19T12:30:27.589Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f9/09/d26ec82740540c40edc097703f241d96bcad8c9925ed5188eec8b88e5bd2/mime_enum-0.0.3-py3-none-any.whl", hash = "sha256:c90186c60ac56aeaaf33dd12f0bfb212881925e30546d787affacf6dbb7f6ef1", size = 31152, upload-time = "2026-05-19T12:30:25.909Z" },
 ]
 
 [[package]]
