@@ -3,12 +3,12 @@ from typing import Literal, override
 
 from discord import Attachment
 from discord.utils import utcnow
-from imagehash import ImageHash
 from pydantic import BaseModel, Field
 
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.bucket import AutomodBucket
 from commanderbot.ext.automod.constants import IMAGE_MIME_TYPES
+from commanderbot.lib.image_hash import ImageHash
 from commanderbot.lib.types import AttachmentID, Timedelta
 
 __all__ = ("FlaggedImageAttachments",)
