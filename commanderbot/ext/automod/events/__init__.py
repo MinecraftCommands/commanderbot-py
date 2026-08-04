@@ -11,6 +11,7 @@ from .member_typing import *
 from .member_updated import *
 from .message_deleted import *
 from .message_edited import *
+from .message_frequency import *
 from .message_sent import *
 from .reaction_added import *
 from .reaction_removed import *
