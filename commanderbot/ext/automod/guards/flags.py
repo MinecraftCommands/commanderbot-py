@@ -18,7 +18,7 @@ class FlagsGuard(BaseModel):
     Checks whether a `discord.User` or `discord.Member` has certain flags.
     """
 
-    flags: set[FlagNames] = Field(default_factory=set)
+    flags: set[FlagNames] = Field(default_factory=set, min_length=1)
 
     def _get_flags(self, actor: Actor) -> Generator[tuple[str, bool]]:
         if is_member(actor):
@@ -87,6 +87,7 @@ class FlagsGuard(BaseModel):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
+        default_schema = handler(source_type)
         from_list_schema = core_schema.chain_schema(
             [
                 core_schema.set_schema(
@@ -104,7 +105,11 @@ class FlagsGuard(BaseModel):
         return core_schema.json_or_python_schema(
             json_schema=from_list_schema,
             python_schema=core_schema.union_schema(
-                [core_schema.is_instance_schema(cls), from_list_schema]
+                [
+                    core_schema.is_instance_schema(cls),
+                    from_list_schema,
+                    default_schema,
+                ]
             ),
             serialization=core_schema.plain_serializer_function_ser_schema(
                 lambda guard: list(guard.flags)
