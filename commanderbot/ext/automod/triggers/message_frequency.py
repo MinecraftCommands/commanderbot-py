@@ -40,13 +40,12 @@ class MessageFrequency(AutomodTrigger):
         if bucket.name != self.bucket:
             return True
 
-        # Use the bucket to build a record out of our timeframe
-
+        # Build the message history out of our timeframe
         message = context.event.message
         since = message.created_at - self.timeframe
-        record = bucket.build_message_history_since(message.author, since)
+        message_history = bucket.build_message_history_since(message.author, since)
 
-        # Ignore if the record does not meet our thresholds
-        enough_messages = self.message_count.includes(record.message_count)
-        enough_channels = self.channel_count.includes(record.channel_count)
+        # Ignore if the message history does not meet our thresholds
+        enough_messages = self.message_count.includes(message_history.message_count)
+        enough_channels = self.channel_count.includes(message_history.channel_count)
         return not (enough_messages and enough_channels)
