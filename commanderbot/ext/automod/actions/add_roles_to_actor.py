@@ -18,5 +18,5 @@ class AddRolesToActor(AddRolesToTarget):
 
     @override
     def get_target(self, context: AutomodContext) -> Optional[Member]:
-        if (member := context.event.member) and is_member(member):
+        if (member := context.event.actor) and is_member(member):
             return member
