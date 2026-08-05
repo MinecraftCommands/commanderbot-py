@@ -177,5 +177,5 @@ class MessageHistory(AutomodBucket):
         await context.state.dispatch_event(events.MessageFrequency(message, self))
 
     @override
-    def clear(self):
+    async def clear(self):
         self._history.clear()

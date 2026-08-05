@@ -84,5 +84,5 @@ class FlaggedImageAttachments(AutomodBucket):
             self.attachments[image_attachment.id] = flagged
 
     @override
-    def clear(self):
+    async def clear(self):
         self.attachments.clear()
