@@ -25,7 +25,7 @@ class DeleteTargetMessages(AutomodAction):
 
     previous_history: Timedelta
     """
-    How much previous message history to delete. Note that to Discord's limitations, you can't delete 
+    How much previous message history to delete. Note that due to Discord's limitations, you can't delete 
     more than 100 messages in each channel and the messages can't be more than 14 days old.
     """
 
