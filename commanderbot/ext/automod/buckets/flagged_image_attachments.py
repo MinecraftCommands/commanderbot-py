@@ -46,9 +46,9 @@ class FlaggedImageAttachments(AutomodBucket):
     def is_flagged(self, image_attachment: Attachment) -> bool:
         return image_attachment.id in self.attachments
 
-    def is_flagged_phash(self, phash: ImageHash, max_hamming_distance: int = 0) -> bool:
+    def is_flagged_phash(self, phash: ImageHash, threshold: int = 0) -> bool:
         for flagged_attachment in self.attachments.values():
-            if flagged_attachment.phash - phash <= max_hamming_distance:
+            if flagged_attachment.phash - phash <= threshold:
                 return True
         return False
 
