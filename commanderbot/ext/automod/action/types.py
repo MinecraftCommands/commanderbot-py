@@ -12,6 +12,8 @@ type _AutomodActionType = (
     | actions.AddRolesToAuthor
     | actions.AddToBucket
     | actions.AddUsersToThread
+    | actions.DeleteActorMessages
+    | actions.DeleteAuthorMessages
     | actions.DeleteMessage
     | actions.DMMember
     | actions.EditThread

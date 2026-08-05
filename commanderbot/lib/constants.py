@@ -1,5 +1,6 @@
 import ctypes
 import sys
+from datetime import timedelta
 from importlib.metadata import version
 
 __all__ = (
@@ -9,6 +10,8 @@ __all__ = (
     "SUPPORTS_OCR",
     "USER_AGENT",
     "MAX_MESSAGE_LENGTH",
+    "BULK_DELETE_MAX_MESSAGES",
+    "BULK_DELETE_MAX_MESSAGE_AGE",
     "MAX_EMBED_TITLE_LENGTH",
     "MAX_EMBED_DESCRIPTION_LENGTH",
     "MAX_MODAL_TITLE_LENGTH",
@@ -36,6 +39,8 @@ USER_AGENT: str = (
 )
 
 MAX_MESSAGE_LENGTH: int = 2000
+BULK_DELETE_MAX_MESSAGES: int = 100
+BULK_DELETE_MAX_MESSAGE_AGE: timedelta = timedelta(days=14)
 
 MAX_EMBED_TITLE_LENGTH: int = 256
 MAX_EMBED_DESCRIPTION_LENGTH: int = 4096

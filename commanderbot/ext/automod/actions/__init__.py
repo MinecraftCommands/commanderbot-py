@@ -3,6 +3,8 @@ from .add_roles_to_actor import *
 from .add_roles_to_author import *
 from .add_to_bucket import *
 from .add_users_to_thread import *
+from .delete_actor_messages import *
+from .delete_author_messages import *
 from .delete_message import *
 from .dm_member import *
 from .edit_thread import *
