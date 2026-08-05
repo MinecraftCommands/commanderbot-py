@@ -26,7 +26,7 @@ if SUPPORTS_OCR:
 
 class ImageAttachmentsContain(AutomodCondition):
     """
-    OCR image attachments and check if they contain a number of substrings.
+    OCR image attachments in context and check if they contain a number of substrings.
     """
 
     type: Literal["image_attachments_contain"]
