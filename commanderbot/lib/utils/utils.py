@@ -4,8 +4,9 @@ import json
 import os
 import re
 import traceback
+from collections.abc import AsyncIterable, Callable, Coroutine, Mapping
 from enum import Enum
-from typing import Any, AsyncIterable, Callable, Coroutine, Mapping, Optional, cast
+from typing import Any, Optional
 
 from discord import (
     AllowedMentions,

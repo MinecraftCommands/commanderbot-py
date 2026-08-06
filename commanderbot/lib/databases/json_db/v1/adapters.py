@@ -1,7 +1,8 @@
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Callable, Optional
+from typing import Optional
 
 from commanderbot.lib.json import json_dump_async, json_load_async
 from commanderbot.lib.types import JsonObject
@@ -73,11 +74,11 @@ class JsonFileDatabaseAdapter[CacheType]:
         try:
             # Attempt to async load the file.
             return await json_load_async(self.options.path)
-        except FileNotFoundError as ex:
+        except FileNotFoundError:
             if self.options.no_init:
                 # If the file doesn't exist, and we've been specifically told not to
                 # automatically create it, then let the error fall through.
-                raise ex
+                raise
             else:
                 # Otherwise, we can go ahead and automatically initialize the file.
                 self.log.warning(
@@ -89,4 +90,4 @@ class JsonFileDatabaseAdapter[CacheType]:
 
     async def write(self, data: JsonObject):
         """Write the given data to the database file."""
-        await json_dump_async(data, self.options.path, indent=self.options.indent)  # type: ignore
+        await json_dump_async(data, self.options.path, indent=self.options.indent)

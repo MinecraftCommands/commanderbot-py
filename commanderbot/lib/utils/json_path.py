@@ -9,8 +9,8 @@ from commanderbot.lib.exceptions import ResponsiveException
 __all__ = (
     "JsonPath",
     "JsonPathOp",
-    "parse_json_path_op",
     "parse_json_path",
+    "parse_json_path_op",
     "query_json_path",
     "update_json_with_path",
 )

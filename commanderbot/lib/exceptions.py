@@ -4,9 +4,9 @@ from discord import AllowedMentions, Interaction
 from discord.ext.commands import Context
 
 __all__ = (
+    "InstantiationError",
     "MalformedData",
     "NoSuchFactory",
-    "InstantiationError",
     "ResponsiveException",
 )
 
@@ -34,7 +34,7 @@ class InstantiationError(ValueError):
 
     def __init__(self, cls: type, exception: Exception):
         super().__init__(
-            f"An error occurred while instantiating a '{cls.__name__}': {str(exception)}",
+            f"An error occurred while instantiating a '{cls.__name__}': {exception}",
         )
 
 

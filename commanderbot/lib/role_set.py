@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Iterator, Optional
+from typing import Any, Optional
 
 from discord import Guild, Member, Role
 

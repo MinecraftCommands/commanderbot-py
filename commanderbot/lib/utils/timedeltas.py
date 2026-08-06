@@ -5,12 +5,12 @@ from commanderbot.lib.exceptions import MalformedData
 from commanderbot.lib.types import JsonObject
 
 __all__ = (
-    "timedelta_from_dict",
-    "timedelta_to_dict",
-    "try_timedelta_from_data",
     "timedelta_from_data",
+    "timedelta_from_dict",
     "timedelta_from_field",
     "timedelta_from_field_optional",
+    "timedelta_to_dict",
+    "try_timedelta_from_data",
 )
 
 
@@ -19,11 +19,11 @@ def timedelta_from_dict(d: dict[str, Any]) -> timedelta:
 
 
 def timedelta_to_dict(td: timedelta) -> dict[str, Any]:
-    return dict(
-        days=td.days,
-        seconds=td.seconds,
-        microseconds=td.microseconds,
-    )
+    return {
+        "days": td.days,
+        "seconds": td.seconds,
+        "microseconds": td.microseconds,
+    }
 
 
 def try_timedelta_from_data(data: Any) -> Optional[timedelta]:

@@ -2,7 +2,7 @@ from typing import Optional
 
 from discord import AllowedMentions, Interaction, InteractionResponseType
 
-__all__ = ("send_or_followup", "command_name", "is_deferred", "is_user_app")
+__all__ = ("command_name", "is_deferred", "is_user_app", "send_or_followup")
 
 
 async def send_or_followup(

@@ -1,10 +1,7 @@
-from typing import Any, Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar
 
-from discord import Interaction
+from discord import Interaction, ui
 from discord.ext.commands import Bot, Cog
-from discord.interactions import Interaction
-from discord.ui import Modal, View
-from discord.ui.item import Item
 
 __all__ = ("CogStateModal", "CogStateView")
 
@@ -12,7 +9,7 @@ CogStateType = TypeVar("CogStateType")
 CogStoreType = TypeVar("CogStoreType")
 
 
-class CogStateModal(Generic[CogStateType, CogStoreType], Modal):
+class CogStateModal(Generic[CogStateType, CogStoreType], ui.Modal):  # noqa: PYI059, UP046 - Discord.py has issues with the newer generic syntax
     """
     A base class for modals that can access a cog state.
 
@@ -65,7 +62,7 @@ class CogStateModal(Generic[CogStateType, CogStoreType], Modal):
         await self.bot.tree.on_error(interaction, error)  # type: ignore
 
 
-class CogStateView(Generic[CogStateType, CogStoreType], View):
+class CogStateView(Generic[CogStateType, CogStoreType], ui.View):  # noqa: PYI059, UP046 - Discord.py has issues with the newer generic syntax
     """
     A base class for views that can access a cog state.
 
@@ -111,6 +108,6 @@ class CogStateView(Generic[CogStateType, CogStoreType], View):
         return interaction.user == self.original_interaction.user
 
     # @overrides View
-    async def on_error(self, interaction: Interaction, error: Exception, item: Item):
+    async def on_error(self, interaction: Interaction, error: Exception, item: ui.Item):
         # Pipe this error through the command tree's error handler
         await self.bot.tree.on_error(interaction, error)  # type: ignore

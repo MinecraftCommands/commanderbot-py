@@ -4,21 +4,21 @@ from datetime import timedelta
 from importlib.metadata import version
 
 __all__ = (
+    "BULK_DELETE_MAX_MESSAGES",
+    "BULK_DELETE_MAX_MESSAGE_AGE",
     "COMMANDERBOT_VERSION",
     "DISCORD_PY_VERSION",
+    "MAX_APPLICATION_EMOJIS",
+    "MAX_AUTOCOMPLETE_CHOICES",
+    "MAX_EMBED_DESCRIPTION_LENGTH",
+    "MAX_EMBED_TITLE_LENGTH",
+    "MAX_MESSAGE_LENGTH",
+    "MAX_MODAL_TITLE_LENGTH",
+    "POINTER_SIZE_BITS",
+    "POINTER_SIZE_BYTES",
     "PYTHON_VERSION",
     "SUPPORTS_OCR",
     "USER_AGENT",
-    "MAX_MESSAGE_LENGTH",
-    "BULK_DELETE_MAX_MESSAGES",
-    "BULK_DELETE_MAX_MESSAGE_AGE",
-    "MAX_EMBED_TITLE_LENGTH",
-    "MAX_EMBED_DESCRIPTION_LENGTH",
-    "MAX_MODAL_TITLE_LENGTH",
-    "MAX_AUTOCOMPLETE_CHOICES",
-    "MAX_APPLICATION_EMOJIS",
-    "POINTER_SIZE_BYTES",
-    "POINTER_SIZE_BITS",
 )
 
 COMMANDERBOT_VERSION: str = version("commanderbot")
@@ -28,7 +28,7 @@ PYTHON_VERSION: str = (
 )
 
 try:
-    import tesserocr
+    import tesserocr  # noqa: F401 - Just checking if the import is available
 except:
     SUPPORTS_OCR: bool = False
 else:

@@ -4,7 +4,6 @@ import emoji
 from discord import Interaction, Message
 from discord.app_commands import AppCommandError, Choice, Transformer
 from discord.ext.commands import BadArgument, CommandError, Context, MessageConverter
-from discord.interactions import Interaction
 
 from commanderbot.lib.color import Color
 from commanderbot.lib.constants import MAX_AUTOCOMPLETE_CHOICES
@@ -12,13 +11,13 @@ from commanderbot.lib.exceptions import ResponsiveException
 from commanderbot.lib.predicates import is_custom_emoji, is_message_link
 
 __all__ = (
+    "ColorTransformer",
+    "EmojiTransformer",
+    "InvalidColor",
     "InvalidEmoji",
     "InvalidMessageLink",
-    "UnableToFindMessage",
-    "InvalidColor",
-    "EmojiTransformer",
     "MessageTransformer",
-    "ColorTransformer",
+    "UnableToFindMessage",
 )
 
 
@@ -79,8 +78,8 @@ class MessageTransformer(Transformer):
 
         # Try to transform `value` into a `discord.Message`
         try:
-            ctx = await Context.from_interaction(interaction)  # type: ignore
-            return await MessageConverter().convert(ctx, value)  # type: ignore
+            ctx = await Context.from_interaction(interaction)
+            return await MessageConverter().convert(ctx, value)
         except (CommandError, BadArgument):
             raise UnableToFindMessage(value)
 

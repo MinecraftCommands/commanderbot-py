@@ -7,10 +7,10 @@ from commanderbot.lib.types import ForumTagID
 
 __all__ = (
     "format_forum_tag",
-    "try_get_forum_tag",
     "require_forum_tag",
     "require_forum_tag_id",
     "thread_has_forum_tag_with_id",
+    "try_get_forum_tag",
 )
 
 

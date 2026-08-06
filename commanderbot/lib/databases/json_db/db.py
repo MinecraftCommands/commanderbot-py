@@ -59,11 +59,11 @@ class JsonDB[CacheType: BaseModel]:
         try:
             # Attempt read the file.
             return self.options.path.read_text(encoding="utf-8")
-        except FileNotFoundError as ex:
+        except FileNotFoundError:
             if self.options.no_init:
                 # If the file doesn't exist, and we've been specifically told not to
                 # automatically create it, then let the error fall through.
-                raise ex
+                raise
             else:
                 # Otherwise, we can go ahead and automatically initialize the file.
                 self.log.warning(

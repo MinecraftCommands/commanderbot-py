@@ -7,10 +7,10 @@ from commanderbot.lib.types import JsonObject
 __all__ = (
     "DatabaseOptions",
     "InMemoryDatabaseOptions",
-    "JsonFileDatabaseOptions",
     "InvalidDatabaseOptions",
-    "UnknownDatabaseType",
+    "JsonFileDatabaseOptions",
     "MissingDatabaseType",
+    "UnknownDatabaseType",
     "UnsupportedDatabaseOptions",
     "make_database_options",
 )

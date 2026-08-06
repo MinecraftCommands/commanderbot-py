@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Callable, ClassVar, Optional, Self, cast, override
+from collections.abc import Callable
+from typing import Any, ClassVar, Optional, Self, cast, override
 
 import discord
 from pydantic import GetCoreSchemaHandler, TypeAdapter
@@ -35,7 +36,7 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
     @classmethod
     def presets(
         cls, *, color_filter: Optional[str] = None, case_sensitive: bool = False
-    ) -> dict[str, "Color"]:
+    ) -> dict[str, Color]:
         """
         Returns a dictionary containing all color presets.
         The `color_filter` parameter can be used to filter the color presets that are returned.

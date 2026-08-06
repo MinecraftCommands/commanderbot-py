@@ -5,8 +5,8 @@ from pydantic import BaseModel, BeforeValidator, Field
 
 __all__ = (
     "InMemoryDatabaseOptions",
-    "JsonFileDatabaseOptions",
     "JsonDBOptions",
+    "JsonFileDatabaseOptions",
 )
 
 

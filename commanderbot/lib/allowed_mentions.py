@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Callable, ClassVar, Optional, Self, cast, override
+from collections.abc import Callable
+from typing import Any, ClassVar, Optional, Self, cast, override
 
 import discord
 from discord.mentions import default
@@ -23,24 +24,6 @@ class AllowedMentions(discord.AllowedMentions, FromDataMixin, JsonSerializable):
     # @@ FACTORIES
 
     _factories: ClassVar[dict[str, Callable[[], Self]]] = {}
-
-    # @overrides discord.AllowedMentions
-    @override
-    @classmethod
-    def all(cls) -> Self:
-        """
-        A factory method that returns a :class:`AllowedMentions` with all fields explicitly set to ``True``
-        """
-        return cast(Self, super().all())
-
-    # @overrides discord.AllowedMentions
-    @override
-    @classmethod
-    def none(cls) -> Self:
-        """
-        A factory method that returns a :class:`AllowedMentions` with all fields set to ``False``
-        """
-        return cast(Self, super().none())
 
     @classmethod
     def not_everyone(cls) -> Self:

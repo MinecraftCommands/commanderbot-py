@@ -10,8 +10,8 @@ from commanderbot.lib.predicates import is_guild
 
 __all__ = (
     "CannotDisambiguateRole",
-    "LenientRoleConverter",
     "ColorConverter",
+    "LenientRoleConverter",
 )
 
 

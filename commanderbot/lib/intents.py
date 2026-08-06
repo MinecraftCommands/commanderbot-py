@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Callable, ClassVar, Optional, Self, cast, override
+from collections.abc import Callable
+from typing import Any, ClassVar, Optional, Self, cast, override
 
 import discord
 from pydantic import GetCoreSchemaHandler, TypeAdapter

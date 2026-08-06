@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Annotated, Any, Literal, TypeAlias
+from typing import Annotated, Any, Literal
 
 from discord import (
     CategoryChannel,
@@ -16,58 +16,58 @@ from discord import (
 from pydantic import WithJsonSchema
 
 __all__ = (
-    "IDType",
-    "GuildID",
-    "CategoryID",
-    "ChannelID",
-    "ThreadID",
-    "MessageID",
-    "RoleID",
-    "UserID",
-    "ForumTagID",
     "AppCommandID",
-    "EmojiID",
-    "DiscordAutomodRuleID",
     "AttachmentID",
-    "RawOptions",
+    "CategoryID",
+    "Channel",
+    "ChannelID",
+    "ChannelTypeNames",
+    "ConnectableChannel",
+    "DiscordAutomodRuleID",
+    "EmojiID",
+    "ForumTagID",
+    "GuildChannel",
+    "GuildID",
+    "IDType",
     "JsonObject",
     "MemberOrUser",
-    "Channel",
-    "GuildChannel",
+    "MessageID",
     "MessageableChannel",
     "MessageableGuildChannel",
-    "ThreadableChannel",
-    "ConnectableChannel",
-    "ChannelTypeNames",
-    "Timedelta",
-    "UnicodeNormalizationForms",
+    "RawOptions",
+    "RoleID",
     "TesseractLanguages",
     "TesseractScripts",
+    "ThreadID",
+    "ThreadableChannel",
+    "Timedelta",
+    "UnicodeNormalizationForms",
+    "UserID",
 )
 
 
-IDType: TypeAlias = int
+type IDType = int
 
-GuildID: TypeAlias = IDType
-CategoryID: TypeAlias = IDType
-ChannelID: TypeAlias = IDType
-ThreadID: TypeAlias = IDType
-MessageID: TypeAlias = IDType
-RoleID: TypeAlias = IDType
-UserID: TypeAlias = IDType
-ForumTagID: TypeAlias = IDType
-AppCommandID: TypeAlias = IDType
-EmojiID: TypeAlias = IDType
-DiscordAutomodRuleID: TypeAlias = IDType
-AttachmentID: TypeAlias = IDType
+type GuildID = IDType
+type CategoryID = IDType
+type ChannelID = IDType
+type ThreadID = IDType
+type MessageID = IDType
+type RoleID = IDType
+type UserID = IDType
+type ForumTagID = IDType
+type AppCommandID = IDType
+type EmojiID = IDType
+type DiscordAutomodRuleID = IDType
+type AttachmentID = IDType
 
-RawOptions: TypeAlias = Any
+type RawOptions = Any
 
-JsonObject: TypeAlias = dict[str, Any]
+type JsonObject = dict[str, Any]
 
-MemberOrUser: TypeAlias = Member | User
+type MemberOrUser = Member | User
 
-Channel: TypeAlias = (
+type Channel = (
     TextChannel
     | ForumChannel
     | Thread
@@ -77,17 +77,17 @@ Channel: TypeAlias = (
     | GroupChannel
     | CategoryChannel
 )
-GuildChannel: TypeAlias = (
+type GuildChannel = (
     TextChannel | ForumChannel | VoiceChannel | StageChannel | CategoryChannel
 )
-MessageableChannel: TypeAlias = (
+type MessageableChannel = (
     TextChannel | VoiceChannel | StageChannel | DMChannel | GroupChannel
 )
-MessageableGuildChannel: TypeAlias = TextChannel | VoiceChannel | StageChannel
-ThreadableChannel: TypeAlias = TextChannel | ForumChannel
-ConnectableChannel: TypeAlias = VoiceChannel | StageChannel
+type MessageableGuildChannel = TextChannel | VoiceChannel | StageChannel
+type ThreadableChannel = TextChannel | ForumChannel
+type ConnectableChannel = VoiceChannel | StageChannel
 
-ChannelTypeNames: TypeAlias = Literal[
+type ChannelTypeNames = Literal[
     "text",
     "news",
     "forum",
@@ -107,7 +107,7 @@ Contains all enumerator names from `discord.ChannelType`.
 https://discordpy.readthedocs.io/en/latest/api.html#discord.ChannelType
 """
 
-MemberFlagsNames: TypeAlias = Literal[
+type MemberFlagsNames = Literal[
     "automod_quarantined_guild_tag",
     "automod_quarantined_username",
     "bypasses_verification",
@@ -125,7 +125,7 @@ Contains all member flag names from `discord.MemberFlags`
 https://discordpy.readthedocs.io/en/latest/api.html#memberflags
 """
 
-PublicUserFlagsNames: TypeAlias = Literal[
+type PublicUserFlagsNames = Literal[
     "active_developer",
     "bot_http_interactions",
     "bug_hunter",
@@ -151,7 +151,7 @@ https://discordpy.readthedocs.io/en/latest/api.html#publicuserflags
 """
 
 
-Timedelta = Annotated[
+type Timedelta = Annotated[
     timedelta,
     WithJsonSchema(
         {
@@ -181,11 +181,11 @@ Timedelta = Annotated[
 An alias for `datetime.timedelta`, but with a Json schema for Pydantic. 
 """
 
-UnicodeNormalizationForms: TypeAlias = Literal["NFC", "NFD", "NFKC", "NFKD"]
+type UnicodeNormalizationForms = Literal["NFC", "NFD", "NFKC", "NFKD"]
 
 
 # fmt: off
-TesseractLanguages: TypeAlias = Literal[
+type TesseractLanguages = Literal[
     "afr", "amh", "ara", "asm", "aze", "aze_cyrl", "bel", "ben", "bod", "bos",
     "bre", "bul", "cat", "ceb", "ces", "chi_sim", "chi_sim_vert", "chi_tra", "chi_tra_vert", "chr",
     "cos", "cym", "dan", "deu", "deu_latf", "div", "dzo", "ell", "eng", "enm",
@@ -206,11 +206,15 @@ All languages that Tesseract supports (https://tesseract-ocr.github.io/tessdoc/D
 # fmt: on
 
 # fmt: off
-TesseractScripts: TypeAlias = Literal[
-    "arab", "armn", "beng", "cans", "cher", "cyrl", "deva", "ethi", "frak", "geor",
-    "grek", "gujr", "guru", "hans", "hans-vert", "hant", "hant-vert", "hang", "hang-vert", "hebr",
-    "jpan", "jpan-vert", "knda", "khmr", "laoo", "latn", "mlym", "mymr", "orya", "sinh",
-    "syrc", "taml", "telu", "thaa", "thai", "tibt", "viet",
+type TesseractScripts = Literal[
+    "script/Arabic", "script/Armenian", "script/Bengali", "script/Canadian_Aboriginal", "script/Cherokee",
+    "script/Cyrillic", "script/Devanagari", "script/Ethiopic", "script/Fraktur", "script/Georgian",
+    "script/Greek", "script/Gujarati", "script/Gurmukhi", "script/Hangul", "script/Hangul_vert",
+    "script/HanS", "script/HanS_vert", "script/HanT", "script/HanT_vert", "script/Hebrew",
+    "script/Japanese", "script/Japanese_vert", "script/Kannada", "script/Khmer", "script/Lao",
+    "script/Latin", "script/Malayalam", "script/Myanmar", "script/Oriya", "script/Sinhala",
+    "script/Syriac", "script/Tamil", "script/Telugu", "script/Thaana", "script/Thai",
+    "script/Tibetan", "script/Vietnamese",
 ]
 """
 All scripts that Tesseract supports (https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html).
