@@ -31,7 +31,7 @@ class DeleteTargetMessages(AutomodAction):
 
     @abstractmethod
     def get_target(self, context: AutomodContext) -> Optional[User]:
-        pass
+        ...
 
     @override
     async def apply(self, context: AutomodContext):
@@ -55,4 +55,4 @@ class DeleteTargetMessages(AutomodAction):
                 try:
                     await channel.delete_messages(to_delete)
                 except:
-                    pass
+                    pass 

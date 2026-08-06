@@ -29,4 +29,4 @@ class AutomodAction(ABC, BaseModel):
     @abstractmethod
     async def apply(self, context: AutomodContext):
         """Apply the action."""
-        pass
+        ...

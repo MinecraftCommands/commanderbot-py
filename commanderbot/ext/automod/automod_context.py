@@ -1,9 +1,10 @@
 import string
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from itertools import chain
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Iterable, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import imagehash
 import numpy as np

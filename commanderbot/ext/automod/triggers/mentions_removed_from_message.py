@@ -88,8 +88,7 @@ class MentionsRemovedFromMessage(AutomodTrigger):
                     removed_role_mentions.add(role_mention)
 
         # Remove the author's own mention
-        if event.author in removed_user_mentions:
-            removed_user_mentions.remove(event.author)
+        removed_user_mentions.discard(event.author)
 
         # Remove any excluded mentions
         if self.victim_user_roles:

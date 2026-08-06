@@ -4,10 +4,10 @@ from discord import Attachment
 from imagehash import ImageHash
 
 __all__ = (
-    "ContextEventFields",
-    "ContextMetadataFields",
-    "ContextFields",
     "ContextAttachment",
+    "ContextEventFields",
+    "ContextFields",
+    "ContextMetadataFields",
 )
 
 

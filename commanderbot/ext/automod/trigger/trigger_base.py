@@ -27,7 +27,7 @@ class AutomodTrigger(ABC, BaseModel):
     disabled: bool = False
     """Is the trigger disabled?"""
 
-    event_types: ClassVar[tuple[type[AutomodEvent], ...]] = tuple()
+    event_types: ClassVar[tuple[type[AutomodEvent], ...]] = ()
 
     async def poll(self, context: AutomodContext) -> bool:
         """Checks whether an event activates the trigger."""

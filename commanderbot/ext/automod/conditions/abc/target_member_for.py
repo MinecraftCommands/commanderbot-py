@@ -20,7 +20,7 @@ class TargetMemberFor(AutomodCondition):
 
     @abstractmethod
     def get_target(self, context: AutomodContext) -> Optional[Member]:
-        pass
+        ...
 
     @override
     async def check(self, context: AutomodContext) -> bool:

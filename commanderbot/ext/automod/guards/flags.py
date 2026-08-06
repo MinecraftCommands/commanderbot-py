@@ -1,4 +1,5 @@
-from typing import Any, Generator, get_args
+from collections.abc import Generator
+from typing import Any, get_args
 
 from discord import Member, User
 from pydantic import BaseModel, Field, GetCoreSchemaHandler
@@ -92,7 +93,7 @@ class FlagsGuard(BaseModel):
             [
                 core_schema.set_schema(
                     core_schema.literal_schema(
-                        [*get_args(PublicUserFlagsNames), *get_args(MemberFlagsNames)]
+                        [*get_args(PublicUserFlagsNames.__value__), *get_args(MemberFlagsNames.__value__)]
                     ),
                     min_length=1,
                 ),

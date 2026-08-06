@@ -29,4 +29,4 @@ class AutomodCondition(ABC, BaseModel):
     @abstractmethod
     async def check(self, context: AutomodContext) -> bool:
         """Check whether the condition passes."""
-        pass
+        ...

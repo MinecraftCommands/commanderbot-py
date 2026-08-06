@@ -12,7 +12,7 @@ __all__ = ("TargetIsBot",)
 class TargetIsBot(AutomodCondition):
     @abstractmethod
     def get_target(self, context: AutomodContext) -> Optional[User]:
-        pass
+        ...
 
     @override
     async def check(self, context: AutomodContext) -> bool:

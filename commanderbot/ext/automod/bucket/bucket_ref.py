@@ -22,7 +22,6 @@ class AutomodBucketRef(BaseModel):
         """
         Resolve the bucket. Will throw an expection if it's not found.
         """
-        ...
 
     @overload
     async def resolve[BucketType = AutomodBucket](
@@ -31,7 +30,6 @@ class AutomodBucketRef(BaseModel):
         """
         Resolve the bucket and require it to have a specific type. Will throw an expection if it's not found.
         """
-        ...
 
     async def resolve[BucketType = AutomodBucket](
         self, context: AutomodContext, bucket_type: Optional[type[BucketType]] = None

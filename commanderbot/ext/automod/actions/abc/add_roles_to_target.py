@@ -20,7 +20,7 @@ class AddRolesToTarget(AutomodAction):
 
     @abstractmethod
     def get_target(self, context: AutomodContext) -> Optional[Member]:
-        pass
+        ...
 
     @override
     async def apply(self, context: AutomodContext):

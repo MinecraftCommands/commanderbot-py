@@ -20,7 +20,7 @@ class TargetHasAnyFlags(AutomodCondition):
 
     @abstractmethod
     def get_target(self, context: AutomodContext) -> Optional[User | Member]:
-        pass
+        ...
 
     @override
     async def check(self, context: AutomodContext) -> bool:

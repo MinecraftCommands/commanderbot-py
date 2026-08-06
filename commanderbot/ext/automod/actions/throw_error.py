@@ -2,6 +2,7 @@ from typing import Literal, override
 
 from commanderbot.ext.automod.action import AutomodAction
 from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.automod_exceptions import AutomodException
 
 __all__ = ("ThrowError",)
 
@@ -20,4 +21,4 @@ class ThrowError(AutomodAction):
 
     @override
     async def apply(self, context: AutomodContext):
-        raise Exception(self.error)
+        raise AutomodException(self.error)

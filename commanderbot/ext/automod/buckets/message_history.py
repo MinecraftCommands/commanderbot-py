@@ -1,7 +1,8 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Iterable, Literal, override
+from datetime import UTC, datetime
+from typing import Literal, override
 
 from discord import Member, Message, User
 from discord.utils import utcnow
@@ -126,7 +127,7 @@ class MessageHistory(AutomodBucket):
     def _to_interval(self, dt: datetime) -> datetime:
         ts = int(dt.timestamp())
         interval_ts = (ts // self.interval_seconds) * self.interval_seconds
-        interval_dt = datetime.fromtimestamp(interval_ts, timezone.utc)
+        interval_dt = datetime.fromtimestamp(interval_ts, UTC)
         return interval_dt
 
     def yield_partitions_since(self, since_interval: datetime) -> Iterable[Partition]:

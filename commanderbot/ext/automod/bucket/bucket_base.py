@@ -32,9 +32,9 @@ class AutomodBucket(ABC, BaseModel):
     @abstractmethod
     async def add(self, context: AutomodContext):
         """Modify the bucket using context data."""
-        pass
+        ...
 
     @abstractmethod
     async def clear(self):
         """Clear all data in the bucket."""
-        pass
+        ...

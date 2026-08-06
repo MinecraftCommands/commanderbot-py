@@ -12,7 +12,7 @@ __all__ = ("TargetIsNotSelf",)
 class TargetIsNotSelf(AutomodCondition):
     @abstractmethod
     def get_target(self, context: AutomodContext) -> Optional[User]:
-        pass
+        ...
 
     @override
     async def check(self, context: AutomodContext) -> bool:

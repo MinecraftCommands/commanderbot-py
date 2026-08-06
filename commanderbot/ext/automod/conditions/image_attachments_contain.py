@@ -96,7 +96,7 @@ class ImageAttachmentsContain(AutomodCondition):
             return
 
         # Create `lang` string from languages and scripts
-        lang: str = "+".join((v for v in chain(self.languages, self.scripts)))
+        lang: str = "+".join(v for v in chain(self.languages, self.scripts))
 
         # Submit OCR tasks to the process pool
         assert is_commander_bot(context.bot)
@@ -108,13 +108,14 @@ class ImageAttachmentsContain(AutomodCondition):
         ]
 
         # Check OCR results as they come in
+        # This may raise a `TimeoutError`, but it *should* be caught in the guild state
         try:
-            for task in asyncio.as_completed(tasks, timeout=self.timeout):
-                if result := await task:
-                    text, attachment_id = result
-                    # Check if the text passes the condition and return the attachment
-                    if self._check_ocr_result(text):
-                        return attachment_id
+            async for text, attachment_id in asyncio.as_completed(
+                tasks, timeout=self.timeout
+            ):
+                # Check if the text passes the condition and return the attachment
+                if self._check_ocr_result(text):
+                    return attachment_id
         finally:
             for task in tasks:
                 if not task.done():
