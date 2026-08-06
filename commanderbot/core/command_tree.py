@@ -1,7 +1,8 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Iterable, Optional, TypeAlias
+from typing import Optional
 
 from discord import AppCommandType
 from discord.abc import Snowflake
@@ -11,8 +12,8 @@ from commanderbot.lib import AppCommandID, GuildID
 
 __all__ = ("CachingCommandTree",)
 
-Cache: TypeAlias = dict[str, AppCommand]
-GuildType: TypeAlias = Snowflake | GuildID
+type Cache = dict[str, AppCommand]
+type GuildType = Snowflake | GuildID
 
 
 @dataclass
@@ -90,7 +91,7 @@ class CachingCommandTree(CommandTree):
         if guild:
             return self._guild_cache.get(self._guild_to_id(guild))
         else:
-            self._global_cache
+            return self._global_cache
 
     def _guild_to_id(self, guild: GuildType) -> GuildID:
         return guild.id if isinstance(guild, Snowflake) else guild
@@ -205,8 +206,8 @@ class CachingCommandTree(CommandTree):
         except Exception as ex:
             # Temporarily handle exception then re-raise it
             # This is only so we can print the warning to the log
-            self._log.warn(f"Unable to sync {sync_msg}. Reason: {ex}")
-            raise ex
+            self._log.warning(f"Unable to sync {sync_msg}. Reason: {ex}")
+            raise
 
         # Update cache
         self._log.info(f"Started updating {cache_msg}...")

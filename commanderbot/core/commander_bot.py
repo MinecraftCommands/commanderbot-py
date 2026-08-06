@@ -3,7 +3,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from discord import AppInfo, Asset, Attachment, User
 from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
@@ -75,7 +75,7 @@ class CommanderBot(Bot):
     def add_app_command_error_handler(self, handler: AppCommandErrorHandler):
         self.error_handling.add_app_command_error_handler(handler)
 
-    async def add_configured_cog(self, ext_name: str, cog_class: Type[Cog]):
+    async def add_configured_cog(self, ext_name: str, cog_class: type[Cog]):
         cog: Optional[Cog] = None
         if options := self.config.get_extension_options(ext_name):
             cog = cog_class(self, **options)
@@ -177,9 +177,9 @@ class CommanderBot(Bot):
             self.log.info(f"[--->] {ext.name}")
             await super().load_extension(ext.name)
             self.config.enable_extension(ext.name)
-        except Exception as ex:
+        except Exception:
             self.log.exception(f"Failed to load extension: {name}")
-            raise ex
+            raise
 
     # @overrides Bot
     async def unload_extension(self, name: str, *, package: Optional[str] = None):
@@ -192,9 +192,9 @@ class CommanderBot(Bot):
             self.log.info(f"[-x->] {ext.name}")
             await super().unload_extension(name)
             self.config.disable_extension(name)
-        except Exception as ex:
+        except Exception:
             self.log.exception(f"Failed to unload extension: {name}")
-            raise ex
+            raise
 
     # @overrides Bot
     async def reload_extension(self, name: str, *, package: Optional[str] = None):
@@ -206,9 +206,9 @@ class CommanderBot(Bot):
             # Reload extension
             self.log.info(f"[-o->] {ext.name}")
             await super().reload_extension(ext.name)
-        except Exception as ex:
+        except Exception:
             self.log.exception(f"Failed to reload extension: {name}")
-            raise ex
+            raise
 
     # @overrides Bot
     async def setup_hook(self):
