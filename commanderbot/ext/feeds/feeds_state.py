@@ -357,7 +357,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         if dt := provider.next_request_date:
             formatted_next_update = format_dt(dt, "R")
 
-        formatted_prev_status_code = f"`{provider.prev_status_code}`" or "**?**"
+        formatted_prev_status_code: str = "**?**"
+        if status_code := provider.prev_status_code:
+            formatted_prev_status_code = f"`{status_code}`"
 
         # Create feed provider status embed
         embed = Embed(title=feed_provider.value, color=0x00ACED)

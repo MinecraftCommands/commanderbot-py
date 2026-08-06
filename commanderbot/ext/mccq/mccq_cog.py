@@ -85,9 +85,9 @@ class MCCQCog(Cog, name="commanderbot.ext.mccq"):
         # Try to query the command
         try:
             results, wiki_url = await query_manager.query_command(query)
-        except Exception as ex:
+        except Exception :
             await interaction.delete_original_response()
-            raise ex
+            raise
 
         # Format the message and create the view if necessary
         msg = f"```hs\n{results}\n```"

@@ -34,7 +34,7 @@ class XKCDCog(
         embed = Embed(
             title=f"#{comic.num} {comic.title}",
             description=(
-                f"-# This comic is interactive; check it out on the website!"
+                "-# This comic is interactive; check it out on the website!"
                 if comic.interactive
                 else ""
             ),
@@ -46,7 +46,7 @@ class XKCDCog(
         )
         embed.set_image(url=comic.image_url)
         embed.set_footer(
-            text=f"{comic.description}\n\nPublished: {comic.publication_date.strftime("%Y/%m/%d")}"
+            text=f"{comic.description}\n\nPublished: {comic.publication_date.strftime('%Y/%m/%d')}"
         )
         return embed
 
@@ -88,9 +88,9 @@ class XKCDCog(
         # Try to get the comic
         try:
             comic: XKCDComic = await self.xkcd_client.get_comic(query)
-        except Exception as ex:
+        except Exception:
             await interaction.delete_original_response()
-            raise ex
+            raise
 
         # Respond with the comic
         await interaction.followup.send(embed=self._create_comic_embed(comic))
@@ -104,9 +104,9 @@ class XKCDCog(
         # Try to get the comic
         try:
             comic: XKCDComic = await self.xkcd_client.get_latest_comic()
-        except Exception as ex:
+        except Exception:
             await interaction.delete_original_response()
-            raise ex
+            raise
 
         # Respond with the comic
         await interaction.followup.send(embed=self._create_comic_embed(comic))
@@ -120,9 +120,9 @@ class XKCDCog(
         # Try to get the comic
         try:
             comic: XKCDComic = await self.xkcd_client.get_random_comic()
-        except Exception as ex:
+        except Exception:
             await interaction.delete_original_response()
-            raise ex
+            raise
 
         # Respond with the comic
         await interaction.followup.send(embed=self._create_comic_embed(comic))

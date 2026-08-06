@@ -492,7 +492,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Respond with a confirmation dialog
         result = await respond_with_confirmation(
             interaction,
-            f"Are you sure you want to clear the bot's avatar?",
+            "Are you sure you want to clear the bot's avatar?",
             ephemeral=True,
         )
         match result:
@@ -564,7 +564,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
         # Respond with a confirmation dialog
         result = await respond_with_confirmation(
             interaction,
-            f"Are you sure you want to clear the bot's banner?",
+            "Are you sure you want to clear the bot's banner?",
             ephemeral=True,
         )
         match result:
@@ -736,7 +736,7 @@ class SudoCog(Cog, name="commanderbot.ext.sudo"):
             assert is_commander_bot(self.bot)
             await self.bot.application_emojis.update_cache()
             await interaction.followup.send(
-                f"✅ Refreshed the application emoji cache", ephemeral=True
+                "✅ Refreshed the application emoji cache", ephemeral=True
             )
         except Exception as ex:
             raise ErrorRefreshingApplicationEmojis(str(ex))

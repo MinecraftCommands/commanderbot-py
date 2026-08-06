@@ -1,10 +1,11 @@
 import random
 import re
 from collections import defaultdict
+from collections.abc import AsyncIterable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from itertools import islice
-from typing import Any, AsyncIterable, Iterable, Optional, Self
+from typing import Any, Optional, Self
 
 from discord import Guild
 from discord.utils import utcnow
@@ -166,7 +167,7 @@ class FridayGuildData(JsonSerializable, FromDataMixin):
         )
 
     def _is_rule_name_available(self, name: str) -> bool:
-        return name not in self.rules.keys()
+        return name not in self.rules
 
     def is_channel_registered(self, channel_id: ChannelID) -> bool:
         return channel_id in self.channels

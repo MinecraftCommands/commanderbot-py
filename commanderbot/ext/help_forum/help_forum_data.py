@@ -49,7 +49,7 @@ class HelpForumGuildData(BaseModel):
     )
 
     def _is_forum_registered(self, forum: ForumChannel):
-        return forum.id in self.help_forums.keys()
+        return forum.id in self.help_forums
 
     def _require_tag(self, forum: ForumChannel, tag_str: str) -> ForumTag:
         # Returns the forum tag if it exists

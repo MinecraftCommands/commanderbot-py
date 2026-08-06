@@ -1,5 +1,5 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from discord import Embed, Interaction, TextStyle
 from discord.ui import TextInput
@@ -130,9 +130,9 @@ class InviteGuildState(CogGuildState):
                     await interaction.followup.send(
                         content=f"Removed the invite `{entry.key}`"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(
@@ -174,7 +174,7 @@ class InviteGuildState(CogGuildState):
 
     async def clear_guild_invite(self, interaction: Interaction):
         await self.store.clear_guild_invite(self.guild)
-        await interaction.response.send_message(f"Cleared the invite for this guild")
+        await interaction.response.send_message("Cleared the invite for this guild")
 
     async def show_guild_invite(self, interaction: Interaction):
         entry: InviteEntry = await self.store.require_guild_invite(self.guild)

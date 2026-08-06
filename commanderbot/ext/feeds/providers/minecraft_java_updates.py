@@ -14,8 +14,8 @@ from .utils import FeedHandler, MinecraftJavaChangelog
 
 __all__ = (
     "MinecraftJavaUpdateInfo",
-    "MinecraftJavaUpdatesOptions",
     "MinecraftJavaUpdates",
+    "MinecraftJavaUpdatesOptions",
 )
 
 

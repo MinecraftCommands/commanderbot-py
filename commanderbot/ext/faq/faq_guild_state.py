@@ -1,6 +1,7 @@
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, Optional
+from typing import Optional
 
 from discord import AllowedMentions, Embed, Interaction, Message, TextStyle
 from discord.ui import TextInput
@@ -111,7 +112,7 @@ class FaqGuildState(CogGuildState):
 
         # Add uncategorized faqs to lines
         if uncategorized:
-            lines.append(f"**Uncategorized**")
+            lines.append("**Uncategorized**")
             lines.append(", ".join((f"`{e.key}`" for e in uncategorized)))
             total_faqs += len(uncategorized)
 
@@ -151,9 +152,9 @@ class FaqGuildState(CogGuildState):
                     await interaction.followup.send(
                         content=f"Removed the FAQ `{entry.key}`"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(f"Did not remove the FAQ `{entry.key}`")
@@ -167,13 +168,13 @@ class FaqGuildState(CogGuildState):
             (f"> {line}" for line in entry.content.split("\n"))
         )
         formatted_aliases: str = (
-            f", ".join((f"`{alias}`" for alias in entry.sorted_aliases)) or "**None!**"
+            ", ".join((f"`{alias}`" for alias in entry.sorted_aliases)) or "**None!**"
         )
         formatted_category_key: str = (
-            f"`{entry.category_key}`" if entry.category_key else "**None!**"
+            "`{entry.category_key}`" if entry.category_key else "**None!**"
         )
         formatted_tags: str = (
-            f", ".join((f"`{tag}`" for tag in entry.sorted_tags)) or "**None!**"
+            ", ".join((f"`{tag}`" for tag in entry.sorted_tags)) or "**None!**"
         )
 
         # Create faq details embed
@@ -249,9 +250,9 @@ class FaqGuildState(CogGuildState):
                     await interaction.followup.send(
                         content=f"Removed the category `{category.key}`"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(

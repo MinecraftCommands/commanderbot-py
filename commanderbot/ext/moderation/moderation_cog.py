@@ -13,7 +13,6 @@ from discord.app_commands import (
 from discord.app_commands.checks import bot_has_permissions
 from discord.app_commands.models import Choice
 from discord.ext.commands import Bot, Cog
-from discord.interactions import Interaction
 
 from commanderbot.ext.moderation.moderation_exceptions import (
     CannotBanBotOrSelf,

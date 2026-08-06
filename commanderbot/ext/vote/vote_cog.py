@@ -1,5 +1,6 @@
 import re
-from typing import Iterable, cast
+from collections.abc import Iterable
+from typing import cast
 
 import emoji
 from discord import Message
@@ -66,7 +67,7 @@ class VoteCog(Cog, name="commanderbot.ext.vote"):
     async def cmd_vote(self, ctx: Context):
         # Determine which emoji reactions to seed the message with, silently ignoring
         # errors raised by any individual emoji.
-        for emoji in self.get_emojis(cast(Message, ctx.message)):
+        for message_emoji in self.get_emojis(cast(Message, ctx.message)):
             try:
                 await ctx.message.add_reaction(emoji)
             except:

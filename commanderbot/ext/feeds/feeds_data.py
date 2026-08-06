@@ -1,6 +1,7 @@
+from collections.abc import AsyncIterable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterable, Optional, Self
+from typing import Any, Optional, Self
 
 from discord import ChannelType
 from discord.utils import utcnow

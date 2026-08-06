@@ -1,6 +1,7 @@
 import re
+from collections.abc import AsyncIterable
 from datetime import datetime
-from typing import AsyncIterable, Optional, Protocol
+from typing import Optional, Protocol
 
 from discord import Guild
 

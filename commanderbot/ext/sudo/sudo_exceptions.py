@@ -1,5 +1,3 @@
-from typing import Any
-
 from discord import Object
 from discord.app_commands import AppCommandError
 

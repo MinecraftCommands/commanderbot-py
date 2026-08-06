@@ -92,9 +92,9 @@ class FeedsGuildState(CogGuildState):
                     await interaction.followup.send(
                         f"<#{subscription.channel_id}> has unsubscribed from the feed `{feed.value}`"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(

@@ -116,11 +116,12 @@ class FaqCog(Cog, name="commanderbot.ext.faq"):
         )
 
         # Create a list of autocomplete choices and return them
-        choices: list[Choice] = []
+        choices: list[Choice[str]] = []
         for item in items:
             if isinstance(item, tuple):
+                alias, entry = item
                 choices.append(
-                    Choice(name=f"💬 {item[0]} → {item[1].key}", value=item[0])
+                    Choice(name=f"💬 {alias} → {entry.key}", value=alias)
                 )
             else:
                 choices.append(Choice(name=f"💬 {item.key}", value=item.key))

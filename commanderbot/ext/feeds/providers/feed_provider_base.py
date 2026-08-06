@@ -8,8 +8,8 @@ from urllib.parse import urlparse, urlunparse
 from commanderbot.lib import FromDataMixin
 
 __all__ = (
-    "FeedProviderOptionsBase",
     "FeedProviderBase",
+    "FeedProviderOptionsBase",
 )
 
 

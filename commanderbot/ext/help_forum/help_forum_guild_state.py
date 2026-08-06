@@ -21,7 +21,6 @@ from commanderbot.ext.help_forum.help_forum_exceptions import (
 )
 from commanderbot.ext.help_forum.help_forum_store import HelpForum, HelpForumStore
 from commanderbot.lib import (
-    AllowedMentions,
     ConfirmationResult,
     ForumTagID,
     UserID,
@@ -144,9 +143,9 @@ class HelpForumGuildState(CogGuildState):
             title="Thanks for asking your question",
             description="\n".join(
                 (
-                    f"- When your question has been answered, please resolve your post.",
+                    "- When your question has been answered, please resolve your post.",
                     f"- You can resolve your post by using {resolve_cmd}, reacting to a message with {resolved_emoji}, or sending {resolved_emoji} as a message.",
-                    f"- Once your post has been resolved, any additional messages or reactions will unresolve it.",
+                    "- Once your post has been resolved, any additional messages or reactions will unresolve it.",
                 )
             ),
             color=0x00ACED,
@@ -210,7 +209,7 @@ class HelpForumGuildState(CogGuildState):
             "\n".join(
                 (
                     f"{forum_data.partial_resolved_emoji} {message.author.mention} resolved this post",
-                    f"-# Any additional messages or reactions will unresolve this post",
+                    "-# Any additional messages or reactions will unresolve this post",
                 )
             ),
             allowed_mentions=AllowedMentions.none(),
@@ -251,7 +250,7 @@ class HelpForumGuildState(CogGuildState):
             "\n".join(
                 (
                     f"{forum_data.partial_resolved_emoji} <@{user_id}> resolved this post",
-                    f"-# Any additional messages or reactions will unresolve this post",
+                    "-# Any additional messages or reactions will unresolve this post",
                 )
             ),
             mention_author=False,
@@ -281,7 +280,7 @@ class HelpForumGuildState(CogGuildState):
             "\n".join(
                 (
                     f"{forum_data.partial_resolved_emoji} {interaction.user.mention} resolved this post",
-                    f"-# Any additional messages or reactions will unresolve this post",
+                    "-# Any additional messages or reactions will unresolve this post",
                 )
             ),
             allowed_mentions=AllowedMentions.none(),
@@ -337,9 +336,9 @@ class HelpForumGuildState(CogGuildState):
                     await interaction.followup.send(
                         content=f"Deregistered <#{forum_data.channel_id}> from being a help forum"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(

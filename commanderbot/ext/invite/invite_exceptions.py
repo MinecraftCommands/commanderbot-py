@@ -36,7 +36,7 @@ class InviteDoesNotExist(InviteException):
 
 class GuildInviteNotSet(InviteException):
     def __init__(self):
-        super().__init__(f"😬 An invite for this guild has not been set")
+        super().__init__("😬 An invite for this guild has not been set")
 
 
 class QueryReturnedNoResults(InviteException):

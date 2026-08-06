@@ -117,9 +117,9 @@ class FridayGuildState(CogGuildState):
                     await interaction.followup.send(
                         content=f"Removed the rule `{rule.name}`"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(

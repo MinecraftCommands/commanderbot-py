@@ -12,13 +12,13 @@ from commanderbot.ext.roles.roles_state import RolesState
 from commanderbot.ext.roles.roles_store import RolesStore
 from commanderbot.lib import is_guild, is_member
 from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.commands import LenientRoleConverter, checks
 from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
-from commanderbot.lib.commands import LenientRoleConverter, checks
 
 
 def make_roles_store(bot: Bot, cog: Cog, options: RolesOptions) -> RolesStore:

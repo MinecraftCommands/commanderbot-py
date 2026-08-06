@@ -22,7 +22,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pydantic>=2.13.0",
     "aiohttp>=3.13.0",
-    
+
     # These are used for logging.
     "colorama>=0.4.0",
     "colorlog>=6.10.0",
@@ -55,13 +55,23 @@ Changelog = "https://github.com/MinecraftCommands/commanderbot-py/blob/main/CHAN
 commanderbot = "commanderbot:__main__"
 
 [dependency-groups]
-dev = ["black>=24.0.0", "isort>=5.13.0"]
+dev = ["ruff>=0.16.0"]
 
-[tool.isort]
-profile = "black"
-
-[tool.pyright]
-typeCheckingMode = "basic"
+[tool.ruff.lint]
+ignore = [
+    "UP034",  # https://docs.astral.sh/ruff/rules/extraneous-parentheses/
+    "UP045",  # https://docs.astral.sh/ruff/rules/non-pep604-annotation-optional/
+    "E722",   # https://docs.astral.sh/ruff/rules/bare-except/
+    "S110",   # https://docs.astral.sh/ruff/rules/try-except-pass/
+    "BLE001", # https://docs.astral.sh/ruff/rules/blind-except/
+    "SIM102", # https://docs.astral.sh/ruff/rules/collapsible-if/
+    "SIM103", # https://docs.astral.sh/ruff/rules/needless-bool/
+    "SIM114", # https://docs.astral.sh/ruff/rules/if-with-same-arms/
+    "SIM117", # https://docs.astral.sh/ruff/rules/multiple-with-statements/
+    "B009",   # https://docs.astral.sh/ruff/rules/get-attr-with-constant/
+    "FLY002", # https://docs.astral.sh/ruff/rules/static-join-to-f-string/
+    "PIE796", # https://docs.astral.sh/ruff/rules/non-unique-enums/
+]
 
 [tool.uv.sources]
 tesserocr = { url = "https://github.com/simonflueckiger/tesserocr-windows_build/releases/download/tesserocr-v2.10.0-tesseract-5.5.2/tesserocr-2.10.0-cp314-cp314-win_amd64.whl", marker = "sys_platform == 'win32'", extra = "ocr" }

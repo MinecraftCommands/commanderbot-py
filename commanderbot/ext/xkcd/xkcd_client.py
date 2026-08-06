@@ -1,17 +1,18 @@
 import random
 import re
+from collections.abc import AsyncIterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from itertools import islice
 from logging import Logger, getLogger
-from typing import Any, AsyncIterable, Optional, Self
+from typing import Any, Optional, Self
 
 import aiohttp
 from discord.utils import utcnow
 
 from commanderbot.ext.xkcd.xkcd_exception import ComicNotFound
 from commanderbot.ext.xkcd.xkcd_options import XKCDOptions
-from commanderbot.lib import FromDataMixin, JsonObject, constants
+from commanderbot.lib import FromDataMixin, constants
 
 BASE_URL: str = "https://xkcd.com"
 ARCHIVE_URL: str = f"{BASE_URL}/archive/"
@@ -182,7 +183,7 @@ class XKCDClient:
             return cached_comic
 
         # Throw an exception if the comic is not in the archive
-        if num not in self._archive_cache.keys():
+        if num not in self._archive_cache:
             raise ComicNotFound(num)
 
         # Try to get the comic and throw an exception if it couldn't be found
