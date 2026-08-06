@@ -6,6 +6,7 @@ from itertools import chain
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+import cv2
 import imagehash
 import numpy as np
 from discord import Attachment, Member, User
@@ -155,7 +156,10 @@ class AutomodContext:
 
             # Calculate phash
             buffer = np.frombuffer(data, np.uint8)
-            image = Image.fromarray(buffer)
+            image = cv2.imdecode(buffer, cv2.IMREAD_COLOR_RGB)
+            assert image is not None
+            
+            image = Image.fromarray(image)
             phash = imagehash.phash(image)
 
             # Store image attachment phash
