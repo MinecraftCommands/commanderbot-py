@@ -110,12 +110,14 @@ class ImageAttachmentsContain(AutomodCondition):
         # Check OCR results as they come in
         # This may raise a `TimeoutError`, but it *should* be caught in the guild state
         try:
-            async for text, attachment_id in asyncio.as_completed(
+            async for completed_task in asyncio.as_completed(
                 tasks, timeout=self.timeout
             ):
                 # Check if the text passes the condition and return the attachment
-                if self._check_ocr_result(text):
-                    return attachment_id
+                if result := completed_task.result():
+                    text, attachment_id = result
+                    if self._check_ocr_result(text):
+                        return attachment_id
         finally:
             for task in tasks:
                 if not task.done():
