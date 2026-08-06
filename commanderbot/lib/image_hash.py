@@ -16,6 +16,6 @@ def _validate_image_hash(data: Any) -> imagehash.ImageHash:
 
 ImageHash = Annotated[
     imagehash.ImageHash,
-    PlainValidator(_validate_image_hash),
+    PlainValidator(_validate_image_hash, json_schema_input_type=str),
     PlainSerializer(lambda value: str(value), return_type=str),
 ]
