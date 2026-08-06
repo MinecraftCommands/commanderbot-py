@@ -21,6 +21,7 @@ from discord.ext.commands import Bot
 
 from commanderbot.lib.types import (
     ConnectableChannel,
+    EmojiID,
     GuildChannel,
     MessageableChannel,
     MessageableGuildChannel,
@@ -35,6 +36,7 @@ __all__ = (
     "is_convertable_to",
     "is_custom_emoji",
     "is_dm_channel",
+    "is_emoji_id",
     "is_forum_channel",
     "is_group_dm_channel",
     "is_guild",
@@ -184,3 +186,7 @@ def is_connectable_channel(obj: object) -> TypeIs[ConnectableChannel]:
 
 def is_partial_messagable(obj: object) -> TypeIs[PartialMessageable]:
     return isinstance(obj, PartialMessageable)
+
+
+def is_emoji_id(obj: object) -> TypeIs[EmojiID]:
+    return isinstance(obj, int)

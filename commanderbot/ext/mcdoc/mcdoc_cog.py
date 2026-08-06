@@ -121,9 +121,9 @@ class McdocCog(Cog, name="commanderbot.ext.mcdoc"):
                 version[2:], float
             ):
                 raise InvalidVersionError(version)
-        except Exception as ex:
+        except Exception:
             await interaction.delete_original_response()
-            raise ex
+            raise
 
         # Create a context object used for rendering
         ctx = McdocContext(version, symbols, self._get_emoji)

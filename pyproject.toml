@@ -61,6 +61,7 @@ dev = ["ruff>=0.16.0"]
 ignore = [
     "UP034",  # https://docs.astral.sh/ruff/rules/extraneous-parentheses/
     "UP045",  # https://docs.astral.sh/ruff/rules/non-pep604-annotation-optional/
+    "UP007",  # https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/
     "E722",   # https://docs.astral.sh/ruff/rules/bare-except/
     "S110",   # https://docs.astral.sh/ruff/rules/try-except-pass/
     "BLE001", # https://docs.astral.sh/ruff/rules/blind-except/
