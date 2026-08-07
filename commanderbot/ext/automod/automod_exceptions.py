@@ -79,5 +79,9 @@ class AutomodBucketAlreadyDisabled(AutomodException):
 class OCRNotSupported(AutomodException):
     def __init__(self):
         super().__init__(
-            "Automod does not support OCR. The feature is either not installed or misconfigured."
+            "Automod does not support OCR. The feature is either not installed or misconfigured"
         )
+
+
+class AutomodValidationError(ValueError):
+    pass

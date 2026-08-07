@@ -1,7 +1,9 @@
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
 from pydantic import BaseModel, ConfigDict, GetCoreSchemaHandler
 from pydantic_core import core_schema
+
+from commanderbot.ext.automod.automod_exceptions import AutomodValidationError
 
 __all__ = ("IntegerRangeGuard",)
 
@@ -35,7 +37,16 @@ class IntegerRangeGuard(BaseModel):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
+        def validate_min_max(guard: Self) -> Self:
+            if guard.min and guard.max and guard.min > guard.max:
+                raise AutomodValidationError("'min' is greater than 'max'")
+            return guard
+
         default_schema = handler(source_type)
+        from_dict_schema = core_schema.no_info_after_validator_function(
+            validate_min_max, default_schema
+        )
+
         from_int_schema = core_schema.chain_schema(
             steps=[
                 core_schema.int_schema(),
@@ -52,14 +63,14 @@ class IntegerRangeGuard(BaseModel):
             json_schema=core_schema.union_schema(
                 [
                     from_int_schema,
-                    default_schema,
+                    from_dict_schema,
                 ]
             ),
             python_schema=core_schema.union_schema(
                 [
                     core_schema.is_instance_schema(cls),
                     from_int_schema,
-                    default_schema,
+                    from_dict_schema,
                 ]
             ),
             serialization=core_schema.plain_serializer_function_ser_schema(
