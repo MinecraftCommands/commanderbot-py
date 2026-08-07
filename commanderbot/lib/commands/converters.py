@@ -1,5 +1,6 @@
 import difflib
 import re
+from typing import override
 
 import discord
 from discord.ext import commands
@@ -35,6 +36,7 @@ class LenientRoleConverter(commands.RoleConverter):
     Raises `CannotDisambiguateRole` if multiple roles are matched.
     """
 
+    @override
     async def convert(self, ctx: Context, argument: str) -> discord.Role:
         # Throw exception if we aren't in a guild.
         if not is_guild(ctx.guild):
@@ -105,7 +107,7 @@ class LenientRoleConverter(commands.RoleConverter):
 class ColorConverter(commands.ColorConverter):
     """Extends `commands.ColorConverter`."""
 
-    # @overrides commands.ColorConverter
+    @override
     async def convert(self, ctx: Context, argument: str) -> Color:
         temp: discord.Color = await super().convert(ctx, argument)
         return Color(temp.value)

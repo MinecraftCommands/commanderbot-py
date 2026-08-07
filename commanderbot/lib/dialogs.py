@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, override
 
 import discord
 from discord import ButtonStyle, Interaction, Member, Message, Reaction, ui
@@ -87,7 +87,7 @@ class ConfirmView(ui.View):
         self.result = ConfirmationResult.NO_RESPONSE
         super().__init__(timeout=timeout)
 
-    # @overrides View
+    @override
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user != self.original_interaction.user:
             await interaction.response.send_message(
@@ -96,7 +96,7 @@ class ConfirmView(ui.View):
             return False
         return True
 
-    # @overrides View
+    @override
     async def on_timeout(self):
         # Disable all buttons and set their color to gray
         for button in self.children:

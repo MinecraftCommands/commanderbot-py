@@ -1,4 +1,5 @@
 from itertools import islice
+from typing import override
 
 import emoji
 from discord import Interaction, Message
@@ -58,6 +59,7 @@ class EmojiTransformer(Transformer):
     A transformer that validates that a string is a valid Unicode or Discord emoji
     """
 
+    @override
     async def transform(self, interaction: Interaction, value: str) -> str:
         if emoji.is_emoji(value):
             return value
@@ -70,7 +72,8 @@ class MessageTransformer(Transformer):
     """
     Transforms a valid Discord message link into a `discord.Message`
     """
-
+    
+    @override
     async def transform(self, interaction: Interaction, value: str) -> Message:
         # Return early if the string we're trying to transform isn't a valid Discord message link
         if not is_message_link(value):
@@ -80,7 +83,7 @@ class MessageTransformer(Transformer):
         try:
             ctx = await Context.from_interaction(interaction)
             return await MessageConverter().convert(ctx, value)
-        except (CommandError, BadArgument):
+        except CommandError, BadArgument:
             raise UnableToFindMessage(value)
 
 
@@ -91,15 +94,18 @@ class ColorTransformer(Transformer):
     Also provides autocomplete suggestions
     """
 
+    @override
     async def transform(self, interaction: Interaction, value: str) -> Color:
         try:
             return Color.from_str(value)
         except ValueError:
             raise InvalidColor(value)
 
+    @override
     async def autocomplete(
-        self, interaction: Interaction, value: str
-    ) -> list[Choice[str]]:
+        self, interaction: Interaction, value: int | float |str
+    ) -> list[Choice[int | float |str]]:
+        assert isinstance(value, str)
         colors: list[Choice] = []
         for name, color in islice(
             Color.presets(color_filter=value).items(), MAX_AUTOCOMPLETE_CHOICES

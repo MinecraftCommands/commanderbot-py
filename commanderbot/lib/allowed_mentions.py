@@ -55,7 +55,6 @@ class AllowedMentions(discord.AllowedMentions, FromDataMixin, JsonSerializable):
 
     # @@ INSTANCE
 
-    # @overrides discord.AllowedMentions
     @override
     def merge(self, other: discord.AllowedMentions) -> Self:
         return cast(Self, super().merge(other))

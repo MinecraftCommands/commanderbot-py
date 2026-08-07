@@ -1,4 +1,4 @@
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, override
 
 from discord import Interaction, ui
 from discord.ext.commands import Bot, Cog
@@ -51,15 +51,15 @@ class CogStateModal(Generic[CogStateType, CogStoreType], ui.Modal):  # noqa: PYI
 
         super().__init__(title=title, custom_id=custom_id, timeout=timeout)
 
-    # @overrides View
+    @override
     async def interaction_check(self, interaction: Interaction) -> bool:
         # Check if this interaction and the original interaction are from the same user
         return interaction.user == self.original_interaction.user
 
-    # @overrides Modal
+    @override
     async def on_error(self, interaction: Interaction, error: Exception):
         # Pipe this error through the command tree's error handler
-        await self.bot.tree.on_error(interaction, error)  # type: ignore
+        await self.bot.tree.on_error(interaction, error)  # type: ignore[ty:missing-argument, ty:invalid-argument-type] - Maybe fix this in the future? #enhance
 
 
 class CogStateView(Generic[CogStateType, CogStoreType], ui.View):  # noqa: PYI059, UP046 - Discord.py has issues with the newer generic syntax
@@ -102,12 +102,12 @@ class CogStateView(Generic[CogStateType, CogStoreType], ui.View):  # noqa: PYI05
 
         super().__init__(timeout=timeout)
 
-    # @overrides View
+    @override
     async def interaction_check(self, interaction: Interaction) -> bool:
         # Check if this interaction and the original interaction are from the same user
         return interaction.user == self.original_interaction.user
 
-    # @overrides View
+    @override
     async def on_error(self, interaction: Interaction, error: Exception, item: ui.Item):
         # Pipe this error through the command tree's error handler
-        await self.bot.tree.on_error(interaction, error)  # type: ignore
+        await self.bot.tree.on_error(interaction, error)  # type: ignore[ty:missing-argument, ty:invalid-argument-type] - Maybe fix this in the future? #enhance

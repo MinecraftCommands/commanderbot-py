@@ -24,7 +24,6 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
 
     _factories: ClassVar[dict[str, Callable[[], Self]]] = {}
 
-    # @overrides discord.Colour
     @override
     @classmethod
     def from_str(cls, value: str) -> Self:
@@ -309,7 +308,6 @@ class Color(discord.Colour, FromDataMixin, JsonSerializable):
     def to_hex(self) -> str:
         return str(self)
 
-    # @overrides discord.Colour
     @override
     def __repr__(self) -> str:
         return f"0x{self.value:X}"

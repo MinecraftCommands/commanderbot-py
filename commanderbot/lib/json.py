@@ -36,20 +36,20 @@ class ExtendedJsonEncoder(json.JSONEncoder):
     6. A `discord.Color` is converted into hex format `#FFFFFF`
     """
 
-    def default(self, obj: Any) -> Any:
-        if isinstance(obj, JsonSerializable):
-            return obj.to_json()
-        if isinstance(obj, set):
-            return self.convert_set(obj)
-        if isinstance(obj, datetime):
-            return self.convert_datetime(obj)
-        if isinstance(obj, timedelta):
-            return self.convert_timedelta(obj)
-        if dataclasses.is_dataclass(obj):
-            return self.convert_dataclass(obj)
-        if isinstance(obj, discord.Color):
-            return self.convert_color(obj)
-        return super().default(obj)
+    def default(self, o: Any) -> Any:
+        if isinstance(o, JsonSerializable):
+            return o.to_json()
+        if isinstance(o, set):
+            return self.convert_set(o)
+        if isinstance(o, datetime):
+            return self.convert_datetime(o)
+        if isinstance(o, timedelta):
+            return self.convert_timedelta(o)
+        if dataclasses.is_dataclass(o):
+            return self.convert_dataclass(o)
+        if isinstance(o, discord.Color):
+            return self.convert_color(o)
+        return super().default(o)
 
     def convert_set(self, obj: set[Any]) -> list[Any]:
         return list(obj)

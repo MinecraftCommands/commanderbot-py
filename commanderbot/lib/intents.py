@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Callable
-from typing import Any, ClassVar, Optional, Self, cast, override
+from typing import Any, ClassVar, Optional, Self, override
 
 import discord
 from pydantic import GetCoreSchemaHandler, TypeAdapter
@@ -24,25 +24,22 @@ class Intents(discord.Intents, FromDataMixin, JsonSerializable):
 
     _factories: ClassVar[dict[str, Callable[[], Self]]] = {}
 
-    # @overrides discord.Intents
     @override
     @classmethod
     def all(cls) -> Self:
         """
         A factory method that creates a :class:`Intents` with everything enabled.
         """
-        return cast(Self, super().all())
+        return super().all()  # type: ignore[ty:invalid-return-type] - The return type in the parent class is `discord.Intents` instead of `Self`
 
-    # @overrides discord.Intents
     @override
     @classmethod
     def none(cls) -> Self:
         """
         A factory method that creates a :class:`Intents` with everything disabled.
         """
-        return cast(Self, super().none())
+        return super().none()  # type: ignore[ty:invalid-return-type] - The return type in the parent class is `discord.Intents` instead of `Self`
 
-    # @overrides discord.Intents
     @override
     @classmethod
     def default(cls) -> Self:
@@ -50,7 +47,7 @@ class Intents(discord.Intents, FromDataMixin, JsonSerializable):
         A factory method that creates a :class:`Intents` with everything enabled
         except :attr:`presences`, :attr:`members`, and :attr:`message_content`.
         """
-        return cast(Self, super().default())
+        return super().default()  # type: ignore[ty:invalid-return-type] - The return type in the parent class is `discord.Intents` instead of `Self`
 
     @classmethod
     def privileged(cls) -> Self:
