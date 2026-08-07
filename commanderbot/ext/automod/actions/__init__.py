@@ -22,4 +22,5 @@ from .sequence import *
 from .throw_error import *
 from .timeout_actor import *
 from .timeout_author import *
+from .type_in_channel import *
 from .wait import *

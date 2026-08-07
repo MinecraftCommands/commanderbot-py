@@ -31,6 +31,7 @@ type _AutomodActionType = (
     | actions.ThrowError
     | actions.TimeoutActor
     | actions.TimeoutAuthor
+    | actions.TypeInChannel
     | actions.Wait
 )
 
