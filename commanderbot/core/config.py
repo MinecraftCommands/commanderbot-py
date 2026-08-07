@@ -146,7 +146,6 @@ class Config(BaseModel):
         result: dict = handler(self)
         return {k: v for k, v in result.items() if v}
 
-    # @overrides BaseModel
     @override
     def model_post_init(self, context: Any):
         self._extensions_by_name.clear()

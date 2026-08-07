@@ -1,8 +1,10 @@
+from typing import override
+
 from discord.ext.commands import DefaultHelpCommand
 
 
 class HelpCommand(DefaultHelpCommand):
-    # @overrides DefaultHelpCommand
+    @override
     def get_ending_note(self) -> str:
         command_name = self.invoked_with
         prefix = self.context.clean_prefix

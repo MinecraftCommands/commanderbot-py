@@ -3,7 +3,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
-from typing import Any, Optional
+from typing import Any, Optional, override
 
 from discord import AppInfo, Asset, Attachment, User
 from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
@@ -44,7 +44,7 @@ class CommanderBot(Bot):
 
         # Create an error handling component.
         self.error_handling = ErrorHandling(log=self.log)
-        self.tree.on_error = self.on_app_command_error
+        self.tree.on_error = self.on_app_command_error  # type: ignore[ty:invalid-assignment] - Maybe get rid of this in the future? #enhance
 
         # Create application emoji manager.
         self.application_emojis = ApplicationEmojiManager(self)
@@ -63,8 +63,8 @@ class CommanderBot(Bot):
 
     @property
     def command_tree(self) -> CachingCommandTree:
-        # A hack to get the actual app command tree type for type checkers
-        return self.tree  # type: ignore
+        assert isinstance(self.tree, CachingCommandTree)
+        return self.tree
 
     def add_event_error_handler(self, handler: EventErrorHandler):
         self.error_handling.add_event_error_handler(handler)
@@ -166,7 +166,7 @@ class CommanderBot(Bot):
         except ImportError:
             raise ExtensionNotFound(name)
 
-    # @overrides Bot
+    @override
     async def load_extension(self, name: str, *, package: Optional[str] = None):
         try:
             # Resolve the extension name and get the extension.
@@ -181,7 +181,7 @@ class CommanderBot(Bot):
             self.log.exception(f"Failed to load extension: {name}")
             raise
 
-    # @overrides Bot
+    @override
     async def unload_extension(self, name: str, *, package: Optional[str] = None):
         try:
             # Resolve the extension name and get the extension
@@ -196,7 +196,7 @@ class CommanderBot(Bot):
             self.log.exception(f"Failed to unload extension: {name}")
             raise
 
-    # @overrides Bot
+    @override
     async def reload_extension(self, name: str, *, package: Optional[str] = None):
         try:
             # Resolve the extension name and get the extension
@@ -210,7 +210,7 @@ class CommanderBot(Bot):
             self.log.exception(f"Failed to reload extension: {name}")
             raise
 
-    # @overrides Bot
+    @override
     async def setup_hook(self):
         # Build application emoji cache before we process extensions.
         self.log.info("Building application emoji cache...")
@@ -237,16 +237,16 @@ class CommanderBot(Bot):
             await self.command_tree.build_global_cache()
             await self.command_tree.build_guild_cache(self.guilds)
 
-    # @overrides Bot
+    # Event handler for `Bot`
     async def on_connect(self):
         self.log.warning("Connected to Discord.")
         self._connected_since = utcnow()
 
-    # @overrides Bot
+    # Event handler for `Bot`
     async def on_disconnect(self):
         self.log.warning("Disconnected from Discord.")
 
-    # @overrides Bot
+    # Event handler for `Bot`
     async def on_error(self, event_method: str, *args: Any, **kwargs: Any):
         _, ex, _ = sys.exc_info()
         if isinstance(ex, Exception):
@@ -255,7 +255,7 @@ class CommanderBot(Bot):
         else:
             await super().on_error(event_method, *args, **kwargs)
 
-    # @overrides Bot
+    # Event handler for `Bot`
     async def on_command_error(self, ctx: Context, ex: Exception):
         await self.error_handling.on_command_error(ex, ctx)
 

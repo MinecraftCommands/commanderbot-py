@@ -2,7 +2,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Optional
+from typing import Optional, override
 
 from discord import AppCommandType
 from discord.abc import Snowflake
@@ -48,7 +48,7 @@ class CommandCache:
         def traverse_options(options: list[AppCommandGroup | Argument]):
             for option in options:
                 if isinstance(option, AppCommandGroup):
-                    self._cache[option.qualified_name] = option  # type: ignore
+                    self._cache[option.qualified_name] = option  # type: ignore[ty:invalid-assignment]
                     traverse_options(option.options)
 
         # Add commands and their options
@@ -155,7 +155,7 @@ class CachingCommandTree(CommandTree):
 
         self._log.info("Finished building guild command cache.")
 
-    # @overrides CommandTree
+    @override
     async def fetch_command(
         self,
         command_id: int,
@@ -175,7 +175,7 @@ class CachingCommandTree(CommandTree):
         self.update_cache([command], guild=guild)
         return command
 
-    # @overrides CommandTree
+    @override
     async def fetch_commands(
         self, *, guild: Optional[Snowflake] = None, use_cache: bool = True
     ) -> list[AppCommand]:
@@ -189,7 +189,7 @@ class CachingCommandTree(CommandTree):
         self.update_cache(commands, guild=guild, override=True)
         return commands
 
-    # @overrides CommandTree
+    @override
     async def sync(self, *, guild: Optional[Snowflake] = None) -> list[AppCommand]:
         # Create log messages
         sync_msg: str = "global app commands"
@@ -216,7 +216,7 @@ class CachingCommandTree(CommandTree):
 
         return commands
 
-    # @overrides CommandTree
+    @override
     def clear_commands(
         self,
         *,
