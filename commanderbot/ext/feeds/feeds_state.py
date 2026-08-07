@@ -115,7 +115,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         # Send the embed
         msg: Optional[Message] = None
         try:
-            msg = await channel.send(content=content, embed=embed, view=view)  # type: ignore
+            msg = await channel.send(content, embed=embed, view=view)  # type: ignore[ty:no-matching-overload] - This does work, but we should update this extension to use components v2 #enhance
         except:
             pass
 

@@ -16,7 +16,7 @@ from commanderbot.ext.mccq.mccq_exceptions import (
 )
 from commanderbot.ext.mccq.mccq_options import MCCQManagerOptions
 
-type MCCQQueryResults = QueryResults | tuple[dict[str, list[str]]]
+type MCCQQueryResults = QueryResults | dict[str, list[str]]
 
 
 class MCCQManager:

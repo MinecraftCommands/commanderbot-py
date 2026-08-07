@@ -1,7 +1,7 @@
 import importlib.util
 import platform
 from enum import Enum
-from typing import Optional
+from typing import Optional, override
 
 import psutil
 from discord import (
@@ -28,7 +28,6 @@ from discord.ext.commands import Bot, Cog
 from discord.utils import format_dt
 from pydantic import BaseModel
 
-from commanderbot.core.commander_bot import CommanderBot
 from commanderbot.core.config import Config, ConfiguredExtension
 from commanderbot.core.exceptions import ExtensionIsRequired, ExtensionNotInConfig
 from commanderbot.core.utils import is_commander_bot
@@ -78,9 +77,11 @@ class ExtensionTransformer(Transformer):
     A transformer that resolves `value` into a `ConfiguredExtension` from the config.
     """
 
+    @override
     async def transform(
-        self, interaction: Interaction[CommanderBot], value: str
+        self, interaction: Interaction, value: str
     ) -> ConfiguredExtension:
+        assert is_commander_bot(interaction.client)
         resolved_name: str = ""
         try:
             resolved_name = importlib.util.resolve_name(value, "commanderbot")
@@ -98,9 +99,12 @@ class EnabledExtensionTransformer(ExtensionTransformer):
     Extends `ExtensionTransformer` to provide autocomplete for enabled extensions.
     """
 
+    @override
     async def autocomplete(
-        self, interaction: Interaction[CommanderBot], value: str
-    ) -> list[Choice[str]]:
+        self, interaction: Interaction, value: int | float | str
+    ) -> list[Choice[int | float | str]]:
+        assert is_commander_bot(interaction.client)
+        assert isinstance(value, str)
         config: Config = interaction.client.config
         choices: list[Choice] = []
         for ext in (ext for ext in config.enabled_extensions if not ext.required):
@@ -117,9 +121,12 @@ class DisabledExtensionTransformer(ExtensionTransformer):
     Extends `ExtensionTransformer` to provide autocomplete for disabled extensions.
     """
 
+    @override
     async def autocomplete(
-        self, interaction: Interaction[CommanderBot], value: str
-    ) -> list[Choice[str]]:
+        self, interaction: Interaction, value: int | float | str
+    ) -> list[Choice[int | float | str]]:
+        assert is_commander_bot(interaction.client)
+        assert isinstance(value, str)
         config: Config = interaction.client.config
         choices: list[Choice] = []
         for ext in (ext for ext in config.disabled_extensions if not ext.required):
@@ -136,16 +143,19 @@ class ApplicationEmojiTransformer(Transformer):
     A transformer that resolves `value` into an application emoji.
     """
 
-    async def transform(
-        self, interaction: Interaction[CommanderBot], value: str
-    ) -> Emoji:
+    @override
+    async def transform(self, interaction: Interaction, value: str) -> Emoji:
+        assert is_commander_bot(interaction.client)
         if emoji := interaction.client.application_emojis.get(value):
             return emoji
         raise CannotFindApplicationEmoji(value)
 
+    @override
     async def autocomplete(
-        self, interaction: Interaction[CommanderBot], value: str
-    ) -> list[Choice[str]]:
+        self, interaction: Interaction, value: int | float | str
+    ) -> list[Choice[int | float | str]]:
+        assert is_commander_bot(interaction.client)
+        assert isinstance(value, str)
         emojis = interaction.client.application_emojis.get_all()
         choices: list[Choice] = []
         for emoji in emojis:

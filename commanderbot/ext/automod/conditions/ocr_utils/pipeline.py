@@ -39,7 +39,7 @@ def get_text(
         bytes_per_pixel = 1
         bytes_per_line = width * bytes_per_pixel
         api.SetImageBytes(
-            imagedata=processed.tobytes(),  # type: ignore
+            imagedata=processed.tobytes(),  # type: ignore[ty:invalid-argument-type] - Why is this even expecting a string
             width=width,
             height=height,
             bytes_per_pixel=bytes_per_pixel,
@@ -144,7 +144,7 @@ def reorient(image: MatLike) -> MatLike:
         bytes_per_pixel = 1
         bytes_per_line = width * bytes_per_pixel
         api.SetImageBytes(
-            imagedata=image.tobytes(),  # type: ignore
+            imagedata=image.tobytes(),  # type: ignore[ty:invalid-argument-type] - Why is this even expecting a string
             width=width,
             height=height,
             bytes_per_pixel=bytes_per_pixel,

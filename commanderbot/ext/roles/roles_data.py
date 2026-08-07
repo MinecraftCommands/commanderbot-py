@@ -182,7 +182,7 @@ class RolesData:
 
     # @implements RolesStore
     async def get_all_role_entries(self, guild: Guild) -> list[RoleEntry]:
-        return self.guilds[guild.id].get_all_role_entries()  # type: ignore
+        return self.guilds[guild.id].get_all_role_entries()  # type: ignore[ty:invalid-return-type]
 
     # @implements RolesStore
     async def get_role_entry(self, role: Role) -> Optional[RoleEntry]:

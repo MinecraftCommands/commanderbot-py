@@ -22,7 +22,7 @@ from commanderbot.ext.moderation.moderation_exceptions import (
     UserIsNotAMember,
 )
 from commanderbot.ext.moderation.moderation_views import ModerationResponse
-from commanderbot.lib import AllowedMentions
+from commanderbot.lib import AllowedMentions, is_guild
 
 KICK_COMPROMISED_REASON = "Your account is compromised and is sending scam messages. Feel free to rejoin once you've changed your password."
 
@@ -89,7 +89,8 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         # We do this before kicking in case this is the only mutual server
         if reason:
             try:
-                guild_name: str = interaction.guild.name  # type: ignore
+                assert is_guild(interaction.guild)
+                guild_name: str = interaction.guild.name
                 kick_dm_view = ModerationResponse(
                     f"👢 You were kicked from `{guild_name}`", reason
                 )
@@ -153,7 +154,8 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         # We do this before banning in case this is the only mutual server
         if reason:
             try:
-                guild_name: str = interaction.guild.name  # type: ignore
+                assert is_guild(interaction.guild)
+                guild_name: str = interaction.guild.name
                 ban_dm_view = ModerationResponse(
                     f"🔨 You were banned from `{guild_name}`", reason
                 )
@@ -197,7 +199,8 @@ class ModerationCog(Cog, name="commanderbot.ext.moderation"):
         # Attempt to DM
         # We do this before banning in case this is the only mutual server
         try:
-            guild_name: str = interaction.guild.name  # type: ignore
+            assert is_guild(interaction.guild)
+            guild_name: str = interaction.guild.name
             dm_view = ModerationResponse(
                 f"👢 You were kicked from `{guild_name}`", KICK_COMPROMISED_REASON
             )

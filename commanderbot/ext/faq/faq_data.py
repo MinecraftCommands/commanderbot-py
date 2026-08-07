@@ -714,7 +714,7 @@ class FaqData(JsonSerializable, FromDataMixin):
             maybe_sorted_entries = (
                 sorted(entries, key=lambda e: e.key) if sort else entries
             )
-            yield (display, maybe_sorted_entries)  # type: ignore
+            yield (display, maybe_sorted_entries)
 
     # @implements FaqStore
     async def get_uncategorized_faqs(

@@ -1,7 +1,7 @@
 import asyncio
 import unicodedata
 from itertools import chain
-from typing import Any, Literal, Optional, override
+from typing import Any, Literal, Optional, cast, override
 
 from pydantic import Field, PositiveInt
 
@@ -31,7 +31,9 @@ class ImageAttachmentsContain(AutomodCondition):
 
     type: Literal["image_attachments_contain"]
 
-    languages: set[TesseractLanguages] = Field(default_factory=lambda: {"eng"})
+    languages: set[TesseractLanguages] = Field(
+        default_factory=lambda: cast(set[TesseractLanguages], {"eng"})
+    )
     """
     The languages to recognize. If not set, `eng` will be recognized by default.
     """
@@ -115,6 +117,7 @@ class ImageAttachmentsContain(AutomodCondition):
             ):
                 # Check if the text passes the condition and return the attachment
                 if result := completed_task.result():
+                    assert isinstance(result, tuple)
                     text, attachment_id = result
                     if self._check_ocr_result(text):
                         return attachment_id
