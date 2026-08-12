@@ -5,6 +5,40 @@ class AutomodException(ResponsiveException):
     pass
 
 
+class CouldNotValidateNewAutomodRule(AutomodException):
+    def __init__(self, exception: ValueError):
+        self.exception = exception
+        super().__init__(
+            f"😵 An error occurred while validating the new automod rule:\n```\n{exception}\n```"
+        )
+
+
+class CouldNotValidateModifiedAutomodRule(AutomodException):
+    def __init__(self, exception: ValueError):
+        self.exception = exception
+        super().__init__(
+            f"😵 An error occurred while validating the modified automod rule:\n```\n{exception}\n```"
+        )
+
+
+class CouldNotValidateUploadedAutomodRule(AutomodException):
+    def __init__(self, exception: ValueError):
+        self.exception = exception
+        super().__init__(
+            f"😵 An error occurred while validating the uploaded automod rule:\n```\n{exception}\n```"
+        )
+
+
+class UploadIsNotJsonFile(AutomodException):
+    def __init__(self):
+        super().__init__("🤔 The uploaded automod rule is not a Json file")
+
+
+class DefaultLogChannelNotConfigured(AutomodException):
+    def __init__(self):
+        super().__init__("🤔 The default log channel has not been configured")
+
+
 class AutomodRuleAlreadyExists(AutomodException):
     def __init__(self, name: str):
         self.name: str = name
@@ -15,13 +49,6 @@ class AutomodRuleDoesNotExist(AutomodException):
     def __init__(self, name: str):
         self.name: str = name
         super().__init__(f"😬 Automod rule `{self.name}` does not exist")
-
-
-class CannotModifyAutomodRuleName(AutomodException):
-    def __init__(self):
-        super().__init__(
-            "😬 Automod rule names can't be changed after the rule was created"
-        )
 
 
 class AutomodRuleAlreadyEnabled(AutomodException):
