@@ -119,7 +119,7 @@ class LogMessage(AutomodAction):
             context_fields = context.get_fields()
             for field_name, field_title in self.fields.items():
                 if field_value := context_fields.get(field_name):
-                    field_lines.append(f"- **{field_title}**: `{field_value}`")
+                    field_lines.append(f"- **{field_title}** **-** `{field_value}`")
 
             if field_lines:
                 log_container.add_item(ui.Separator())
