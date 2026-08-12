@@ -10,6 +10,7 @@ from .image_hash import *
 from .intents import *
 from .json import *
 from .json_serializable import *
+from .log_channel import *
 from .log_options import *
 from .predicates import *
 from .role_set import *
