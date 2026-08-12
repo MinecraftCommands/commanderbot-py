@@ -6,6 +6,7 @@ from commanderbot.ext.automod.action import AutomodActionType
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.condition import AutomodConditionType
 from commanderbot.ext.automod.trigger import AutomodTriggerType
+from commanderbot.lib.log_channel import LogChannel
 
 __all__ = ("AutomodRule",)
 
@@ -25,6 +26,9 @@ class AutomodRule(BaseModel):
 
     disabled: Optional[bool] = None
     """Is the rule disabled?"""
+
+    log: Optional[LogChannel] = None
+    """Override the log channel for this rule."""
 
     triggers: list[AutomodTriggerType] = Field(min_length=1)
     """A list of triggers that cause the rule to run."""
