@@ -87,5 +87,5 @@ module-name = "commanderbot"
 module-root = ""
 
 [build-system]
-requires = ["uv_build<0.12"]
+requires = ["uv_build<0.13"]
 build-backend = "uv_build"
