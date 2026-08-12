@@ -1,323 +1,331 @@
 from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Any, AsyncIterable, Iterable, Optional, Self, Type
+from collections.abc import Iterable
+from typing import Annotated, Any, Optional
 
 from discord import Guild
 from discord.utils import utcnow
+from pydantic import BaseModel, Field, PrivateAttr
 
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.automod_rule import AutomodRule
-from commanderbot.lib import (
-    GuildID,
-    JsonObject,
-    LogOptions,
-    ResponsiveException,
-    RoleSet,
-    to_data,
-    utils,
+from commanderbot.ext.automod.automod_exceptions import (
+    AutomodBucketAlreadyDisabled,
+    AutomodBucketAlreadyEnabled,
+    AutomodBucketDoesNotExist,
+    AutomodRuleAlreadyDisabled,
+    AutomodRuleAlreadyEnabled,
+    AutomodRuleAlreadyExists,
+    AutomodRuleDoesNotExist,
+    AutomodRuleMetadataAlreadyExists,
+    AutomodRuleMetadataDoesNotExist,
+    DefaultLogChannelNotConfigured,
 )
-
-RulesByEventType = defaultdict[Type[AutomodEvent], set[AutomodRule]]
-
-
-class AutomodRuleWithNameAlreadyExists(ResponsiveException):
-    def __init__(self, name: str):
-        self.name: str = name
-        super().__init__(f"A rule with the name `{name}` already exists")
+from commanderbot.ext.automod.bucket import AutomodBucket
+from commanderbot.ext.automod.bucket.types import AutomodBucketType
+from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.rule import AutomodRule, AutomodRuleMetadata
+from commanderbot.lib.log_channel import LogChannel
+from commanderbot.lib.types import GuildID, UserID
 
 
-class AutomodNoRuleWithName(ResponsiveException):
-    def __init__(self, name: str):
-        self.name: str = name
-        super().__init__(f"There is no rule with the name `{name}`")
-
-
-class AutomodRuleNotRegistered(ResponsiveException):
-    def __init__(self, rule: AutomodRule):
-        self.rule: AutomodRule = rule
-        super().__init__(f"Rule `{rule.name}` is not registered")
-
-
-class AutomodInvalidFields(ResponsiveException):
-    def __init__(self, names: set[str]):
-        self.names: set[str] = names
-        super().__init__("These fields are invalid: " + "`" + "` `".join(names) + "`")
-
-
-class AutomodUnmodifiableFields(ResponsiveException):
-    def __init__(self, names: set[str]):
-        self.names: set[str] = names
-        super().__init__(
-            "These fields cannot be modified: " + "`" + "` `".join(names) + "`"
-        )
-
-
-@dataclass
-class AutomodGuildData:
-    # Default logging configuration for this guild.
-    default_log_options: Optional[LogOptions] = None
-
-    # Roles that are permitted to manage the extension within this guild.
-    permitted_roles: Optional[RoleSet] = None
-
-    # Index rules by name for faster look-up in commands.
-    rules: dict[str, AutomodRule] = field(init=False, default_factory=dict)
-
-    # Group rules by event type for faster look-up during event dispatch.
-    rules_by_event_type: RulesByEventType = field(
-        init=False, default_factory=lambda: defaultdict(lambda: set())
+class AutomodGuildData(BaseModel):
+    default_log: Optional[LogChannel] = None
+    rules: dict[str, AutomodRule] = Field(
+        default_factory=dict, exclude_if=lambda v: not v
+    )
+    rule_metadata: dict[str, AutomodRuleMetadata] = Field(
+        default_factory=dict, exclude_if=lambda v: not v
+    )
+    buckets: dict[str, AutomodBucketType] = Field(
+        default_factory=dict, exclude_if=lambda v: not v
     )
 
-    @classmethod
-    def from_data(cls, data: JsonObject) -> Self:
-        default_log_options = LogOptions.from_field_optional(data, "log")
-        permitted_roles = RoleSet.from_field_optional(data, "permitted_roles")
-        guild_data = cls(
-            default_log_options=default_log_options,
-            permitted_roles=permitted_roles,
-        )
-        for rule_data in data.get("rules", []):
-            rule = AutomodRule.from_data(rule_data)
-            guild_data.add_rule(rule)
-        return guild_data
+    _rules_by_event_type: defaultdict[type[AutomodEvent], set[AutomodRule]] = (
+        PrivateAttr(default_factory=lambda: defaultdict(set))
+    )
 
-    def to_data(self) -> JsonObject:
-        return utils.dict_without_ellipsis(
-            log=self.default_log_options or ...,
-            permitted_roles=self.permitted_roles or ...,
-            rules=list(self.rules.values()) or ...,
-        )
+    def model_post_init(self, context: Any) -> None:
+        self._rebuild_mappings()
 
-    def set_default_log_options(
-        self, log_options: Optional[LogOptions]
-    ) -> Optional[LogOptions]:
-        old_value = self.default_log_options
-        self.default_log_options = log_options
-        return old_value
+    def _rebuild_mappings(self):
+        self._rules_by_event_type.clear()
+        for rule in self.rules.values():
+            for trigger in rule.triggers:
+                for event_type in trigger.event_types:
+                    self._rules_by_event_type[event_type].add(rule)
 
-    def set_permitted_roles(
-        self, permitted_roles: Optional[RoleSet]
-    ) -> Optional[RoleSet]:
-        old_value = self.permitted_roles
-        self.permitted_roles = permitted_roles
-        return old_value
+    def require_default_log_channel(
+        self,
+    ) -> LogChannel:
+        if log_channel := self.default_log:
+            return log_channel
+        raise DefaultLogChannelNotConfigured
 
-    def all_rules(self) -> Iterable[AutomodRule]:
-        yield from self.rules.values()
+    def get_default_log_channel(
+        self,
+    ) -> Optional[LogChannel]:
+        return self.default_log
+
+    def set_default_log_channel(self, log_channel: LogChannel) -> LogChannel:
+        self.default_log = log_channel
+        return self.default_log
+
+    def modify_default_log_channel(
+        self, log_channel: LogChannel
+    ) -> tuple[LogChannel, LogChannel]:
+        old_log_channel = self.require_default_log_channel()
+        self.default_log = log_channel
+        return (old_log_channel, self.default_log)
+
+    def remove_default_log_channel(
+        self,
+    ) -> LogChannel:
+        old_log_channel = self.require_default_log_channel()
+        self.default_log = None
+        return old_log_channel
+
+    def require_rule(self, name: str) -> AutomodRule:
+        if rule := self.rules.get(name):
+            return rule
+        raise AutomodRuleDoesNotExist(name)
+
+    def require_rule_metadata(self, name: str) -> AutomodRuleMetadata:
+        if metadata := self.rule_metadata.get(name):
+            return metadata
+        raise AutomodRuleMetadataDoesNotExist(name)
 
     def rules_for_event(self, event: AutomodEvent) -> Iterable[AutomodRule]:
         event_type = type(event)
-        # Start with the initial set of possible rules, based on the event type.
-        for rule in self.rules_by_event_type[event_type]:
-            # Yield the rule if the event activates any of its triggers.
-            if rule.poll_triggers(event):
-                yield rule
+        if rules := self._rules_by_event_type.get(event_type):
+            yield from rules
 
-    def query_rules(self, query: str) -> Iterable[AutomodRule]:
-        # If there's an exact match, yield just that.
-        if rule := self.rules.get(query):
-            yield rule
-        else:
-            # Otherwise, yield any rules that match the query.
-            query_lower = query.lower()
-            for rule_name, rule in self.rules.items():
-                if query_lower in rule_name.lower():
-                    yield rule
-
-    def get_rule(self, name: str) -> Optional[AutomodRule]:
-        return self.rules.get(name)
-
-    def require_rule(self, name: str) -> AutomodRule:
-        if rule := self.get_rule(name):
-            return rule
-        raise AutomodNoRuleWithName(name)
-
-    def _add_rule_to_cache(self, rule: AutomodRule):
-        for trigger in rule.triggers:
-            for event_type in trigger.event_types:
-                self.rules_by_event_type[event_type].add(rule)
-
-    def add_rule(self, rule: AutomodRule):
+    def add_rule(
+        self, rule: AutomodRule, user_id: UserID
+    ) -> tuple[AutomodRule, AutomodRuleMetadata]:
+        # The rule name needs to be available
         if rule.name in self.rules:
-            raise AutomodRuleWithNameAlreadyExists(rule.name)
+            raise AutomodRuleAlreadyExists(rule.name)
+
+        # The rule name needs to be available for metadata
+        if rule.name in self.rule_metadata:
+            raise AutomodRuleMetadataAlreadyExists(rule.name)
+
+        # Create metadata
+        metadata = AutomodRuleMetadata(
+            name=rule.name,
+            hits=0,
+            added_by_id=user_id,
+            modified_by_id=user_id,
+            added_on=utcnow(),
+            modified_on=utcnow(),
+        )
+
+        # Add rule
         self.rules[rule.name] = rule
-        self._add_rule_to_cache(rule)
+        self.rule_metadata[rule.name] = metadata
 
-    def add_rule_from_data(self, data: JsonObject) -> AutomodRule:
-        rule = AutomodRule.from_data(data)
-        self.add_rule(rule)
-        return rule
+        self._rebuild_mappings()
+        return (rule, metadata)
 
-    def _remove_rule_from_cache(self, rule: AutomodRule):
-        for rules in self.rules_by_event_type.values():
-            if rule in rules:
-                rules.remove(rule)
+    def modify_rule(
+        self, rule: AutomodRule, user_id: UserID
+    ) -> tuple[AutomodRule, AutomodRule, AutomodRuleMetadata]:
+        # The rule and metadata need to exist
+        old_rule = self.require_rule(rule.name)
+        metadata = self.require_rule_metadata(rule.name)
 
-    def remove_rule(self, rule: AutomodRule):
-        existing_rule = self.rules.get(rule.name)
-        if not (existing_rule and (existing_rule is rule)):
-            raise AutomodRuleNotRegistered(rule)
-        self._remove_rule_from_cache(rule)
+        # Replace the old rule with the modified rule
+        self.rules[rule.name] = rule
+
+        # Update metadata
+        metadata.modified_by_id = user_id
+        metadata.modified_on = utcnow()
+
+        self._rebuild_mappings()
+        return (old_rule, rule, metadata)
+
+    def remove_rule(self, name: str) -> tuple[AutomodRule, AutomodRuleMetadata]:
+        # The rule and metadata need to exist
+        rule = self.require_rule(name)
+        metadata = self.require_rule_metadata(name)
+
+        # Delete rule and metadata
         del self.rules[rule.name]
+        del self.rule_metadata[rule.name]
 
-    def remove_rule_by_name(self, name: str) -> AutomodRule:
+        self._rebuild_mappings()
+        return (rule, metadata)
+
+    def rule_count(self) -> int:
+        return len(self.rules)
+
+    def enable_rule(self, name: str) -> AutomodRule:
         rule = self.require_rule(name)
-        self.remove_rule(rule)
-        return rule
+        if rule.disabled:
+            rule.disabled = False
+            return rule
+        raise AutomodRuleAlreadyEnabled(name)
 
-    def modify_rule_raw(
-        self,
-        name: str,
-        path: utils.JsonPath,
-        op: utils.JsonPathOp,
-        data: Any,
-    ) -> AutomodRule:
-        # Start with the serialized form of the original rule.
-        old_rule = self.require_rule(name)
-        new_data = to_data(old_rule)
-
-        # Update the modification timestamp. Note that it may still be overidden.
-        new_data["modified_on"] = utcnow().isoformat()
-
-        # Update the new rule data using the given changes.
-        utils.update_json_with_path(new_data, path, op, data)
-
-        # Create a new rule out of the modified data.
-        new_rule = AutomodRule.from_data(new_data)
-
-        # Remove the old rule, and then add the new one.
-        self.remove_rule(old_rule)
-        self.add_rule(new_rule)
-
-        # Return the new rule.
-        return new_rule
-
-    def enable_rule_by_name(self, name: str) -> AutomodRule:
+    def disable_rule(self, name: str) -> AutomodRule:
         rule = self.require_rule(name)
-        rule.disabled = False
-        return rule
+        if not rule.disabled:
+            rule.disabled = True
+            return rule
+        raise AutomodRuleAlreadyDisabled(name)
 
-    def disable_rule_by_name(self, name: str) -> AutomodRule:
-        rule = self.require_rule(name)
-        rule.disabled = True
-        return rule
+    def enable_all_rules(self):
+        for rule in self.rules.values():
+            rule.disabled = False
 
-    def increment_rule_hits_by_name(self, name: str) -> AutomodRule:
-        rule = self.require_rule(name)
-        rule.hits += 1
-        return rule
+    def disable_all_rules(self):
+        for rule in self.rules.values():
+            rule.disabled = True
+
+    def require_bucket(self, name: str) -> AutomodBucket:
+        if bucket := self.buckets.get(name):
+            return bucket
+        raise AutomodBucketDoesNotExist(name)
+
+    def require_bucket_with_type[BucketType = AutomodBucket](
+        self, name: str, bucket_type: type[BucketType]
+    ) -> BucketType:
+        if bucket := self.buckets.get(name):
+            if isinstance(bucket, bucket_type):
+                return bucket
+        raise AutomodBucketDoesNotExist(name)
+
+    def bucket_count(self) -> int:
+        return len(self.buckets)
+
+    def enable_bucket(self, name: str):
+        bucket = self.require_bucket(name)
+        if bucket.disabled:
+            bucket.disabled = False
+            return bucket
+        raise AutomodBucketAlreadyEnabled(name)
+
+    def disable_bucket(self, name: str):
+        bucket = self.require_bucket(name)
+        if not bucket.disabled:
+            bucket.disabled = True
+            return bucket
+        raise AutomodBucketAlreadyDisabled(name)
+
+    def enable_all_buckets(self):
+        for bucket in self.buckets.values():
+            bucket.disabled = False
+
+    def disable_all_buckets(self):
+        for bucket in self.buckets.values():
+            bucket.disabled = True
 
 
-def _guilds_defaultdict_factory() -> defaultdict[GuildID, AutomodGuildData]:
-    return defaultdict(lambda: AutomodGuildData())
-
-
-# @implements AutomodStore
-@dataclass
-class AutomodData:
-    """
-    Implementation of `AutomodStore` using an in-memory object hierarchy.
-    """
-
-    guilds: defaultdict[GuildID, AutomodGuildData] = field(
-        default_factory=_guilds_defaultdict_factory
+class AutomodData(BaseModel):
+    guilds: defaultdict[
+        GuildID,
+        Annotated[AutomodGuildData, Field(default_factory=AutomodGuildData)],
+    ] = Field(
+        default_factory=lambda: defaultdict(AutomodGuildData),
+        exclude_if=lambda v: not v,
     )
 
-    @classmethod
-    def from_data(cls, data: JsonObject) -> Self:
-        guilds = _guilds_defaultdict_factory()
-        guilds.update(
-            {
-                int(guild_id): AutomodGuildData.from_data(raw_guild_data)
-                for guild_id, raw_guild_data in data.get("guilds", {}).items()
-            }
-        )
-        return cls(guilds=guilds)
-
-    def to_data(self) -> JsonObject:
-        # Omit empty guilds, as well as an empty list of guilds.
-        return utils.dict_without_ellipsis(
-            guilds=utils.dict_without_ellipsis(
-                {
-                    str(guild_id): (guild_data.to_data() or ...)
-                    for guild_id, guild_data in self.guilds.items()
-                }
-            )
-            or ...
-        )
-
-    # @implements AutomodStore
-    async def get_default_log_options(self, guild: Guild) -> Optional[LogOptions]:
-        return self.guilds[guild.id].default_log_options
-
-    # @implements AutomodStore
-    async def set_default_log_options(
-        self, guild: Guild, log_options: Optional[LogOptions]
-    ) -> Optional[LogOptions]:
-        return self.guilds[guild.id].set_default_log_options(log_options)
-
-    # @implements AutomodStore
-    async def get_permitted_roles(self, guild: Guild) -> Optional[RoleSet]:
-        return self.guilds[guild.id].permitted_roles
-
-    # @implements AutomodStore
-    async def set_permitted_roles(
-        self, guild: Guild, permitted_roles: Optional[RoleSet]
-    ) -> Optional[RoleSet]:
-        return self.guilds[guild.id].set_permitted_roles(permitted_roles)
-
-    # @implements AutomodStore
-    async def all_rules(self, guild: Guild) -> AsyncIterable[AutomodRule]:
-        for rule in self.guilds[guild.id].all_rules():
-            yield rule
-
-    # @implements AutomodStore
-    async def rules_for_event(
-        self, guild: Guild, event: AutomodEvent
-    ) -> AsyncIterable[AutomodRule]:
-        for rule in self.guilds[guild.id].rules_for_event(event):
-            yield rule
-
-    # @implements AutomodStore
-    async def query_rules(self, guild: Guild, query: str) -> AsyncIterable[AutomodRule]:
-        for rule in self.guilds[guild.id].query_rules(query):
-            yield rule
-
-    # @implements AutomodStore
-    async def get_rule(self, guild: Guild, name: str) -> Optional[AutomodRule]:
-        return self.guilds[guild.id].get_rule(name)
-
-    # @implements AutomodStore
-    async def require_rule(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].require_rule(name)
-
-    # @implements AutomodStore
-    async def add_rule(self, guild: Guild, data: JsonObject) -> AutomodRule:
-        return self.guilds[guild.id].add_rule_from_data(data)
-
-    # @implements AutomodStore
-    async def remove_rule(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].remove_rule_by_name(name)
-
-    # @implements AutomodStore
-    async def modify_rule(
+    def require_default_log_channel(
         self,
         guild: Guild,
-        name: str,
-        path: utils.JsonPath,
-        op: utils.JsonPathOp,
-        data: Any,
-    ) -> AutomodRule:
-        return self.guilds[guild.id].modify_rule_raw(name, path, op, data)
+    ) -> LogChannel:
+        return self.guilds[guild.id].remove_default_log_channel()
 
-    # @implements AutomodStore
-    async def enable_rule(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].enable_rule_by_name(name)
+    def get_default_log_channel(
+        self,
+        guild: Guild,
+    ) -> Optional[LogChannel]:
+        return self.guilds[guild.id].get_default_log_channel()
 
-    # @implements AutomodStore
-    async def disable_rule(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].disable_rule_by_name(name)
+    def set_default_log_channel(
+        self, guild: Guild, log_channel: LogChannel
+    ) -> LogChannel:
+        return self.guilds[guild.id].set_default_log_channel(log_channel)
 
-    # @implements AutomodStore
-    async def increment_rule_hits(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].increment_rule_hits_by_name(name)
+    def modify_default_log_channel(
+        self, guild: Guild, log_channel: LogChannel
+    ) -> tuple[LogChannel, LogChannel]:
+        return self.guilds[guild.id].modify_default_log_channel(log_channel)
+
+    def remove_default_log_channel(
+        self,
+        guild: Guild,
+    ) -> LogChannel:
+        return self.guilds[guild.id].remove_default_log_channel()
+
+    def require_rule(self, guild: Guild, name: str) -> AutomodRule:
+        return self.guilds[guild.id].require_rule(name)
+
+    def require_rule_metadata(self, guild: Guild, name: str) -> AutomodRuleMetadata:
+        return self.guilds[guild.id].require_rule_metadata(name)
+
+    def has_rule(self, guild: Guild, name: str) -> bool:
+        return name in self.guilds[guild.id].rules
+
+    def rules_for_event(
+        self, guild: Guild, event: AutomodEvent
+    ) -> Iterable[AutomodRule]:
+        yield from self.guilds[guild.id].rules_for_event(event)
+
+    def add_rule(
+        self, guild: Guild, rule: AutomodRule, user_id: UserID
+    ) -> tuple[AutomodRule, AutomodRuleMetadata]:
+        return self.guilds[guild.id].add_rule(rule, user_id)
+
+    def modify_rule(
+        self, guild: Guild, rule: AutomodRule, user_id: UserID
+    ) -> tuple[AutomodRule, AutomodRule, AutomodRuleMetadata]:
+        return self.guilds[guild.id].modify_rule(rule, user_id)
+
+    def remove_rule(
+        self, guild: Guild, name: str
+    ) -> tuple[AutomodRule, AutomodRuleMetadata]:
+        return self.guilds[guild.id].remove_rule(name)
+
+    def increment_rule_hits(self, guild: Guild, name: str):
+        metadata = self.guilds[guild.id].require_rule_metadata(name)
+        metadata.hits += 1
+
+    def yield_rules(self, guild: Guild, sort: bool) -> Iterable[AutomodRule]:
+        rules = self.guilds[guild.id].rules.values()
+        yield from sorted(rules, key=lambda rule: rule.name) if sort else rules
+
+    def rule_count(self, guild: Guild) -> int:
+        return self.guilds[guild.id].rule_count()
+
+    def enable_rule(self, guild: Guild, name: str) -> AutomodRule:
+        return self.guilds[guild.id].enable_rule(name)
+
+    def disable_rule(self, guild: Guild, name: str) -> AutomodRule:
+        return self.guilds[guild.id].disable_rule(name)
+
+    def enable_all_rules(self, guild: Guild):
+        self.guilds[guild.id].enable_all_rules()
+
+    def disable_all_rules(self, guild: Guild):
+        self.guilds[guild.id].disable_all_rules()
+
+    def require_bucket(self, guild: Guild, name: str) -> AutomodBucket:
+        return self.guilds[guild.id].require_bucket(name)
+
+    def require_bucket_with_type[BucketType = AutomodBucket](
+        self, guild: Guild, name: str, bucket_type: type[BucketType]
+    ) -> BucketType:
+        return self.guilds[guild.id].require_bucket_with_type(name, bucket_type)
+
+    def bucket_count(self, guild: Guild) -> int:
+        return self.guilds[guild.id].bucket_count()
+
+    def enable_bucket(self, guild: Guild, name: str) -> AutomodBucket:
+        return self.guilds[guild.id].enable_bucket(name)
+
+    def disable_bucket(self, guild: Guild, name: str) -> AutomodBucket:
+        return self.guilds[guild.id].disable_bucket(name)
+
+    def enable_all_buckets(self, guild: Guild):
+        self.guilds[guild.id].enable_all_buckets()
+
+    def disable_all_buckets(self, guild: Guild):
+        self.guilds[guild.id].disable_all_buckets()

@@ -1,449 +1,412 @@
 import asyncio
-import json
 from dataclasses import dataclass
 from datetime import datetime
-from json import JSONDecodeError
-from typing import Any, Optional, cast
+from typing import Optional
 
-import yaml
+import discord
 from discord import (
-    AllowedMentions,
+    Attachment,
+    Interaction,
     Member,
-    RawMessageDeleteEvent,
-    RawMessageUpdateEvent,
-    RawReactionActionEvent,
-    Role,
-    TextChannel,
+    Message,
+    Reaction,
+    TextStyle,
     Thread,
     ThreadMember,
     User,
+    ui,
 )
-from discord.ext.commands import Context
-from discord.utils import utcnow
-from yaml import YAMLError
+from discord.utils import format_dt
+from mime_enum import MimeType
 
+from commanderbot.core.utils import get_app_command
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_event import AutomodEventBase
-from commanderbot.ext.automod.automod_rule import AutomodRule
-from commanderbot.ext.automod.automod_store import AutomodStore
-from commanderbot.lib import (
-    Color,
-    ConfirmationResult,
-    LogOptions,
-    ResponsiveException,
-    RoleSet,
-    TextMessage,
-    TextReaction,
-    confirm_with_reaction,
-    to_data,
-    utils,
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.automod_exceptions import (
+    CouldNotValidateModifiedAutomodRule,
+    CouldNotValidateNewAutomodRule,
+    CouldNotValidateUploadedAutomodRule,
+    UploadIsNotJsonFile,
 )
+from commanderbot.ext.automod.automod_store import AutomodStore
+from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.ext.automod.rule import AutomodRule
+from commanderbot.lib.allowed_mentions import AllowedMentions
 from commanderbot.lib.cogs import CogGuildState
+from commanderbot.lib.cogs.views import CogStateModal
+from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
+from commanderbot.lib.types import GuildChannel, MessageableGuildChannel
+from commanderbot.lib.utils import str_to_file
 
 
 @dataclass
 class AutomodGuildState(CogGuildState):
     """
     Encapsulates the state and logic of the automod cog, at the guild level.
-
-    Attributes
-    -----------
-    store
-        The store used to interface with persistent data in a database-agnostic way.
     """
 
     store: AutomodStore
 
-    async def _get_log_options_for_rule(
-        self, rule: AutomodRule
-    ) -> Optional[LogOptions]:
-        # First try to grab the rule's specific logging configuration, if any.
-        if rule.log:
-            return rule.log
-        # If it doesn't have any, return the guild-wide logging configuration. This may
-        # also not exist, hence why it's optional.
-        return await self.store.get_default_log_options(self.guild)
+    # @@ COMMANDS
+
+    async def add_rule(self, interaction: Interaction):
+        await interaction.response.send_modal(AddRuleModal(interaction, self))
+
+    async def modify_rule(self, interaction: Interaction, name: str):
+        rule = await self.store.require_rule(self.guild, name)
+        await interaction.response.send_modal(ModifyRuleModal(interaction, self, rule))
+
+    async def upload_rule(self, interaction: Interaction, file: Attachment):
+        # The uploaded file needs to be a Json file
+        if not (file.content_type and MimeType.APPLICATION_JSON in file.content_type):
+            raise UploadIsNotJsonFile
+
+        # Try to validate the uploaded file
+        try:
+            file_data = await file.read()
+            rule = AutomodRule.model_validate_json(file_data)
+        except ValueError as ex:
+            raise CouldNotValidateUploadedAutomodRule(ex)
+
+        # Modify the rule if it already exists
+        if await self.store.has_rule(self.guild, rule.name):
+            await self.store.modify_rule(self.guild, rule, interaction.user.id)
+            await interaction.response.send_message(
+                f"Modified automod rule `{rule.name}`"
+            )
+        else:
+            await self.store.add_rule(self.guild, rule, interaction.user.id)
+            await interaction.response.send_message(f"Added automod rule `{rule.name}`")
+
+    async def remove_rule(self, interaction: Interaction, name: str):
+        # Get the rule
+        rule = await self.store.require_rule(self.guild, name)
+
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove the automod rule `{rule.name}`?",
+            timeout=10.0,
+        )
+
+        # Handle response to dialog
+        match result:
+            case ConfirmationResult.YES:
+                try:
+                    await self.store.remove_rule(self.guild, rule.name)
+                    await interaction.followup.send(
+                        content=f"Removed the automod rule `{rule.name}`"
+                    )
+                except Exception:
+                    await interaction.delete_original_response()
+                    raise
+            case _:
+                await interaction.followup.send(
+                    f"Did not remove the automod rule `{rule.name}`"
+                )
+
+    async def show_rule_details(self, interaction: Interaction, name: str):
+        # Get rule and metadata
+        rule = await self.store.require_rule(self.guild, name)
+        metadata = await self.store.require_rule_metadata(self.guild, name)
+
+        # Turn the rule into a Json file
+        rule_json = rule.model_dump_json(indent=4, exclude_defaults=True)
+        rule_file = str_to_file(rule_json, f"{rule.name}.json")
+
+        # Create fields
+        fields: dict[str, str] = {
+            "Name": f"`{rule.name}`",
+            "Enabled": "❌" if rule.disabled else "✅",
+            "Hits": f"`{metadata.hits}`",
+            "Added by": f"<@{metadata.added_by_id}>({format_dt(metadata.added_on, style='R')})",
+            "Modified by": f"<@{metadata.modified_by_id}>({format_dt(metadata.modified_on, style='R')})",
+        }
+
+        # Create the rule details view
+        rule_details_view = ui.LayoutView()
+        container = ui.Container(accent_color=0x00ACED)
+        rule_details_view.add_item(container)
+
+        container.add_item(
+            ui.TextDisplay(f"### 📜 Details for automod rule `{rule.name}`")
+        )
+        container.add_item(ui.Separator())
+        container.add_item(ui.File(rule_file))
+        container.add_item(ui.Separator())
+        for field_name, field_value in fields.items():
+            container.add_item(ui.TextDisplay(f"**{field_name}** **-** {field_value}"))
+
+        # Respond with the view
+        await interaction.response.send_message(
+            view=rule_details_view,
+            file=rule_file,
+            allowed_mentions=AllowedMentions.none(),
+        )
+
+    async def list_rules(self, interaction: Interaction):
+        # Get info about rules
+        formatted_rules: list[str] = []
+        enabled_rules: int = 0
+        disabled_rules: int = 0
+        async for rule in self.store.yield_rules(self.guild):
+            if not rule.disabled:
+                formatted_rules.append(rule.name)
+                enabled_rules += 1
+            else:
+                formatted_rules.append(f"{rule.name} (Disabled)")
+                disabled_rules += 1
+
+        # Create rule list view
+        rule_list_view = ui.LayoutView()
+        container = ui.Container(accent_color=0x00ACED)
+        rule_list_view.add_item(container)
+
+        container.add_item(ui.TextDisplay("### 📜 All automod rules"))
+        container.add_item(ui.Separator())
+
+        if formatted_rules:
+            lines = "\n".join(("```", "\n".join(formatted_rules), "```"))
+            container.add_item(ui.TextDisplay(lines))
+        else:
+            container.add_item(ui.TextDisplay("**None!**"))
+
+        container.add_item(ui.Separator())
+        container.add_item(
+            ui.TextDisplay(f"-# Enabled: {enabled_rules} | Disabled: {disabled_rules}")
+        )
+
+        # Respond with the view
+        await interaction.response.send_message(view=rule_list_view)
+
+    async def enable_rule(self, interaction: Interaction, name: str):
+        rule = await self.store.enable_rule(self.guild, name)
+        await interaction.response.send_message(f"Enabled automod rule `{rule.name}`")
+
+    async def disable_rule(self, interaction: Interaction, name: str):
+        rule = await self.store.disable_rule(self.guild, name)
+        await interaction.response.send_message(f"Disabled automod rule `{rule.name}`")
+
+    async def enable_all_rule(self, interaction: Interaction):
+        rule_count = await self.store.rule_count(self.guild)
+        await self.store.enable_all_rules(self.guild)
+        await interaction.response.send_message(
+            f"Enabled all `{rule_count}` automod rules"
+        )
+
+    async def disable_all_rule(self, interaction: Interaction):
+        rule_count = await self.store.rule_count(self.guild)
+        await self.store.disable_all_rules(self.guild)
+        await interaction.response.send_message(
+            f"Disabled all `{rule_count}` automod rules"
+        )
+
+    # @@ UTILITIES
+
+    def get_schema_command(self) -> str:
+        if cmd := get_app_command(self.bot, "automod schema"):
+            return cmd.mention
+        return "/automod schema"
+
+    # @@ EVENTS
 
     async def _handle_rule_error(self, rule: AutomodRule, error: Exception):
-        error_message = f"Rule `{rule.name}` caused an error"
-
-        # Re-raise the error so that it can be printed to the console.
+        # Re-raise the error so that it can be printed to the console
         try:
             raise error
         except:
-            self.log.exception(error_message)
+            self.log.exception(f"Automod rule '{rule.name}' caused an error")
 
-        # Attempt to print the error to the log channel, if any.
-        if log_options := await self._get_log_options_for_rule(rule):
-            try:
-                error_codeblock = log_options.format_error_codeblock(error)
-                await log_options.send_embed(
-                    self.bot,
-                    title=error_message,
-                    description=error_codeblock,
-                    file_callback=lambda: (
-                        error_message,
-                        "",
-                        error_codeblock,
-                        "error.txt",
-                    ),
-                )
-            except:
-                # If something went wrong here, print another exception to the console.
-                self.log.exception("Failed to log message to error channel")
+        # Try to get the log channel
+        log_channel = rule.log or await self.store.get_default_log_channel(self.guild)
+        if not log_channel:
+            return
 
-    async def _do_event_for_rule(self, event: AutomodEventBase, rule: AutomodRule):
+        # Attempt to print the error to the log channel
         try:
-            if await rule.run(event):
+            await log_channel.send_error(
+                self.bot, f"Automod rule `{rule.name}` caused an error", error
+            )
+        except:
+            self.log.exception("Failed to send error message to log channel")
+
+    async def _run_rule(self, rule: AutomodRule, event: AutomodEvent):
+        try:
+            context = AutomodContext(self.bot, self.log, self, rule, event)
+            if await rule.run(context):
                 await self.store.increment_rule_hits(self.guild, rule.name)
         except Exception as error:
             await self._handle_rule_error(rule, error)
 
-    async def _do_event(self, event: AutomodEventBase):
-        # Run rules in parallel so that they don't need to wait for one another. They
-        # run separately so that when a rule fails it doesn't stop the others.
-        rules = await utils.async_expand(self.store.rules_for_event(self.guild, event))
-        tasks = [self._do_event_for_rule(event, rule) for rule in rules]
-        await asyncio.gather(*tasks)
+    async def dispatch_event(self, event: AutomodEvent):
+        async with asyncio.TaskGroup() as tg:
+            async for rule in self.store.rules_for_event(self.guild, event):
+                tg.create_task(self._run_rule(rule, event))
 
-    def _parse_body(self, body: str) -> Any:
-        content = body.strip("\n").strip("`")
-        kind, _, content = content.partition("\n")
-        if kind == "json":
-            try:
-                return json.loads(content)
-            except JSONDecodeError as ex:
-                raise ResponsiveException(str(ex)) from ex
-        if kind == "yaml":
-            try:
-                return yaml.safe_load(content)
-            except YAMLError as ex:
-                raise ResponsiveException(str(ex)) from ex
-        raise ResponsiveException("Missing code block declared as `json` or `yaml`")
-
-    async def reply(self, ctx: Context, content: str):
-        """Wraps `Context.reply()` with some extension-default boilerplate."""
-        await ctx.message.reply(
-            content,
-            allowed_mentions=AllowedMentions.none(),
-        )
-
-    async def show_default_log_options(self, ctx: Context):
-        log_options = await self.store.get_default_log_options(self.guild)
-        if log_options:
-            channel = cast(TextChannel, self.bot.get_channel(log_options.channel))
-            await self.reply(
-                ctx,
-                f"Default logging is configured for {channel.mention}"
-                + f"\n```\n{log_options!r}\n```",
-            )
-        else:
-            await self.reply(ctx, f"No default logging is configured")
-
-    async def set_default_log_options(
-        self,
-        ctx: Context,
-        channel: TextChannel,
-        stacktrace: Optional[bool],
-        emoji: Optional[str],
-        color: Optional[Color],
+    # @@ DISCORD AUTOMOD
+    async def on_discord_automod_action_block_message(
+        self, execution: discord.AutoModAction
     ):
-        new_log_options = LogOptions(
-            channel=channel.id,
-            stacktrace=stacktrace,
-            emoji=emoji,
-            color=color,
-        )
-        old_log_options = await self.store.set_default_log_options(
-            self.guild, new_log_options
-        )
-        if old_log_options:
-            old_log_channel = cast(
-                TextChannel, self.bot.get_channel(old_log_options.channel)
-            )
-            await self.reply(
-                ctx,
-                f"Moved default logging from {old_log_channel.mention}"
-                + f" to {channel.mention}",
-            )
-        else:
-            await self.reply(ctx, f"Configured default logging for {channel.mention}")
+        await self.dispatch_event(events.DiscordAutomodBlockedMessage(execution))
 
-    async def remove_default_log_options(self, ctx: Context):
-        old_log_options = await self.store.set_default_log_options(self.guild, None)
-        if old_log_options:
-            channel = cast(TextChannel, self.bot.get_channel(old_log_options.channel))
-            await self.reply(ctx, f"Removed default logging from {channel.mention}")
-        else:
-            await self.reply(ctx, f"No default logging is configured")
+    async def on_discord_automod_action_timeout(self, execution: discord.AutoModAction):
+        await self.dispatch_event(events.DiscordAutomodTimedOut(execution))
 
-    async def show_permitted_roles(self, ctx: Context):
-        permitted_roles = await self.store.get_permitted_roles(self.guild)
-        if permitted_roles:
-            count_permitted_roles = len(permitted_roles)
-            role_mentions = permitted_roles.to_mentions(self.guild)
-            await self.reply(
-                ctx,
-                f"There are {count_permitted_roles} roles permitted to manage"
-                + f" automod: {role_mentions}",
-            )
-        else:
-            await self.reply(ctx, f"No roles are permitted to manage automod")
-
-    async def set_permitted_roles(self, ctx: Context, *roles: Role):
-        new_permitted_roles = RoleSet(set(role.id for role in roles))
-        new_role_mentions = new_permitted_roles.to_mentions(self.guild)
-        old_permitted_roles = await self.store.set_permitted_roles(
-            self.guild, new_permitted_roles
-        )
-        if old_permitted_roles:
-            old_role_mentions = old_permitted_roles.to_mentions(self.guild)
-            await self.reply(
-                ctx,
-                f"Changed permitted roles from {old_role_mentions}"
-                + f" to {new_role_mentions}",
-            )
-        else:
-            await self.reply(ctx, f"Changed permitted roles to {new_role_mentions}")
-
-    async def clear_permitted_roles(self, ctx: Context):
-        old_permitted_roles = await self.store.set_permitted_roles(self.guild, None)
-        if old_permitted_roles:
-            role_mentions = old_permitted_roles.to_mentions(self.guild)
-            await self.reply(ctx, f"Cleared all permitted roles: {role_mentions}")
-        else:
-            await self.reply(ctx, f"No roles are permitted to manage automod")
-
-    async def show_rules(self, ctx: Context, query: str = ""):
-        if query:
-            rules = await utils.async_expand(self.store.query_rules(self.guild, query))
-        else:
-            rules = await utils.async_expand(self.store.all_rules(self.guild))
-        count_rules = len(rules)
-        if count_rules > 1:
-            lines = ["```"]
-            sorted_rules = sorted(rules, key=lambda rule: (rule.disabled, rule.name))
-            for rule in sorted_rules:
-                lines.append(rule.build_title())
-            lines.append("```")
-            content = "\n".join(lines)
-            await self.reply(ctx, content)
-        elif count_rules == 1:
-            rule = rules[0]
-            now = utcnow()
-            added_on_timestamp = rule.added_on.isoformat()
-            added_on_delta = now - rule.added_on
-            added_on_str = f"{added_on_timestamp} ({added_on_delta})"
-            modified_on_delta = now - rule.modified_on
-            modified_on_timestamp = rule.modified_on.isoformat()
-            modified_on_str = f"{modified_on_timestamp} ({modified_on_delta})"
-            name_line = rule.build_title()
-            lines = [
-                "```",
-                name_line,
-                f"  Hits:        {rule.hits}",
-                f"  Added on:    {added_on_str}",
-                f"  Modified on: {modified_on_str}",
-                "  Triggers:",
-            ]
-            for i, trigger in enumerate(rule.triggers):
-                description = trigger.description or "(No description)"
-                lines.append(f"    {i+1}. {description}")
-            lines.append("  Conditions:")
-            for i, condition in enumerate(rule.conditions):
-                description = condition.description or "(No description)"
-                lines.append(f"    {i+1}. {description}")
-            lines.append("  Actions:")
-            for i, action in enumerate(rule.actions):
-                description = action.description or "(No description)"
-                lines.append(f"    {i+1}. {description}")
-            lines.append("```")
-            content = "\n".join(lines)
-            await self.reply(ctx, content)
-        elif query:
-            await self.reply(ctx, f"No rules matching `{query}`")
-        else:
-            await self.reply(ctx, f"No rules available")
-
-    async def print_rule(
-        self,
-        ctx: Context,
-        query: str,
-        path: Optional[utils.JsonPath] = None,
+    async def on_discord_automod_action_block_member_interactions(
+        self, execution: discord.AutoModAction
     ):
-        rules = await utils.async_expand(self.store.query_rules(self.guild, query))
-        if rules:
-            # If multiple rules were found, just use the first.
-            rule = rules[0]
-
-            # Turn the rule into raw data.
-            rule_data = to_data(rule)
-
-            # Take a sub-section of the data, if necessary.
-            output_data = rule_data
-            if path:
-                output_data = utils.query_json_path(output_data, path)
-
-            # Turn the data into a YAML string.
-            output_yaml = yaml.safe_dump(output_data, sort_keys=False)
-
-            # If the output can fit into a code block, just send a response. Otherwise,
-            # stuff it into a file and send it as an attachment.
-            content = f"```yaml\n{output_yaml}\n```"
-            file_callback = lambda: ("", output_yaml, f"{rule.name}.yaml")
-            return await utils.send_message_or_file(
-                ctx.channel,
-                content,
-                file_callback=file_callback,
-                allowed_mentions=AllowedMentions.none(),
-            )
-
-        else:
-            await self.reply(ctx, f"No rule found matching `{query}`")
-
-    async def add_rule(self, ctx: Context, body: str):
-        data = self._parse_body(body)
-        rule = await self.store.add_rule(self.guild, data)
-        await self.reply(ctx, f"Added automod rule `{rule.name}`")
-
-    async def remove_rule(self, ctx: Context, name: str):
-        # Get the corresponding rule.
-        rule = await self.store.require_rule(self.guild, name)
-        # Then ask for confirmation to actually remove it.
-        conf = await confirm_with_reaction(
-            self.bot,
-            ctx,
-            f"Are you sure you want to remove automod rule `{rule.name}`?",
+        await self.dispatch_event(
+            events.DiscordAutomodBlockedMemberInteractions(execution)
         )
-        # If the answer was yes, attempt to remove the rule and send a response.
-        if conf == ConfirmationResult.YES:
-            removed_rule = await self.store.remove_rule(self.guild, rule.name)
-            await self.reply(ctx, f"Removed automod rule `{removed_rule.name}`")
-        # If the answer was no, send a response.
-        elif conf == ConfirmationResult.NO:
-            await self.reply(ctx, f"Did not remove automod rule `{rule.name}`")
 
-    async def modify_rule(
-        self,
-        ctx: Context,
-        name: str,
-        path: utils.JsonPath,
-        op: utils.JsonPathOp,
-        body: str,
+    # @@ CHANNELS
+
+    async def on_guild_channel_created(self, channel: GuildChannel):
+        await self.dispatch_event(events.GuildChannelCreated(channel))
+
+    async def on_guild_channel_deleted(self, channel: GuildChannel):
+        await self.dispatch_event(events.GuildChannelDeleted(channel))
+
+    async def on_guild_channel_updated(self, before: GuildChannel, after: GuildChannel):
+        await self.dispatch_event(events.GuildChannelUpdated(before, after))
+
+    async def on_guild_channel_pins_updated(
+        self, channel: MessageableGuildChannel | Thread, last_pin: Optional[datetime]
     ):
-        data = self._parse_body(body)
-        rule = await self.store.modify_rule(self.guild, name, path, op, data)
-        await self.reply(ctx, f"Modified automod rule `{rule.name}`")
-
-    async def enable_rule(self, ctx: Context, name: str):
-        rule = await self.store.enable_rule(self.guild, name)
-        await self.reply(ctx, f"Enabled automod rule `{rule.name}`")
-
-    async def disable_rule(self, ctx: Context, name: str):
-        rule = await self.store.disable_rule(self.guild, name)
-        await self.reply(ctx, f"Disabled automod rule `{rule.name}`")
-
-    async def member_has_permission(self, member: Member) -> bool:
-        permitted_roles = await self.store.get_permitted_roles(self.guild)
-        if permitted_roles is None:
-            return False
-        has_permission = permitted_roles.member_has_some(member)
-        return has_permission
-
-    # @@ EVENT HANDLERS
-
-    async def on_typing(
-        self, channel: TextChannel | Thread, member: Member, when: datetime
-    ):
-        await self._do_event(
-            events.MemberTyping(self.bot, self.log, channel, member, when)
-        )
-
-    async def on_message(self, message: TextMessage):
-        await self._do_event(events.MessageSent(self.bot, self.log, message))
-
-    async def on_message_delete(self, message: TextMessage):
-        await self._do_event(events.MessageDeleted(self.bot, self.log, message))
-
-    async def on_message_edit(self, before: TextMessage, after: TextMessage):
-        await self._do_event(events.MessageEdited(self.bot, self.log, before, after))
-
-    async def on_reaction_add(self, reaction: TextReaction, member: Member):
-        await self._do_event(events.ReactionAdded(self.bot, self.log, reaction, member))
-
-    async def on_reaction_remove(self, reaction: TextReaction, member: Member):
-        await self._do_event(
-            events.ReactionRemoved(self.bot, self.log, reaction, member)
-        )
-
-    async def on_channel_create(self, channel: TextChannel | Thread):
-        await self._do_event(events.GuildChannelCreated(self.bot, self.log, channel))
-
-    async def on_channel_delete(self, channel: TextChannel | Thread):
-        await self._do_event(events.GuildChannelDeleted(self.bot, self.log, channel))
-
-    async def on_channel_update(
-        self, before: TextChannel | Thread, after: TextChannel | Thread
-    ):
-        await self._do_event(
-            events.GuildChannelUpdated(self.bot, self.log, before, after)
-        )
-
-    # @@ THREADS
-
-    async def on_thread_create(self, thread: Thread):
-        await self._do_event(events.ThreadCreated(self.bot, self.log, thread))
-
-    async def on_thread_join(self, thread: Thread):
-        await self._do_event(events.ThreadJoined(self.bot, self.log, thread))
-
-    async def on_thread_update(self, before: Thread, after: Thread):
-        await self._do_event(events.ThreadUpdated(self.bot, self.log, before, after))
-
-    async def on_thread_remove(self, thread: Thread):
-        await self._do_event(events.ThreadRemoved(self.bot, self.log, thread))
-
-    async def on_thread_delete(self, thread: Thread):
-        await self._do_event(events.ThreadDeleted(self.bot, self.log, thread))
-
-    async def on_thread_member_join(self, member: ThreadMember):
-        await self._do_event(events.ThreadMemberJoined(self.bot, self.log, member))
-
-    async def on_thread_member_remove(self, member: ThreadMember):
-        await self._do_event(events.ThreadMemberLeft(self.bot, self.log, member))
+        await self.dispatch_event(events.GuildChannelPinsUpdated(channel, last_pin))
 
     # @@ MEMBERS
 
-    async def on_member_join(self, member: Member):
-        await self._do_event(events.MemberJoined(self.bot, self.log, member))
+    async def on_member_joined(self, member: Member):
+        await self.dispatch_event(events.MemberJoined(member))
 
-    async def on_member_remove(self, member: Member):
-        await self._do_event(events.MemberLeft(self.bot, self.log, member))
+    async def on_member_left(self, member: Member):
+        await self.dispatch_event(events.MemberLeft(member))
 
-    async def on_member_update(self, before: Member, after: Member):
-        await self._do_event(events.MemberUpdated(self.bot, self.log, before, after))
+    async def on_member_typing(
+        self, channel: MessageableGuildChannel | Thread, member: Member, when: datetime
+    ):
+        await self.dispatch_event(events.MemberTyping(channel, member, when))
 
-    async def on_user_update(self, before: User, after: User, member: Member):
-        await self._do_event(
-            events.UserUpdated(self.bot, self.log, before, after, member)
+    async def on_member_updated(self, before: Member, after: Member):
+        await self.dispatch_event(events.MemberUpdated(before, after))
+
+    # @@ MESSAGES
+
+    async def on_message_sent(self, message: Message):
+        await self.dispatch_event(events.MessageSent(message))
+
+    async def on_message_edited(self, before: Message, after: Message):
+        await self.dispatch_event(events.MessageEdited(before, after))
+
+    async def on_message_deleted(self, message: Message):
+        await self.dispatch_event(events.MessageDeleted(message))
+
+    # @@ REACTIONS
+
+    async def on_reaction_added(self, reaction: Reaction, member: Member):
+        await self.dispatch_event(events.ReactionAdded(reaction, member))
+
+    async def on_reaction_removed(self, reaction: Reaction, member: Member):
+        await self.dispatch_event(events.ReactionRemoved(reaction, member))
+
+    # @@ THREADS
+
+    async def on_thread_created(self, thread: Thread):
+        await self.dispatch_event(events.ThreadCreated(thread))
+
+    async def on_thread_joined(self, thread: Thread):
+        await self.dispatch_event(events.ThreadJoined(thread))
+
+    async def on_thread_updated(self, before: Thread, after: Thread):
+        await self.dispatch_event(events.ThreadUpdated(before, after))
+
+    async def on_thread_removed(self, thread: Thread):
+        await self.dispatch_event(events.ThreadRemoved(thread))
+
+    async def on_thread_deleted(self, thread: Thread):
+        await self.dispatch_event(events.ThreadDeleted(thread))
+
+    async def on_thread_member_joined(self, member: ThreadMember):
+        await self.dispatch_event(events.ThreadMemberJoined(member))
+
+    async def on_thread_member_left(self, member: ThreadMember):
+        await self.dispatch_event(events.ThreadMemberLeft(member))
+
+    # @@ USERS
+
+    async def on_user_updated(self, before: User, after: User):
+        await self.dispatch_event(events.UserUpdated(before, after))
+
+    async def on_user_banned(self, user: User):
+        await self.dispatch_event(events.UserBanned(user))
+
+    async def on_user_unbanned(self, user: User):
+        await self.dispatch_event(events.UserUnbanned(user))
+
+
+class AddRuleModal(CogStateModal[AutomodGuildState, AutomodStore]):
+    def __init__(self, interaction: Interaction, state: AutomodGuildState):
+        super().__init__(
+            interaction,
+            state,
+            title="Add a new automod rule",
+            custom_id="commanderbot_ext:automod.rule.add",
         )
 
-    async def on_user_ban(self, user: User):
-        await self._do_event(events.UserBanned(self.bot, self.log, user))
+        self.rule_input = ui.TextInput(
+            label="The automod rule in Json format",
+            style=TextStyle.paragraph,
+            placeholder="{}",
+            required=True,
+        )
+        self.help_display = ui.TextDisplay(
+            f"-# Run {state.get_schema_command()} if you need the schema"
+        )
 
-    async def on_user_unban(self, user: User):
-        await self._do_event(events.UserUnbanned(self.bot, self.log, user))
+        self.add_item(self.rule_input)
+        self.add_item(self.help_display)
 
-    # @@ RAW EVENT HANDLERS
+    async def on_submit(self, interaction: Interaction):
+        try:
+            rule = AutomodRule.model_validate_json(self.rule_input.value)
+            await self.store.add_rule(self.state.guild, rule, interaction.user.id)
+            await interaction.response.send_message(f"Added automod rule `{rule.name}`")
+        except ValueError as ex:
+            raise CouldNotValidateNewAutomodRule(ex)
 
-    async def on_raw_message_delete(self, payload: RawMessageDeleteEvent):
-        await self._do_event(events.RawMessageDeleted(self.bot, self.log, payload))
 
-    async def on_raw_message_edit(self, payload: RawMessageUpdateEvent):
-        await self._do_event(events.RawMessageEdited(self.bot, self.log, payload))
+class ModifyRuleModal(CogStateModal[AutomodGuildState, AutomodStore]):
+    def __init__(
+        self, interaction: Interaction, state: AutomodGuildState, rule: AutomodRule
+    ):
+        super().__init__(
+            interaction,
+            state,
+            title=f"Modifying automod rule '{rule.name}'",
+            custom_id="commanderbot_ext:automod.rule.modify",
+        )
 
-    async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
-        await self._do_event(events.RawReactionAdded(self.bot, self.log, payload))
+        self.rule_input = ui.TextInput(
+            label="The automod rule in Json format",
+            style=TextStyle.paragraph,
+            placeholder="{}",
+            default=rule.model_dump_json(indent=4, exclude_defaults=True),
+            required=True,
+        )
+        self.help_display = ui.TextDisplay(
+            f"-# Run {state.get_schema_command()} if you need the schema"
+        )
 
-    async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
-        await self._do_event(events.RawReactionRemoved(self.bot, self.log, payload))
+        self.add_item(self.rule_input)
+        self.add_item(self.help_display)
+
+    async def on_submit(self, interaction: Interaction):
+        try:
+            rule = AutomodRule.model_validate_json(self.rule_input.value)
+            await self.store.modify_rule(self.state.guild, rule, interaction.user.id)
+            await interaction.response.send_message(
+                f"Modified automod rule `{rule.name}`"
+            )
+        except ValueError as ex:
+            raise CouldNotValidateModifiedAutomodRule(ex)
