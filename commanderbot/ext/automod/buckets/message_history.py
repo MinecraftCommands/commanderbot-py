@@ -118,6 +118,22 @@ class MessageHistory(AutomodBucket):
     def interval_seconds(self) -> int:
         return int(self.lifetime.total_seconds())
 
+    @property
+    def message_count(self) -> int:
+        count: int = 0
+        for partition in self._history.values():
+            for user_record in partition.values():
+                count += user_record.message_count
+        return count
+
+    @property
+    def channel_count(self) -> int:
+        count: int = 0
+        for partition in self._history.values():
+            for user_record in partition.values():
+                count += user_record.channel_count
+        return count
+
     def _clean_up(self):
         cutoff = utcnow() - self.lifetime
         for interval in list(self._history.keys()):
