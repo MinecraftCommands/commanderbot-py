@@ -2,13 +2,13 @@ from collections import defaultdict
 from collections.abc import Iterable
 from typing import Annotated, Any, Optional
 
-from discord import Guild
 from discord.utils import utcnow
 from pydantic import BaseModel, Field, PrivateAttr
 
 from commanderbot.ext.automod.automod_exceptions import (
     AutomodBucketAlreadyDisabled,
     AutomodBucketAlreadyEnabled,
+    AutomodBucketAlreadyExists,
     AutomodBucketDoesNotExist,
     AutomodRuleAlreadyDisabled,
     AutomodRuleAlreadyEnabled,
@@ -18,8 +18,7 @@ from commanderbot.ext.automod.automod_exceptions import (
     AutomodRuleMetadataDoesNotExist,
     DefaultLogChannelNotConfigured,
 )
-from commanderbot.ext.automod.bucket import AutomodBucket
-from commanderbot.ext.automod.bucket.types import AutomodBucketType
+from commanderbot.ext.automod.bucket import AutomodBucket, AutomodBucketType
 from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.ext.automod.rule import AutomodRule, AutomodRuleMetadata
 from commanderbot.lib.log_channel import LogChannel
@@ -52,35 +51,33 @@ class AutomodGuildData(BaseModel):
                 for event_type in trigger.event_types:
                     self._rules_by_event_type[event_type].add(rule)
 
-    def require_default_log_channel(
+    def require_default_log(
         self,
     ) -> LogChannel:
-        if log_channel := self.default_log:
-            return log_channel
+        if log := self.default_log:
+            return log
         raise DefaultLogChannelNotConfigured
 
-    def get_default_log_channel(
+    def get_default_log(
         self,
     ) -> Optional[LogChannel]:
         return self.default_log
 
-    def set_default_log_channel(self, log_channel: LogChannel) -> LogChannel:
-        self.default_log = log_channel
+    def set_default_log(self, log: LogChannel) -> LogChannel:
+        self.default_log = log
         return self.default_log
 
-    def modify_default_log_channel(
-        self, log_channel: LogChannel
-    ) -> tuple[LogChannel, LogChannel]:
-        old_log_channel = self.require_default_log_channel()
-        self.default_log = log_channel
-        return (old_log_channel, self.default_log)
+    def modify_default_log(self, log: LogChannel) -> tuple[LogChannel, LogChannel]:
+        old_log = self.require_default_log()
+        self.default_log = log
+        return (old_log, self.default_log)
 
-    def remove_default_log_channel(
+    def remove_default_log(
         self,
     ) -> LogChannel:
-        old_log_channel = self.require_default_log_channel()
+        old_log = self.require_default_log()
         self.default_log = None
-        return old_log_channel
+        return old_log
 
     def require_rule(self, name: str) -> AutomodRule:
         if rule := self.rules.get(name):
@@ -91,6 +88,9 @@ class AutomodGuildData(BaseModel):
         if metadata := self.rule_metadata.get(name):
             return metadata
         raise AutomodRuleMetadataDoesNotExist(name)
+
+    def has_rule(self, name: str) -> bool:
+        return name in self.rules
 
     def rules_for_event(self, event: AutomodEvent) -> Iterable[AutomodRule]:
         event_type = type(event)
@@ -154,6 +154,14 @@ class AutomodGuildData(BaseModel):
         self._rebuild_mappings()
         return (rule, metadata)
 
+    def increment_rule_hits(self, name: str):
+        metadata = self.require_rule_metadata(name)
+        metadata.hits += 1
+
+    def yield_rules(self, *, sort: bool) -> Iterable[AutomodRule]:
+        rules = self.rules.values()
+        yield from (sorted(rules, key=lambda rule: rule.name) if sort else rules)
+
     def rule_count(self) -> int:
         return len(self.rules)
 
@@ -192,17 +200,51 @@ class AutomodGuildData(BaseModel):
                 return bucket
         raise AutomodBucketDoesNotExist(name)
 
+    def add_bucket(self, bucket: AutomodBucket) -> AutomodBucket:
+        # The bucket name needs to be available
+        if bucket.name in self.buckets:
+            raise AutomodBucketAlreadyExists(bucket.name)
+
+        # Add the bucket
+        self.buckets[bucket.name] = bucket  # type: ignore[ty:invalid-assignment] - This is fine since all buckets inherit from `AutomodBucket`
+
+        return bucket
+
+    def modify_bucket(self, bucket: AutomodBucket) -> AutomodBucket:
+        # The bucket need to exist
+        self.require_bucket_with_type(bucket.name, type(bucket))
+
+        # Modify the bucket
+        self.buckets[bucket.name] = bucket  # type: ignore[ty:invalid-assignment] - This is fine since all buckets inherit from `AutomodBucket`
+
+        return bucket
+
+    def remove_bucket(self, name: str) -> AutomodBucket:
+        # The bucket need to exist
+        bucket = self.require_bucket(name)
+
+        # Remove the bucket
+        del self.buckets[bucket.name]
+
+        return bucket
+
+    def yield_buckets(self, *, sort: bool) -> Iterable[AutomodBucket]:
+        buckets = self.buckets.values()
+        yield from (
+            sorted(buckets, key=lambda bucket: bucket.name) if sort else buckets
+        )
+
     def bucket_count(self) -> int:
         return len(self.buckets)
 
-    def enable_bucket(self, name: str):
+    def enable_bucket(self, name: str) -> AutomodBucket:
         bucket = self.require_bucket(name)
         if bucket.disabled:
             bucket.disabled = False
             return bucket
         raise AutomodBucketAlreadyEnabled(name)
 
-    def disable_bucket(self, name: str):
+    def disable_bucket(self, name: str) -> AutomodBucket:
         bucket = self.require_bucket(name)
         if not bucket.disabled:
             bucket.disabled = True
@@ -226,106 +268,3 @@ class AutomodData(BaseModel):
         default_factory=lambda: defaultdict(AutomodGuildData),
         exclude_if=lambda v: not v,
     )
-
-    def require_default_log_channel(
-        self,
-        guild: Guild,
-    ) -> LogChannel:
-        return self.guilds[guild.id].remove_default_log_channel()
-
-    def get_default_log_channel(
-        self,
-        guild: Guild,
-    ) -> Optional[LogChannel]:
-        return self.guilds[guild.id].get_default_log_channel()
-
-    def set_default_log_channel(
-        self, guild: Guild, log_channel: LogChannel
-    ) -> LogChannel:
-        return self.guilds[guild.id].set_default_log_channel(log_channel)
-
-    def modify_default_log_channel(
-        self, guild: Guild, log_channel: LogChannel
-    ) -> tuple[LogChannel, LogChannel]:
-        return self.guilds[guild.id].modify_default_log_channel(log_channel)
-
-    def remove_default_log_channel(
-        self,
-        guild: Guild,
-    ) -> LogChannel:
-        return self.guilds[guild.id].remove_default_log_channel()
-
-    def require_rule(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].require_rule(name)
-
-    def require_rule_metadata(self, guild: Guild, name: str) -> AutomodRuleMetadata:
-        return self.guilds[guild.id].require_rule_metadata(name)
-
-    def has_rule(self, guild: Guild, name: str) -> bool:
-        return name in self.guilds[guild.id].rules
-
-    def rules_for_event(
-        self, guild: Guild, event: AutomodEvent
-    ) -> Iterable[AutomodRule]:
-        yield from self.guilds[guild.id].rules_for_event(event)
-
-    def add_rule(
-        self, guild: Guild, rule: AutomodRule, user_id: UserID
-    ) -> tuple[AutomodRule, AutomodRuleMetadata]:
-        return self.guilds[guild.id].add_rule(rule, user_id)
-
-    def modify_rule(
-        self, guild: Guild, rule: AutomodRule, user_id: UserID
-    ) -> tuple[AutomodRule, AutomodRule, AutomodRuleMetadata]:
-        return self.guilds[guild.id].modify_rule(rule, user_id)
-
-    def remove_rule(
-        self, guild: Guild, name: str
-    ) -> tuple[AutomodRule, AutomodRuleMetadata]:
-        return self.guilds[guild.id].remove_rule(name)
-
-    def increment_rule_hits(self, guild: Guild, name: str):
-        metadata = self.guilds[guild.id].require_rule_metadata(name)
-        metadata.hits += 1
-
-    def yield_rules(self, guild: Guild, sort: bool) -> Iterable[AutomodRule]:
-        rules = self.guilds[guild.id].rules.values()
-        yield from sorted(rules, key=lambda rule: rule.name) if sort else rules
-
-    def rule_count(self, guild: Guild) -> int:
-        return self.guilds[guild.id].rule_count()
-
-    def enable_rule(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].enable_rule(name)
-
-    def disable_rule(self, guild: Guild, name: str) -> AutomodRule:
-        return self.guilds[guild.id].disable_rule(name)
-
-    def enable_all_rules(self, guild: Guild):
-        self.guilds[guild.id].enable_all_rules()
-
-    def disable_all_rules(self, guild: Guild):
-        self.guilds[guild.id].disable_all_rules()
-
-    def require_bucket(self, guild: Guild, name: str) -> AutomodBucket:
-        return self.guilds[guild.id].require_bucket(name)
-
-    def require_bucket_with_type[BucketType = AutomodBucket](
-        self, guild: Guild, name: str, bucket_type: type[BucketType]
-    ) -> BucketType:
-        return self.guilds[guild.id].require_bucket_with_type(name, bucket_type)
-
-    def bucket_count(self, guild: Guild) -> int:
-        return self.guilds[guild.id].bucket_count()
-
-    def enable_bucket(self, guild: Guild, name: str) -> AutomodBucket:
-        return self.guilds[guild.id].enable_bucket(name)
-
-    def disable_bucket(self, guild: Guild, name: str) -> AutomodBucket:
-        return self.guilds[guild.id].disable_bucket(name)
-
-    def enable_all_buckets(self, guild: Guild):
-        self.guilds[guild.id].enable_all_buckets()
-
-    def disable_all_buckets(self, guild: Guild):
-        self.guilds[guild.id].disable_all_buckets()

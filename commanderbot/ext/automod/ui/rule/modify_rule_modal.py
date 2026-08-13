@@ -1,0 +1,56 @@
+from typing import TYPE_CHECKING, override
+
+from discord import Interaction, TextStyle, ui
+
+from commanderbot.ext.automod.automod_exceptions import (
+    CouldNotValidateModifiedAutomodRule,
+)
+from commanderbot.ext.automod.automod_store import AutomodStore
+from commanderbot.ext.automod.rule import AutomodRule
+from commanderbot.lib.cogs.views import CogStateModal
+from commanderbot.lib.constants import MAX_MODAL_TITLE_LENGTH
+
+__all__ = ("ModifyRuleModal",)
+
+if TYPE_CHECKING:
+    from commanderbot.ext.automod.automod_guild_state import AutomodGuildState
+
+
+class ModifyRuleModal(CogStateModal["AutomodGuildState", AutomodStore]):
+    def __init__(
+        self, interaction: Interaction, state: AutomodGuildState, rule: AutomodRule
+    ):
+        title: str = f"Modifying rule '{rule.name}'"
+        if len(title) > MAX_MODAL_TITLE_LENGTH:
+            title = f"{title[:42]}..."
+
+        super().__init__(
+            interaction,
+            state,
+            title=title,
+            custom_id="commanderbot_ext:automod.rule.modify",
+        )
+
+        self.rule_input = ui.TextInput(
+            style=TextStyle.paragraph,
+            placeholder="{}",
+            default=rule.model_dump_json(indent=4, exclude_defaults=True),
+            required=True,
+        )
+        self.rule_input_label = ui.Label(
+            text="The rule in Json format",
+            description=f"Run {state.get_schema_command()} if you need the schema",
+            component=self.rule_input,
+        )
+        self.add_item(self.rule_input_label)
+
+    @override
+    async def on_submit(self, interaction: Interaction):
+        try:
+            rule = AutomodRule.model_validate_json(self.rule_input.value)
+            await self.store.modify_rule(self.state.guild, rule, interaction.user.id)
+            await interaction.response.send_message(
+                f"Modified rule `{rule.name}`"
+            )
+        except ValueError as ex:
+            raise CouldNotValidateModifiedAutomodRule(ex)

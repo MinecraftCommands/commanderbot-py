@@ -10,7 +10,6 @@ from discord import (
     Member,
     Message,
     Reaction,
-    TextStyle,
     Thread,
     ThreadMember,
     User,
@@ -20,20 +19,19 @@ from discord.utils import format_dt
 from mime_enum import MimeType
 
 from commanderbot.core.utils import get_app_command
-from commanderbot.ext.automod import events
+from commanderbot.ext.automod import buckets, events
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.automod_exceptions import (
-    CouldNotValidateModifiedAutomodRule,
-    CouldNotValidateNewAutomodRule,
     CouldNotValidateUploadedAutomodRule,
     UploadIsNotJsonFile,
 )
 from commanderbot.ext.automod.automod_store import AutomodStore
 from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.ext.automod.rule import AutomodRule
+from commanderbot.ext.automod.ui import log as log_ui
+from commanderbot.ext.automod.ui import rule as rule_ui
 from commanderbot.lib.allowed_mentions import AllowedMentions
 from commanderbot.lib.cogs import CogGuildState
-from commanderbot.lib.cogs.views import CogStateModal
 from commanderbot.lib.dialogs import ConfirmationResult, respond_with_confirmation
 from commanderbot.lib.types import GuildChannel, MessageableGuildChannel
 from commanderbot.lib.utils import str_to_file
@@ -49,12 +47,88 @@ class AutomodGuildState(CogGuildState):
 
     # @@ COMMANDS
 
+    async def set_default_log(self, interaction: Interaction):
+        await interaction.response.send_modal(
+            log_ui.SetDefaultLogModal(interaction, self)
+        )
+
+    async def modify_default_log(self, interaction: Interaction):
+        log = await self.store.require_default_log(self.guild)
+        await interaction.response.send_modal(
+            log_ui.ModifyDefaultLogModal(interaction, self, log)
+        )
+
+    async def remove_default_log(self, interaction: Interaction):
+        # Get the default log
+        log = await self.store.require_default_log(self.guild)
+
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove the default log channel <#{log.channel}>?",
+            timeout=10.0,
+        )
+
+        # Handle response to dialog
+        match result:
+            case ConfirmationResult.YES:
+                try:
+                    await self.store.remove_default_log(self.guild)
+                    await interaction.followup.send(
+                        content=f"Removed the default log channel <#{log.channel}>"
+                    )
+                except Exception:
+                    await interaction.delete_original_response()
+                    raise
+            case _:
+                await interaction.followup.send(
+                    f"Did not remove the default log channel <#{log.channel}>"
+                )
+
+    async def show_default_log_details(self, interaction: Interaction):
+        # Get the default log
+        log = await self.store.require_default_log(self.guild)
+
+        # Create fields
+        fields: dict[str, str] = {
+            "Channel": f"<#{log.channel}>",
+            "Emoji": log.emoji or "**None!**",
+            "Color": f"`{log.color}`" if log.color is not None else "**None!**",
+            "Stacktrace": "✅" if log.stacktrace else "❌",
+            "Allowed Mentions": "\n".join(
+                (
+                    "",
+                    f"- Everyone: {'✅' if log.allowed_mentions.everyone else '❌'}",
+                    f"- Users: {'✅' if log.allowed_mentions.users else '❌'}",
+                    f"- Roles: {'✅' if log.allowed_mentions.roles else '❌'}",
+                    f"- Replied User: {'✅' if log.allowed_mentions.replied_user else '❌'}",
+                )
+            ),
+        }
+
+        # Create the default log details view
+        view = ui.LayoutView()
+        container = ui.Container(accent_color=0x00ACED)
+        view.add_item(container)
+
+        container.add_item(
+            ui.TextDisplay(f"### 🧾 Details for default log channel <#{log.channel}>")
+        )
+        container.add_item(ui.Separator())
+        for field_name, field_value in fields.items():
+            container.add_item(ui.TextDisplay(f"**{field_name}**: {field_value}"))
+
+        # Respond with the view
+        await interaction.response.send_message(view=view)
+
     async def add_rule(self, interaction: Interaction):
-        await interaction.response.send_modal(AddRuleModal(interaction, self))
+        await interaction.response.send_modal(rule_ui.AddRuleModal(interaction, self))
 
     async def modify_rule(self, interaction: Interaction, name: str):
         rule = await self.store.require_rule(self.guild, name)
-        await interaction.response.send_modal(ModifyRuleModal(interaction, self, rule))
+        await interaction.response.send_modal(
+            rule_ui.ModifyRuleModal(interaction, self, rule)
+        )
 
     async def upload_rule(self, interaction: Interaction, file: Attachment):
         # The uploaded file needs to be a Json file
@@ -71,12 +145,10 @@ class AutomodGuildState(CogGuildState):
         # Modify the rule if it already exists
         if await self.store.has_rule(self.guild, rule.name):
             await self.store.modify_rule(self.guild, rule, interaction.user.id)
-            await interaction.response.send_message(
-                f"Modified automod rule `{rule.name}`"
-            )
+            await interaction.response.send_message(f"Modified rule `{rule.name}`")
         else:
             await self.store.add_rule(self.guild, rule, interaction.user.id)
-            await interaction.response.send_message(f"Added automod rule `{rule.name}`")
+            await interaction.response.send_message(f"Added rule `{rule.name}`")
 
     async def remove_rule(self, interaction: Interaction, name: str):
         # Get the rule
@@ -85,7 +157,7 @@ class AutomodGuildState(CogGuildState):
         # Respond to this interaction with a confirmation dialog
         result: ConfirmationResult = await respond_with_confirmation(
             interaction,
-            f"Are you sure you want to remove the automod rule `{rule.name}`?",
+            f"Are you sure you want to remove the rule `{rule.name}`?",
             timeout=10.0,
         )
 
@@ -95,14 +167,14 @@ class AutomodGuildState(CogGuildState):
                 try:
                     await self.store.remove_rule(self.guild, rule.name)
                     await interaction.followup.send(
-                        content=f"Removed the automod rule `{rule.name}`"
+                        content=f"Removed the rule `{rule.name}`"
                     )
                 except Exception:
                     await interaction.delete_original_response()
                     raise
             case _:
                 await interaction.followup.send(
-                    f"Did not remove the automod rule `{rule.name}`"
+                    f"Did not remove the rule `{rule.name}`"
                 )
 
     async def show_rule_details(self, interaction: Interaction, name: str):
@@ -115,8 +187,10 @@ class AutomodGuildState(CogGuildState):
         rule_file = str_to_file(rule_json, f"{rule.name}.json")
 
         # Create fields
+        description = f"`{rule.description}`" if rule.description else "**None!**"
         fields: dict[str, str] = {
             "Name": f"`{rule.name}`",
+            "Description": description,
             "Enabled": "❌" if rule.disabled else "✅",
             "Hits": f"`{metadata.hits}`",
             "Added by": f"<@{metadata.added_by_id}>({format_dt(metadata.added_on, style='R')})",
@@ -124,25 +198,31 @@ class AutomodGuildState(CogGuildState):
         }
 
         # Create the rule details view
-        rule_details_view = ui.LayoutView()
+        view = ui.LayoutView()
         container = ui.Container(accent_color=0x00ACED)
-        rule_details_view.add_item(container)
+        view.add_item(container)
 
-        container.add_item(
-            ui.TextDisplay(f"### 📜 Details for automod rule `{rule.name}`")
-        )
+        container.add_item(ui.TextDisplay(f"### 📜 Details for rule `{rule.name}`"))
         container.add_item(ui.Separator())
         container.add_item(ui.File(rule_file))
         container.add_item(ui.Separator())
         for field_name, field_value in fields.items():
-            container.add_item(ui.TextDisplay(f"**{field_name}** **-** {field_value}"))
+            container.add_item(ui.TextDisplay(f"**{field_name}**: {field_value}"))
 
         # Respond with the view
         await interaction.response.send_message(
-            view=rule_details_view,
+            view=view,
             file=rule_file,
             allowed_mentions=AllowedMentions.none(),
         )
+
+    async def enable_rule(self, interaction: Interaction, name: str):
+        rule = await self.store.enable_rule(self.guild, name)
+        await interaction.response.send_message(f"Enabled rule `{rule.name}`")
+
+    async def disable_rule(self, interaction: Interaction, name: str):
+        rule = await self.store.disable_rule(self.guild, name)
+        await interaction.response.send_message(f"Disabled rule `{rule.name}`")
 
     async def list_rules(self, interaction: Interaction):
         # Get info about rules
@@ -158,11 +238,11 @@ class AutomodGuildState(CogGuildState):
                 disabled_rules += 1
 
         # Create rule list view
-        rule_list_view = ui.LayoutView()
+        view = ui.LayoutView()
         container = ui.Container(accent_color=0x00ACED)
-        rule_list_view.add_item(container)
+        view.add_item(container)
 
-        container.add_item(ui.TextDisplay("### 📜 All automod rules"))
+        container.add_item(ui.TextDisplay("### 📜 All rules"))
         container.add_item(ui.Separator())
 
         if formatted_rules:
@@ -177,28 +257,167 @@ class AutomodGuildState(CogGuildState):
         )
 
         # Respond with the view
-        await interaction.response.send_message(view=rule_list_view)
-
-    async def enable_rule(self, interaction: Interaction, name: str):
-        rule = await self.store.enable_rule(self.guild, name)
-        await interaction.response.send_message(f"Enabled automod rule `{rule.name}`")
-
-    async def disable_rule(self, interaction: Interaction, name: str):
-        rule = await self.store.disable_rule(self.guild, name)
-        await interaction.response.send_message(f"Disabled automod rule `{rule.name}`")
+        await interaction.response.send_message(view=view)
 
     async def enable_all_rule(self, interaction: Interaction):
         rule_count = await self.store.rule_count(self.guild)
         await self.store.enable_all_rules(self.guild)
-        await interaction.response.send_message(
-            f"Enabled all `{rule_count}` automod rules"
-        )
+        await interaction.response.send_message(f"Enabled all `{rule_count}` rules")
 
     async def disable_all_rule(self, interaction: Interaction):
         rule_count = await self.store.rule_count(self.guild)
         await self.store.disable_all_rules(self.guild)
+        await interaction.response.send_message(f"Disabled all `{rule_count}` rules")
+
+    async def add_flagged_image_attachments_bucket(self, interaction: Interaction):
+        pass
+
+    async def add_message_history_bucket(self, interaction: Interaction):
+        pass
+
+    async def modify_bucket(self, interaction: Interaction, name: str):
+        # Get the bucket
+        bucket = await self.store.require_bucket(self.guild, name)
+
+        # Send the right modal based on the bucket type
+        match bucket:
+            case buckets.FlaggedImageAttachments():
+                pass
+            case buckets.MessageHistory():
+                pass
+            case _:
+                pass
+
+    async def remove_bucket(self, interaction: Interaction, name: str):
+        # Get the bucket
+        bucket = await self.store.require_bucket(self.guild, name)
+
+        # Respond to this interaction with a confirmation dialog
+        result: ConfirmationResult = await respond_with_confirmation(
+            interaction,
+            f"Are you sure you want to remove the bucket `{bucket.name}`?",
+            timeout=10.0,
+        )
+
+        # Handle response to dialog
+        match result:
+            case ConfirmationResult.YES:
+                try:
+                    await self.store.remove_bucket(self.guild, bucket.name)
+                    await interaction.followup.send(
+                        content=f"Removed the bucket `{bucket.name}`"
+                    )
+                except Exception:
+                    await interaction.delete_original_response()
+                    raise
+            case _:
+                await interaction.followup.send(
+                    f"Did not remove the bucket `{bucket.name}`"
+                )
+
+    async def show_bucket_details(self, interaction: Interaction, name: str):
+        # Get the bucket
+        bucket = await self.store.require_bucket(self.guild, name)
+
+        # Create fields
+        description = f"`{bucket.description}`" if bucket.description else "**None!**"
+        fields: dict[str, str] = {
+            "Type": f"`{bucket.type}`",
+            "Name": f"`{bucket.name}`",
+            "Description": description,
+            "Enabled": "❌" if bucket.disabled else "✅",
+        }
+
+        # Add any fields that are specific to the bucket type
+        match bucket:
+            case buckets.FlaggedImageAttachments():
+                fields["Lifetime"] = f"`{bucket.lifetime}`"
+                fields["Flagged"] = f"`{len(bucket.attachments)}`"
+            case buckets.MessageHistory():
+                fields["Lifetime"] = f"`{bucket.lifetime}`"
+                fields["Interval"] = f"`{bucket.interval}`"
+                fields["Messages"] = f"`{bucket.message_count}`"
+                fields["Channels"] = f"`{bucket.channel_count}`"
+            case _:
+                pass
+
+        # Create the bucket details view
+        view = ui.LayoutView()
+        container = ui.Container(accent_color=0x00ACED)
+        view.add_item(container)
+
+        container.add_item(ui.TextDisplay(f"### 🪣 Details for bucket `{bucket.name}`"))
+        container.add_item(ui.Separator())
+        for field_name, field_value in fields.items():
+            container.add_item(ui.TextDisplay(f"**{field_name}**: {field_value}"))
+
+        # Respond with the view
+        await interaction.response.send_message(view=view)
+
+    async def clear_bucket(self, interaction: Interaction, name: str):
+        bucket = await self.store.clear_bucket(self.guild, name)
+        await interaction.response.send_message(f"Cleared bucket `{bucket.name}`")
+
+    async def enable_bucket(self, interaction: Interaction, name: str):
+        bucket = await self.store.enable_bucket(self.guild, name)
+        await interaction.response.send_message(f"Enabled bucket `{bucket.name}`")
+
+    async def disable_bucket(self, interaction: Interaction, name: str):
+        bucket = await self.store.disable_bucket(self.guild, name)
+        await interaction.response.send_message(f"Disabled bucket `{bucket.name}`")
+
+    async def list_buckets(self, interaction: Interaction):
+        # Get info about buckets
+        formatted_buckets: list[str] = []
+        enabled_buckets: int = 0
+        disabled_buckets: int = 0
+        async for bucket in self.store.yield_buckets(self.guild):
+            if not bucket.disabled:
+                formatted_buckets.append(bucket.name)
+                enabled_buckets += 1
+            else:
+                formatted_buckets.append(f"{bucket.name} (Disabled)")
+                disabled_buckets += 1
+
+        # Create bucket list view
+        view = ui.LayoutView()
+        container = ui.Container(accent_color=0x00ACED)
+        view.add_item(container)
+
+        container.add_item(ui.TextDisplay("### 🪣 All buckets"))
+        container.add_item(ui.Separator())
+
+        if formatted_buckets:
+            lines = "\n".join(("```", "\n".join(formatted_buckets), "```"))
+            container.add_item(ui.TextDisplay(lines))
+        else:
+            container.add_item(ui.TextDisplay("**None!**"))
+
+        container.add_item(ui.Separator())
+        container.add_item(
+            ui.TextDisplay(
+                f"-# Enabled: {enabled_buckets} | Disabled: {disabled_buckets}"
+            )
+        )
+
+        # Respond with the view
+        await interaction.response.send_message(view=view)
+
+    async def clear_all_buckets(self, interaction: Interaction):
+        bucket_count = await self.store.bucket_count(self.guild)
+        await self.store.clear_all_buckets(self.guild)
+        await interaction.response.send_message(f"Cleared all `{bucket_count}` buckets")
+
+    async def enable_all_buckets(self, interaction: Interaction):
+        bucket_count = await self.store.bucket_count(self.guild)
+        await self.store.enable_all_buckets(self.guild)
+        await interaction.response.send_message(f"Enabled all `{bucket_count}` buckets")
+
+    async def disable_all_buckets(self, interaction: Interaction):
+        bucket_count = await self.store.bucket_count(self.guild)
+        await self.store.disable_all_buckets(self.guild)
         await interaction.response.send_message(
-            f"Disabled all `{rule_count}` automod rules"
+            f"Disabled all `{bucket_count}` buckets"
         )
 
     # @@ UTILITIES
@@ -218,7 +437,7 @@ class AutomodGuildState(CogGuildState):
             self.log.exception(f"Automod rule '{rule.name}' caused an error")
 
         # Try to get the log channel
-        log_channel = rule.log or await self.store.get_default_log_channel(self.guild)
+        log_channel = rule.log or await self.store.get_default_log(self.guild)
         if not log_channel:
             return
 
@@ -343,70 +562,3 @@ class AutomodGuildState(CogGuildState):
 
     async def on_user_unbanned(self, user: User):
         await self.dispatch_event(events.UserUnbanned(user))
-
-
-class AddRuleModal(CogStateModal[AutomodGuildState, AutomodStore]):
-    def __init__(self, interaction: Interaction, state: AutomodGuildState):
-        super().__init__(
-            interaction,
-            state,
-            title="Add a new automod rule",
-            custom_id="commanderbot_ext:automod.rule.add",
-        )
-
-        self.rule_input = ui.TextInput(
-            label="The automod rule in Json format",
-            style=TextStyle.paragraph,
-            placeholder="{}",
-            required=True,
-        )
-        self.help_display = ui.TextDisplay(
-            f"-# Run {state.get_schema_command()} if you need the schema"
-        )
-
-        self.add_item(self.rule_input)
-        self.add_item(self.help_display)
-
-    async def on_submit(self, interaction: Interaction):
-        try:
-            rule = AutomodRule.model_validate_json(self.rule_input.value)
-            await self.store.add_rule(self.state.guild, rule, interaction.user.id)
-            await interaction.response.send_message(f"Added automod rule `{rule.name}`")
-        except ValueError as ex:
-            raise CouldNotValidateNewAutomodRule(ex)
-
-
-class ModifyRuleModal(CogStateModal[AutomodGuildState, AutomodStore]):
-    def __init__(
-        self, interaction: Interaction, state: AutomodGuildState, rule: AutomodRule
-    ):
-        super().__init__(
-            interaction,
-            state,
-            title=f"Modifying automod rule '{rule.name}'",
-            custom_id="commanderbot_ext:automod.rule.modify",
-        )
-
-        self.rule_input = ui.TextInput(
-            label="The automod rule in Json format",
-            style=TextStyle.paragraph,
-            placeholder="{}",
-            default=rule.model_dump_json(indent=4, exclude_defaults=True),
-            required=True,
-        )
-        self.help_display = ui.TextDisplay(
-            f"-# Run {state.get_schema_command()} if you need the schema"
-        )
-
-        self.add_item(self.rule_input)
-        self.add_item(self.help_display)
-
-    async def on_submit(self, interaction: Interaction):
-        try:
-            rule = AutomodRule.model_validate_json(self.rule_input.value)
-            await self.store.modify_rule(self.state.guild, rule, interaction.user.id)
-            await interaction.response.send_message(
-                f"Modified automod rule `{rule.name}`"
-            )
-        except ValueError as ex:
-            raise CouldNotValidateModifiedAutomodRule(ex)

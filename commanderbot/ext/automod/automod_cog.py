@@ -31,7 +31,7 @@ from commanderbot.ext.automod.automod_guild_state import AutomodGuildState
 from commanderbot.ext.automod.automod_options import AutomodOptions
 from commanderbot.ext.automod.automod_state import AutomodState
 from commanderbot.ext.automod.automod_store import AutomodStore
-from commanderbot.ext.automod.rule.rule import AutomodRule
+from commanderbot.ext.automod.rule import AutomodRule
 from commanderbot.lib import is_guild
 from commanderbot.lib.cogs import CogGuildStateManager
 from commanderbot.lib.databases.json_db import JsonDB
@@ -77,45 +77,67 @@ class AutomodCog(
     # @@ COMMANDS
 
     # @@ automod schema
-    @command(name="schema", description="Export the Json schema for automod rules")
+    @command(name="schema", description="Export the Json schema for rules")
     async def cmd_automod_schema(self, interaction: Interaction):
         schema = json.dumps(AutomodRule.model_json_schema())
         file = str_to_file(schema, "schema.json")
         await interaction.response.send_message(
-            "Exported Json schema for automod rules", file=file, ephemeral=True
+            "Exported Json schema for rules", file=file, ephemeral=True
         )
 
     # @@ automod log
     cmd_automod_log = Group(name="log", description="Configure the default log channel")
 
     # @@ automod log set
+    @cmd_automod_log.command(name="set", description="Set the default log channel")
+    async def cmd_automod_log_set(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].set_default_log(interaction)
 
     # @@ automod log modify
+    @cmd_automod_log.command(
+        name="modify", description="Modify the default log channel"
+    )
+    async def cmd_automod_log_modify(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].modify_default_log(interaction)
 
     # @@ automod log remove
+    @cmd_automod_log.command(
+        name="remove", description="Remove the default log channel"
+    )
+    async def cmd_automod_log_remove(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].remove_default_log(interaction)
 
     # @@ automod log details
+    @cmd_automod_log.command(
+        name="details", description="Show details about the default log channel"
+    )
+    async def cmd_automod_log_details(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].show_default_log_details(interaction)
 
     # @@ automod rules
-    cmd_automod_rules = Group(name="rules", description="Manage automod rules")
+    cmd_automod_rules = Group(name="rules", description="Manage rules")
 
     # @@ automod rules add
-    @cmd_automod_rules.command(name="add", description="Add a new automod rule")
+    @cmd_automod_rules.command(name="add", description="Add a new rule")
     async def cmd_automod_rules_all(self, interaction: Interaction):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].add_rule(interaction)
 
     # @@ automod rules modify
-    @cmd_automod_rules.command(name="modify", description="Modify an automod rule")
-    @describe(rule="The automod rule to modify")
+    @cmd_automod_rules.command(name="modify", description="Modify a rule")
+    @describe(rule="The rule to modify")
     async def cmd_automod_rules_modify(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_rule(interaction, rule)
 
     # @@ automod rules upload
-    @cmd_automod_rules.command(name="upload", description="Upload an automod rule")
+    @cmd_automod_rules.command(name="upload", description="Upload a rule")
     @describe(
-        file="A Json file containing an automod rule (If the rule already exists, it will be modified)"
+        file="A Json file containing a rule (If the rule already exists, it will be modified)"
     )
     async def cmd_automod_rules_upload(
         self, interaction: Interaction, file: Attachment
@@ -124,44 +146,44 @@ class AutomodCog(
         await self.state[interaction.guild].upload_rule(interaction, file)
 
     # @@ automod rules remove
-    @cmd_automod_rules.command(name="remove", description="Remove an automod rule")
-    @describe(rule="The automod rule to remove")
+    @cmd_automod_rules.command(name="remove", description="Remove a rule")
+    @describe(rule="The rule to remove")
     async def cmd_automod_rules_remove(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].remove_rule(interaction, rule)
 
     # @@ automod rules details
     @cmd_automod_rules.command(
-        name="details", description="Show the details about an automod rule"
+        name="details", description="Show details about a rule"
     )
-    @describe(rule="The automod rule to show details about")
+    @describe(rule="The rule to show details about")
     async def cmd_automod_rules_details(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_rule_details(interaction, rule)
 
-    # @@ automod rules list
-    @cmd_automod_rules.command(name="list", description="List all automod rules")
-    async def cmd_automod_rules_list(self, interaction: Interaction):
-        assert is_guild(interaction.guild)
-        await self.state[interaction.guild].list_rules(interaction)
-
     # @@ automod rules enable
-    @cmd_automod_rules.command(name="enable", description="Enable an automod rule")
-    @describe(rule="The automod rule to enable")
+    @cmd_automod_rules.command(name="enable", description="Enable a rule")
+    @describe(rule="The rule to enable")
     async def cmd_automod_rules_enable(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].enable_rule(interaction, rule)
 
     # @@ automod rules disable
-    @cmd_automod_rules.command(name="disable", description="disable an automod rule")
-    @describe(rule="The automod rule to disable")
+    @cmd_automod_rules.command(name="disable", description="Disable a rule")
+    @describe(rule="The rule to disable")
     async def cmd_automod_rules_disable(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].disable_rule(interaction, rule)
 
+    # @@ automod rules list
+    @cmd_automod_rules.command(name="list", description="List all rules")
+    async def cmd_automod_rules_list(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].list_rules(interaction)
+
     # @@ automod rules enable-all
     @cmd_automod_rules.command(
-        name="enable-all", description="Enable all automod rules"
+        name="enable-all", description="Enable all rules"
     )
     async def cmd_automod_rules_enable_all(self, interaction: Interaction):
         assert is_guild(interaction.guild)
@@ -169,36 +191,84 @@ class AutomodCog(
 
     # @@ automod rules disable-all
     @cmd_automod_rules.command(
-        name="disable-all", description="Disable all automod rules"
+        name="disable-all", description="Disable all rules"
     )
     async def cmd_automod_rules_disable_all(self, interaction: Interaction):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].disable_all_rule(interaction)
 
     # @@ automod buckets
-    cmd_automod_buckets = Group(name="buckets", description="Manage automod buckets")
+    cmd_automod_buckets = Group(name="buckets", description="Manage buckets")
 
     # @@ automod buckets add
+    async def cmd_automod_buckets_add(self, interaction: Interaction, type):
+        pass
 
     # @@ automod buckets modify
+    async def cmd_automod_buckets_modify(self, interaction: Interaction, bucket: str):
+        pass
 
     # @@ automod buckets remove
+    async def cmd_automod_buckets_remove(self, interaction: Interaction, bucket: str):
+        pass
 
     # @@ automod buckets details
-
-    # @@ automod buckets list
+    @cmd_automod_buckets.command(
+        name="details", description="Show details about a bucket"
+    )
+    @describe(bucket="The bucket to show details about")
+    async def cmd_automod_buckets_details(self, interaction: Interaction, bucket: str):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].show_bucket_details(interaction, bucket)
 
     # @@ automod buckets clear
+    @cmd_automod_buckets.command(
+        name="clear", description="Clear the saved data in a bucket"
+    )
+    @describe(bucket="The bucket to clear the saved data of")
+    async def cmd_automod_buckets_clear(self, interaction: Interaction, bucket: str):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].clear_bucket(interaction, bucket)
 
     # @@ automod buckets enable
+    @cmd_automod_buckets.command(name="enable", description="Enable a bucket")
+    @describe(bucket="The bucket to enable")
+    async def cmd_automod_buckets_enable(self, interaction: Interaction, bucket: str):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].enable_bucket(interaction, bucket)
 
     # @@ automod buckets disable
+    @cmd_automod_buckets.command(name="disable", description="Disable a bucket")
+    @describe(bucket="The bucket to disable")
+    async def cmd_automod_buckets_disable(self, interaction: Interaction, bucket: str):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].disable_bucket(interaction, bucket)
+
+    # @@ automod buckets list
+    @cmd_automod_buckets.command(name="list", description="List all buckets")
+    async def cmd_automod_buckets_list(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].list_buckets(interaction)
 
     # @@ automod buckets clear-all
+    @cmd_automod_buckets.command(
+        name="clear-all", description="Clear the saved data in all buckets"
+    )
+    async def cmd_automod_buckets_clear_all(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].clear_all_buckets(interaction)
 
     # @@ automod buckets enable-all
+    @cmd_automod_buckets.command(name="enable-all", description="Enable all buckets")
+    async def cmd_automod_buckets_enable_all(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].enable_all_buckets(interaction)
 
     # @@ automod buckets disable-all
+    @cmd_automod_buckets.command(name="disable-all", description="Disable all buckets")
+    async def cmd_automod_buckets_disable_all(self, interaction: Interaction):
+        assert is_guild(interaction.guild)
+        await self.state[interaction.guild].disable_all_buckets(interaction)
 
     # @@ LISTENERS
 
