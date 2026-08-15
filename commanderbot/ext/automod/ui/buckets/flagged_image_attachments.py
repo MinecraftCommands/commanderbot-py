@@ -4,6 +4,7 @@ from discord import Interaction, TextStyle, ui
 
 from commanderbot.ext.automod import buckets
 from commanderbot.ext.automod.automod_exceptions import (
+    CouldNotValidateModifiedFlaggedImageAttachmentsBucket,
     CouldNotValidateNewFlaggedImageAttachmentsBucket,
 )
 from commanderbot.ext.automod.automod_store import AutomodStore
@@ -142,7 +143,7 @@ class ModifyFlaggedImageAttachmentsBucket(
                 f"Modified flagged image attachments bucket `{bucket.name}`"
             )
         except ValueError as ex:
-            raise CouldNotValidateNewFlaggedImageAttachmentsBucket(ex)
+            raise CouldNotValidateModifiedFlaggedImageAttachmentsBucket(ex)
 
 
 class FlaggedImageAttachmentsBucketDetails(ui.LayoutView):
