@@ -6,7 +6,7 @@ from discord.utils import utcnow
 
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.condition import AutomodCondition
-from commanderbot.lib.types import Timedelta
+from commanderbot.lib.timedelta import Timedelta
 
 __all__ = ("TargetAccountAge",)
 
@@ -19,8 +19,7 @@ class TargetAccountAge(AutomodCondition):
     """The upper bound to check against, if any (inclusive)."""
 
     @abstractmethod
-    def get_target(self, context: AutomodContext) -> Optional[User]:
-        ...
+    def get_target(self, context: AutomodContext) -> Optional[User]: ...
 
     @override
     async def check(self, context: AutomodContext) -> bool:

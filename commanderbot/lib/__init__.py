@@ -14,4 +14,5 @@ from .log_channel import *
 from .log_options import *
 from .predicates import *
 from .role_set import *
+from .timedelta import *
 from .types import *

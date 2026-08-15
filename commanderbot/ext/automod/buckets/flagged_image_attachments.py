@@ -9,7 +9,8 @@ from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.bucket import AutomodBucket
 from commanderbot.ext.automod.constants import IMAGE_MIME_TYPES
 from commanderbot.lib.image_hash import ImageHash
-from commanderbot.lib.types import AttachmentID, Timedelta
+from commanderbot.lib.timedelta import Timedelta
+from commanderbot.lib.types import AttachmentID
 
 __all__ = ("FlaggedImageAttachments",)
 

@@ -3,7 +3,7 @@ from typing import Literal, override
 
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.condition import AutomodCondition
-from commanderbot.lib.types import Timedelta
+from commanderbot.lib.timedelta import Timedelta
 
 __all__ = ("Wait",)
 

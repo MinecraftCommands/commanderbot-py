@@ -14,7 +14,7 @@ from commanderbot.lib.constants import (
     BULK_DELETE_MAX_MESSAGES,
 )
 from commanderbot.lib.predicates import is_messagable_guild_channel, is_thread
-from commanderbot.lib.types import Timedelta
+from commanderbot.lib.timedelta import Timedelta
 
 __all__ = ("DeleteTargetMessages",)
 

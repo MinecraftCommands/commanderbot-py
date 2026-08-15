@@ -11,7 +11,8 @@ from pydantic import PrivateAttr
 from commanderbot.ext.automod import events
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.bucket import AutomodBucket
-from commanderbot.lib.types import ChannelID, MessageID, Timedelta, UserID
+from commanderbot.lib.timedelta import Timedelta
+from commanderbot.lib.types import ChannelID, MessageID, UserID
 
 __all__ = ("MessageHistory",)
 

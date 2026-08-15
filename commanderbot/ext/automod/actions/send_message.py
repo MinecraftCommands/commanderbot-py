@@ -7,7 +7,8 @@ from commanderbot.ext.automod.action import AutomodAction
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.lib.allowed_mentions import AllowedMentions
 from commanderbot.lib.predicates import is_messagable_guild_channel, is_thread
-from commanderbot.lib.types import ChannelID, MessageableGuildChannel, Timedelta
+from commanderbot.lib.timedelta import Timedelta
+from commanderbot.lib.types import ChannelID, MessageableGuildChannel
 from commanderbot.lib.utils import dict_without_nones
 
 __all__ = ("SendMessage",)

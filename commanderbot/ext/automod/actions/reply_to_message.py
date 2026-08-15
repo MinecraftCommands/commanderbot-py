@@ -5,7 +5,7 @@ from pydantic import Field
 from commanderbot.ext.automod.action import AutomodAction
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.lib.allowed_mentions import AllowedMentions
-from commanderbot.lib.types import Timedelta
+from commanderbot.lib.timedelta import Timedelta
 from commanderbot.lib.utils import dict_without_nones
 
 __all__ = ("ReplyToMessage",)

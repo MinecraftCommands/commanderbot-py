@@ -4,7 +4,7 @@ from commanderbot.ext.automod import events
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.guards import IntegerRangeGuard
 from commanderbot.ext.automod.trigger import AutomodTrigger
-from commanderbot.lib.types import Timedelta
+from commanderbot.lib.timedelta import Timedelta
 
 __all__ = ("MessageFrequency",)
 

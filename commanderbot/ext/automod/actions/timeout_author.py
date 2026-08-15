@@ -3,7 +3,7 @@ from typing import Literal, Optional, override
 from commanderbot.ext.automod.action import AutomodAction
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.lib.predicates import is_member
-from commanderbot.lib.types import Timedelta
+from commanderbot.lib.timedelta import Timedelta
 
 __all__ = ("TimeoutAuthor",)
 
