@@ -24,12 +24,7 @@ if TYPE_CHECKING:
 
 class AddMessageHistoryBucket(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(self, interaction: Interaction, state: AutomodGuildState):
-        super().__init__(
-            interaction,
-            state,
-            title="Add a new message history bucket",
-            custom_id="commanderbot_ext:automod.buckets.message_history.add",
-        )
+        super().__init__(interaction, state, title="Add a new message history bucket")
 
         self.name_input = ui.TextInput(
             style=TextStyle.short,
@@ -108,12 +103,7 @@ class ModifyMessageHistoryBucket(CogStateModal["AutomodGuildState", AutomodStore
         if len(title) > MAX_MODAL_TITLE_LENGTH:
             title = f"{title[:42]}..."
 
-        super().__init__(
-            interaction,
-            state,
-            title=title,
-            custom_id="commanderbot_ext:automod.buckets.message_history.modify",
-        )
+        super().__init__(interaction, state, title=title)
 
         self.description_input = ui.TextInput(
             style=TextStyle.short,

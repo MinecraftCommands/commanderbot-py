@@ -29,12 +29,7 @@ if TYPE_CHECKING:
 
 class SetDefaultLog(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(self, interaction: Interaction, state: AutomodGuildState):
-        super().__init__(
-            interaction,
-            state,
-            title="Set the default log channel",
-            custom_id="commanderbot_ext:automod.log.set",
-        )
+        super().__init__(interaction, state, title="Set the default log channel")
 
         self.channel_input = ui.ChannelSelect(
             channel_types=[ChannelType.text, ChannelType.public_thread],
@@ -70,7 +65,7 @@ class SetDefaultLog(CogStateModal["AutomodGuildState", AutomodStore]):
         )
 
         self.stacktrace_input = ui.CheckboxGroup(required=False)
-        self.stacktrace_input.add_option(label="\u200B", default=False)
+        self.stacktrace_input.add_option(label="\u200b", default=False)
         self.stacktrace_label = ui.Label(
             text="Print exception stacktraces", component=self.stacktrace_input
         )
@@ -120,12 +115,7 @@ class ModifyDefaultLog(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(
         self, interaction: Interaction, state: AutomodGuildState, log: LogChannel
     ):
-        super().__init__(
-            interaction,
-            state,
-            title="Modifying default log channel",
-            custom_id="commanderbot_ext:automod.log.modify",
-        )
+        super().__init__(interaction, state, title="Modifying default log channel")
 
         self.channel_input = ui.ChannelSelect(
             channel_types=[ChannelType.text, ChannelType.public_thread],
@@ -167,7 +157,7 @@ class ModifyDefaultLog(CogStateModal["AutomodGuildState", AutomodStore]):
 
         self.stacktrace_input = ui.CheckboxGroup(required=False)
         self.stacktrace_input.add_option(
-            label="\u200B", default=log.stacktrace or False
+            label="\u200b", default=log.stacktrace or False
         )
         self.stacktrace_label = ui.Label(
             text="Print exception stacktraces", component=self.stacktrace_input

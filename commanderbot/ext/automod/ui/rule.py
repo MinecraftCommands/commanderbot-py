@@ -25,24 +25,24 @@ if TYPE_CHECKING:
 
 class AddRuleModal(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(self, interaction: Interaction, state: AutomodGuildState):
-        super().__init__(
-            interaction,
-            state,
-            title="Add a new rule",
-            custom_id="commanderbot_ext:automod.rule.add",
-        )
+        super().__init__(interaction, state, title="Add a new rule")
 
         self.rule_input = ui.TextInput(
             style=TextStyle.paragraph,
             placeholder="{}",
             required=True,
         )
-        self.rule_input_label = ui.Label(
+        self.rule_label = ui.Label(
             text="The rule in Json format",
-            description=f"Run {state.get_schema_command()} if you need the schema",
             component=self.rule_input,
         )
-        self.add_item(self.rule_input_label)
+
+        self.rule_schema_help = ui.TextDisplay(
+            f"-# Run {state.get_schema_command()} if you need the schema"
+        )
+
+        self.add_item(self.rule_label)
+        self.add_item(self.rule_schema_help)
 
     @override
     async def on_submit(self, interaction: Interaction):
@@ -62,12 +62,7 @@ class ModifyRuleModal(CogStateModal["AutomodGuildState", AutomodStore]):
         if len(title) > MAX_MODAL_TITLE_LENGTH:
             title = f"{title[:42]}..."
 
-        super().__init__(
-            interaction,
-            state,
-            title=title,
-            custom_id="commanderbot_ext:automod.rule.modify",
-        )
+        super().__init__(interaction, state, title=title)
 
         self.rule_input = ui.TextInput(
             style=TextStyle.paragraph,
@@ -75,12 +70,17 @@ class ModifyRuleModal(CogStateModal["AutomodGuildState", AutomodStore]):
             default=rule.model_dump_json(indent=4, exclude_defaults=True),
             required=True,
         )
-        self.rule_input_label = ui.Label(
+        self.rule_label = ui.Label(
             text="The rule in Json format",
-            description=f"Run {state.get_schema_command()} if you need the schema",
             component=self.rule_input,
         )
-        self.add_item(self.rule_input_label)
+
+        self.rule_schema_help = ui.TextDisplay(
+            f"-# Run {state.get_schema_command()} if you need the schema"
+        )
+
+        self.add_item(self.rule_label)
+        self.add_item(self.rule_schema_help)
 
     @override
     async def on_submit(self, interaction: Interaction):

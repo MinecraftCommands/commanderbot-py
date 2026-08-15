@@ -3,6 +3,8 @@ from typing import Generic, Optional, TypeVar, override
 from discord import Guild, Interaction, ui
 from discord.ext.commands import Bot, Cog
 
+from commanderbot.lib.utils import dict_without_nones
+
 __all__ = ("CogStateModal", "CogStateView")
 
 CogStateType = TypeVar("CogStateType")
@@ -38,7 +40,7 @@ class CogStateModal(Generic[CogStateType, CogStoreType], ui.Modal):  # noqa: PYI
         state: CogStateType,
         *,
         title: str,
-        custom_id: str,
+        custom_id: Optional[str] = None,
         timeout: Optional[float] = None,
     ):
         self.original_interaction: Interaction = interaction
@@ -50,7 +52,12 @@ class CogStateModal(Generic[CogStateType, CogStoreType], ui.Modal):  # noqa: PYI
         self.guild: Guild = getattr(state, "guild")
         self.store: CogStoreType = getattr(state, "store")
 
-        super().__init__(title=title, custom_id=custom_id, timeout=timeout)
+        params = dict_without_nones(
+            title=title,
+            custom_id=custom_id,
+            timeout=timeout,
+        )
+        super().__init__(**params)
 
     @override
     async def interaction_check(self, interaction: Interaction) -> bool:

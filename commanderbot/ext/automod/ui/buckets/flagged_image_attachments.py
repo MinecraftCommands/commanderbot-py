@@ -25,10 +25,7 @@ class AddFlaggedImageAttachmentsBucket(
 ):
     def __init__(self, interaction: Interaction, state: AutomodGuildState):
         super().__init__(
-            interaction,
-            state,
-            title="Add a new flagged image attachments bucket",
-            custom_id="commanderbot_ext:automod.buckets.flagged_image_attachments.add",
+            interaction, state, title="Add a new flagged image attachments bucket"
         )
 
         self.name_input = ui.TextInput(
@@ -97,12 +94,7 @@ class ModifyFlaggedImageAttachmentsBucket(
         if len(title) > MAX_MODAL_TITLE_LENGTH:
             title = f"{title[:42]}..."
 
-        super().__init__(
-            interaction,
-            state,
-            title=title,
-            custom_id="commanderbot_ext:automod.buckets.flagged_image_attachments.modify",
-        )
+        super().__init__(interaction, state, title=title)
 
         self.description_input = ui.TextInput(
             style=TextStyle.short,
