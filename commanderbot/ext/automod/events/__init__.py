@@ -5,9 +5,11 @@ from .guild_channel_created import *
 from .guild_channel_deleted import *
 from .guild_channel_pins_updated import *
 from .guild_channel_updated import *
+from .member_banned import *
 from .member_joined import *
 from .member_left import *
 from .member_typing import *
+from .member_unbanned import *
 from .member_updated import *
 from .message_deleted import *
 from .message_edited import *
@@ -22,6 +24,4 @@ from .thread_member_joined import *
 from .thread_member_left import *
 from .thread_removed import *
 from .thread_updated import *
-from .user_banned import *
-from .user_unbanned import *
 from .user_updated import *

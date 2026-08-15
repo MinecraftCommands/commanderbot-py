@@ -10,24 +10,24 @@ type _AutomodTriggerType = (
     triggers.DiscordAutomodBlockedMemberInteractions
     | triggers.DiscordAutomodBlockedMessage
     | triggers.DiscordAutomodTimedOut
+    | triggers.MemberBanned
+    | triggers.MemberGainedFlags
     | triggers.MemberJoined
     | triggers.MemberLeft
-    | triggers.MemberTyping
-    | triggers.MentionsRemovedFromMessage
-    | triggers.MemberGainedFlags
     | triggers.MemberLostFlags
+    | triggers.MemberTyping
+    | triggers.MemberUnbanned
+    | triggers.MentionsRemovedFromMessage
     | triggers.MessageDeleted
     | triggers.MessageEdited
     | triggers.MessageFrequency
     | triggers.MessageSent
     | triggers.Message
-    | triggers.Reaction
     | triggers.ReactionAdded
     | triggers.ReactionRemoved
+    | triggers.Reaction
     | triggers.ThreadCreated
     | triggers.ThreadDeleted
-    | triggers.UserBanned
-    | triggers.UserUnbanned
 )
 
 type AutomodTriggerType = Annotated[_AutomodTriggerType, Field(discriminator="type")]

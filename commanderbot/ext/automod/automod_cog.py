@@ -408,7 +408,7 @@ class AutomodCog(
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban
         """
 
-        await self.state[guild].on_user_banned(user)
+        await self.state[guild].on_member_banned(user)
 
     @Cog.listener()
     async def on_member_unban(self, guild: Guild, user: User):
@@ -416,7 +416,7 @@ class AutomodCog(
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban
         """
 
-        await self.state[guild].on_user_unbanned(user)
+        await self.state[guild].on_member_unbanned(user)
 
     # @@ MESSAGES
 

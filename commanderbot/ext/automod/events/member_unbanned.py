@@ -5,11 +5,11 @@ from discord import User
 
 from commanderbot.ext.automod.event import AutomodEvent
 
-__all__ = ("UserUnbanned",)
+__all__ = ("MemberUnbanned",)
 
 
 @dataclass
-class UserUnbanned(AutomodEvent):
+class MemberUnbanned(AutomodEvent):
     _user: User
 
     @property

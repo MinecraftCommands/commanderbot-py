@@ -432,8 +432,8 @@ class AutomodGuildState(CogGuildState):
     async def on_user_updated(self, before: User, after: User):
         await self.dispatch_event(events.UserUpdated(before, after))
 
-    async def on_user_banned(self, user: User):
-        await self.dispatch_event(events.UserBanned(user))
+    async def on_member_banned(self, user: User):
+        await self.dispatch_event(events.MemberBanned(user))
 
-    async def on_user_unbanned(self, user: User):
-        await self.dispatch_event(events.UserUnbanned(user))
+    async def on_member_unbanned(self, user: User):
+        await self.dispatch_event(events.MemberUnbanned(user))
