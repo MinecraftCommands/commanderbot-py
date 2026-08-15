@@ -58,7 +58,7 @@ commanderbot = "commanderbot:__main__"
 [dependency-groups]
 dev = [
     "ruff>=0.16.0",
-    "ty>=0.0.71",
+    "ty>=0.0.72",
 ]
 
 [tool.ruff.lint]
