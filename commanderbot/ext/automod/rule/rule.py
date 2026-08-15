@@ -24,7 +24,7 @@ class AutomodRule(BaseModel):
     description: Optional[str] = None
     """Describe what the rule does."""
 
-    disabled: Optional[bool] = None
+    disabled: bool = False
     """Is the rule disabled?"""
 
     log: Optional[LogChannel] = None
