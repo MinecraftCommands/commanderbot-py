@@ -18,6 +18,7 @@ from commanderbot.lib.cogs.views import CogStateModal
 from commanderbot.lib.log_channel import LogChannel
 
 __all__ = (
+    "DefaultLogDetails",
     "ModifyDefaultLog",
     "SetDefaultLog",
 )
