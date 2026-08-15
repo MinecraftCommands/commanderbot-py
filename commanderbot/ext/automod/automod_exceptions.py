@@ -1,3 +1,4 @@
+from commanderbot.ext.automod.enums import BucketTypeChoices
 from commanderbot.lib.exceptions import ResponsiveException
 
 
@@ -7,7 +8,7 @@ class AutomodException(ResponsiveException):
 
 class CouldNotValidateLogChannel(AutomodException):
     def __init__(self, exception: ValueError):
-        self.exception = exception
+        self.exception: ValueError = exception
         super().__init__(
             f"😵 An error occurred while validating the log channel:\n```\n{exception}\n```"
         )
@@ -15,7 +16,7 @@ class CouldNotValidateLogChannel(AutomodException):
 
 class CouldNotValidateModifiedLogChannel(AutomodException):
     def __init__(self, exception: ValueError):
-        self.exception = exception
+        self.exception: ValueError = exception
         super().__init__(
             f"😵 An error occurred while validating the modified log channel:\n```\n{exception}\n```"
         )
@@ -23,7 +24,7 @@ class CouldNotValidateModifiedLogChannel(AutomodException):
 
 class CouldNotValidateNewAutomodRule(AutomodException):
     def __init__(self, exception: ValueError):
-        self.exception = exception
+        self.exception: ValueError = exception
         super().__init__(
             f"😵 An error occurred while validating the new rule:\n```\n{exception}\n```"
         )
@@ -31,7 +32,7 @@ class CouldNotValidateNewAutomodRule(AutomodException):
 
 class CouldNotValidateModifiedAutomodRule(AutomodException):
     def __init__(self, exception: ValueError):
-        self.exception = exception
+        self.exception: ValueError = exception
         super().__init__(
             f"😵 An error occurred while validating the modified rule:\n```\n{exception}\n```"
         )
@@ -39,9 +40,56 @@ class CouldNotValidateModifiedAutomodRule(AutomodException):
 
 class CouldNotValidateUploadedAutomodRule(AutomodException):
     def __init__(self, exception: ValueError):
-        self.exception = exception
+        self.exception: ValueError = exception
         super().__init__(
             f"😵 An error occurred while validating the uploaded rule:\n```\n{exception}\n```"
+        )
+
+
+class UnsupportedBucketTypeChoice(AutomodException):
+    def __init__(self, choice: BucketTypeChoices):
+        self.choice: BucketTypeChoices = choice
+        super().__init__(
+            f"😵 Unsupported bucket type choice '{choice}' (This should never happen!!!)"
+        )
+
+
+class UnsupportedBucketType(AutomodException):
+    def __init__(self, type: str):
+        self.type: str = type
+        super().__init__(
+            f"😵 Unsupported bucket type '{type}' (This should never happen!!!)"
+        )
+
+
+class CouldNotValidateNewMessageHistoryBucket(AutomodException):
+    def __init__(self, exception: ValueError):
+        self.exception: ValueError = exception
+        super().__init__(
+            f"😵 An error occurred while validating the new message history bucket:\n```\n{exception}\n```"
+        )
+
+
+class CouldNotValidateModifiedMessageHistoryBucket(AutomodException):
+    def __init__(self, exception: ValueError):
+        self.exception: ValueError = exception
+        super().__init__(
+            f"😵 An error occurred while validating the modified message history bucket:\n```\n{exception}\n```"
+        )
+
+class CouldNotValidateNewFlaggedImageAttachmentsBucket(AutomodException):
+    def __init__(self, exception: ValueError):
+        self.exception: ValueError = exception
+        super().__init__(
+            f"😵 An error occurred while validating the new flagged image attachments bucket:\n```\n{exception}\n```"
+        )
+
+
+class CouldNotValidateModifiedFlaggedImageAttachmentsBucket(AutomodException):
+    def __init__(self, exception: ValueError):
+        self.exception: ValueError = exception
+        super().__init__(
+            f"😵 An error occurred while validating the modified flagged image attachments bucket:\n```\n{exception}\n```"
         )
 
 

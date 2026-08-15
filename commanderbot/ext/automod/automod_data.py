@@ -68,8 +68,12 @@ class AutomodGuildData(BaseModel):
         return self.default_log
 
     def modify_default_log(self, log: LogChannel) -> tuple[LogChannel, LogChannel]:
+        # The log channel needs to exist
         old_log = self.require_default_log()
+
+        # Replace the old log channel with the modified log channel
         self.default_log = log
+
         return (old_log, self.default_log)
 
     def remove_default_log(
@@ -210,14 +214,16 @@ class AutomodGuildData(BaseModel):
 
         return bucket
 
-    def modify_bucket(self, bucket: AutomodBucket) -> AutomodBucket:
+    def modify_bucket(
+        self, bucket: AutomodBucket
+    ) -> tuple[AutomodBucket, AutomodBucket]:
         # The bucket need to exist
-        self.require_bucket_with_type(bucket.name, type(bucket))
+        old_bucket = self.require_bucket_with_type(bucket.name, type(bucket))
 
-        # Modify the bucket
+        # Replace the old bucket with the modified bucket
         self.buckets[bucket.name] = bucket  # type: ignore[ty:invalid-assignment] - This is fine since all buckets inherit from `AutomodBucket`
 
-        return bucket
+        return (old_bucket, bucket)
 
     def remove_bucket(self, name: str) -> AutomodBucket:
         # The bucket need to exist

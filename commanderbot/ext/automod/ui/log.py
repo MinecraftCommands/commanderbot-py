@@ -92,7 +92,7 @@ class SetDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
 
     @override
     async def on_submit(self, interaction: Interaction):
-        raw_log = {
+        raw_log: dict = {
             "channel": self.channel_input.values[-1].id,
             "emoji": self.emoji_input.value or None,
             "color": self.color_input.value or None,
@@ -107,7 +107,7 @@ class SetDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
 
         try:
             log = LogChannel.model_validate(raw_log)
-            await self.store.set_default_log(self.state.guild, log)
+            await self.store.set_default_log(self.guild, log)
             await interaction.response.send_message(
                 f"Set default log channel to <#{log.channel}>"
             )
@@ -198,7 +198,7 @@ class ModifyDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
 
     @override
     async def on_submit(self, interaction: Interaction):
-        raw_log = {
+        raw_log: dict = {
             "channel": self.channel_input.values[-1].id,
             "emoji": self.emoji_input.value or None,
             "color": self.color_input.value or None,
@@ -213,7 +213,7 @@ class ModifyDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
 
         try:
             log = LogChannel.model_validate(raw_log)
-            await self.store.modify_default_log(self.state.guild, log)
+            await self.store.modify_default_log(self.guild, log)
             await interaction.response.send_message(
                 f"Modified default log channel <#{log.channel}>"
             )

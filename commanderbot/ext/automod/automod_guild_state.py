@@ -23,11 +23,15 @@ from commanderbot.ext.automod import buckets, events
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.automod_exceptions import (
     CouldNotValidateUploadedAutomodRule,
+    UnsupportedBucketType,
+    UnsupportedBucketTypeChoice,
     UploadIsNotJsonFile,
 )
 from commanderbot.ext.automod.automod_store import AutomodStore
+from commanderbot.ext.automod.enums import BucketTypeChoices
 from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.ext.automod.rule import AutomodRule
+from commanderbot.ext.automod.ui import buckets as buckets_ui
 from commanderbot.ext.automod.ui import log as log_ui
 from commanderbot.ext.automod.ui import rule as rule_ui
 from commanderbot.lib.allowed_mentions import AllowedMentions
@@ -269,11 +273,21 @@ class AutomodGuildState(CogGuildState):
         await self.store.disable_all_rules(self.guild)
         await interaction.response.send_message(f"Disabled all `{rule_count}` rules")
 
-    async def add_flagged_image_attachments_bucket(self, interaction: Interaction):
-        pass
-
-    async def add_message_history_bucket(self, interaction: Interaction):
-        pass
+    async def add_bucket(
+        self, interaction: Interaction, bucket_type: BucketTypeChoices
+    ):
+        match bucket_type:
+            case BucketTypeChoices.FLAGGED_IMAGE_ATTACHMENTS:
+                await interaction.response.send_modal(
+                    buckets_ui.AddFlaggedImageAttachmentsBucketModal(interaction, self)
+                )
+            case BucketTypeChoices.MESSAGE_HISTORY:
+                await interaction.response.send_modal(
+                    buckets_ui.AddMessageHistoryBucketModal(interaction, self)
+                )
+            case _:
+                # Just in case we forget to add modals in the future
+                raise UnsupportedBucketTypeChoice(bucket_type)
 
     async def modify_bucket(self, interaction: Interaction, name: str):
         # Get the bucket
@@ -282,11 +296,20 @@ class AutomodGuildState(CogGuildState):
         # Send the right modal based on the bucket type
         match bucket:
             case buckets.FlaggedImageAttachments():
-                pass
+                await interaction.response.send_modal(
+                    buckets_ui.ModifyFlaggedImageAttachmentsBucketModal(
+                        interaction, self, bucket
+                    )
+                )
             case buckets.MessageHistory():
-                pass
+                await interaction.response.send_modal(
+                    buckets_ui.ModifyMessageHistoryBucketModal(
+                        interaction, self, bucket
+                    )
+                )
             case _:
-                pass
+                # Just in case we forget to add modals in the future
+                raise UnsupportedBucketType(bucket.type)
 
     async def remove_bucket(self, interaction: Interaction, name: str):
         # Get the bucket

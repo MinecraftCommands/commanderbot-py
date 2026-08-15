@@ -176,7 +176,9 @@ class AutomodStore(CogStore):
         await self.db.commit()
         return result
 
-    async def modify_bucket(self, guild: Guild, bucket: AutomodBucket) -> AutomodBucket:
+    async def modify_bucket(
+        self, guild: Guild, bucket: AutomodBucket
+    ) -> tuple[AutomodBucket, AutomodBucket]:
         cache = await self.db.get_cache()
         guild_data = cache.guilds[guild.id]
         result = guild_data.modify_bucket(bucket)

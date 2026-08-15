@@ -45,7 +45,7 @@ class AddRuleModal(CogStateModal["AutomodGuildState", AutomodStore]):
     async def on_submit(self, interaction: Interaction):
         try:
             rule = AutomodRule.model_validate_json(self.rule_input.value)
-            await self.store.add_rule(self.state.guild, rule, interaction.user.id)
+            await self.store.add_rule(self.guild, rule, interaction.user.id)
             await interaction.response.send_message(f"Added rule `{rule.name}`")
         except ValueError as ex:
             raise CouldNotValidateNewAutomodRule(ex)
@@ -83,7 +83,7 @@ class ModifyRuleModal(CogStateModal["AutomodGuildState", AutomodStore]):
     async def on_submit(self, interaction: Interaction):
         try:
             rule = AutomodRule.model_validate_json(self.rule_input.value)
-            await self.store.modify_rule(self.state.guild, rule, interaction.user.id)
+            await self.store.modify_rule(self.guild, rule, interaction.user.id)
             await interaction.response.send_message(f"Modified rule `{rule.name}`")
         except ValueError as ex:
             raise CouldNotValidateModifiedAutomodRule(ex)
