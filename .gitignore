@@ -1,17 +1,16 @@
-.pytest_cache/
-**/__pycache__
-venv/
-.venv/
-bot/
-dist/
-*.egg-info/
-
 .vscode/
 *.code-workspace
 
-.python-version
-.venv
+venv/
+.venv/
+.ruff_cache/
+.pytest_cache/
+**/__pycache__/
+*.egg-info/
 
+bot/
+dist/
+.python-version
 .env
 *.sh
 *.bat
