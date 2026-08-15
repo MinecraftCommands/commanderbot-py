@@ -1,6 +1,6 @@
 from typing import Generic, Optional, TypeVar, override
 
-from discord import Interaction, ui
+from discord import Guild, Interaction, ui
 from discord.ext.commands import Bot, Cog
 
 __all__ = ("CogStateModal", "CogStateView")
@@ -47,6 +47,7 @@ class CogStateModal(Generic[CogStateType, CogStoreType], ui.Modal):  # noqa: PYI
         self.state: CogStateType = state
         self.bot: Bot = getattr(state, "bot")
         self.cog: Cog = getattr(state, "cog")
+        self.guild: Guild = getattr(state, "guild")
         self.store: CogStoreType = getattr(state, "store")
 
         super().__init__(title=title, custom_id=custom_id, timeout=timeout)
@@ -98,6 +99,7 @@ class CogStateView(Generic[CogStateType, CogStoreType], ui.View):  # noqa: PYI05
         self.state: CogStateType = state
         self.bot: Bot = getattr(state, "bot")
         self.cog: Cog = getattr(state, "cog")
+        self.guild: Guild = getattr(state, "guild")
         self.store: CogStateType = getattr(state, "store")
 
         super().__init__(timeout=timeout)
