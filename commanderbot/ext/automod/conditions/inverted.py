@@ -21,4 +21,4 @@ class Inverted(AutomodCondition):
 
     @override
     async def check(self, context: AutomodContext) -> bool:
-        return not self.condition.check(context)
+        return not await self.condition.check(context)
