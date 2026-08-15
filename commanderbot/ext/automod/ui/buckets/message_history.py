@@ -13,15 +13,16 @@ from commanderbot.lib.constants import MAX_MODAL_TITLE_LENGTH
 from commanderbot.lib.timedelta import TimedeltaAdapter
 
 __all__ = (
-    "AddMessageHistoryBucketModal",
-    "ModifyMessageHistoryBucketModal",
+    "AddMessageHistoryBucket",
+    "MessageHistoryBucketDetails",
+    "ModifyMessageHistoryBucket",
 )
 
 if TYPE_CHECKING:
     from commanderbot.ext.automod.automod_guild_state import AutomodGuildState
 
 
-class AddMessageHistoryBucketModal(CogStateModal["AutomodGuildState", AutomodStore]):
+class AddMessageHistoryBucket(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(self, interaction: Interaction, state: AutomodGuildState):
         super().__init__(
             interaction,
@@ -95,7 +96,7 @@ class AddMessageHistoryBucketModal(CogStateModal["AutomodGuildState", AutomodSto
             raise CouldNotValidateNewMessageHistoryBucket(ex)
 
 
-class ModifyMessageHistoryBucketModal(CogStateModal["AutomodGuildState", AutomodStore]):
+class ModifyMessageHistoryBucket(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(
         self,
         interaction: Interaction,
@@ -176,3 +177,33 @@ class ModifyMessageHistoryBucketModal(CogStateModal["AutomodGuildState", Automod
             )
         except ValueError as ex:
             raise CouldNotValidateModifiedMessageHistoryBucket(ex)
+
+
+class MessageHistoryBucketDetails(ui.LayoutView):
+    def __init__(self, bucket: buckets.MessageHistory):
+        super().__init__()
+
+        container = ui.Container(accent_color=0x00ACED)
+        self.add_item(container)
+
+        container.add_item(ui.TextDisplay(f"### 🪣 Details for bucket `{bucket.name}`"))
+        container.add_item(ui.Separator())
+
+        description: str = (
+            f"`{bucket.description}`" if bucket.description else "**None!**"
+        )
+        lifetime: str = TimedeltaAdapter.dump_json(bucket.lifetime).decode().strip('"')
+        interval: str = TimedeltaAdapter.dump_json(bucket.interval).decode().strip('"')
+        fields: dict[str, str] = {
+            "Type": f"`{bucket.type}`",
+            "Name": f"`{bucket.name}`",
+            "Description": description,
+            "Enabled": "❌" if bucket.disabled else "✅",
+            "Lifetime": f"`{lifetime}`",
+            "Interval": f"`{interval}`",
+            "Messages": f"`{bucket.message_count}`",
+            "Channels": f"`{bucket.channel_count}`",
+        }
+
+        for field_name, field_value in fields.items():
+            container.add_item(ui.TextDisplay(f"**{field_name}**: {field_value}"))

@@ -18,15 +18,15 @@ from commanderbot.lib.cogs.views import CogStateModal
 from commanderbot.lib.log_channel import LogChannel
 
 __all__ = (
-    "ModifyDefaultLogModal",
-    "SetDefaultLogModal",
+    "ModifyDefaultLog",
+    "SetDefaultLog",
 )
 
 if TYPE_CHECKING:
     from commanderbot.ext.automod.automod_guild_state import AutomodGuildState
 
 
-class SetDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
+class SetDefaultLog(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(self, interaction: Interaction, state: AutomodGuildState):
         super().__init__(
             interaction,
@@ -69,7 +69,7 @@ class SetDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
         )
 
         self.stacktrace_input = ui.CheckboxGroup(required=False)
-        self.stacktrace_input.add_option(label="\u200b", default=False)
+        self.stacktrace_input.add_option(label="\u200B", default=False)
         self.stacktrace_label = ui.Label(
             text="Print exception stacktraces", component=self.stacktrace_input
         )
@@ -115,7 +115,7 @@ class SetDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
             raise CouldNotValidateLogChannel(ex)
 
 
-class ModifyDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
+class ModifyDefaultLog(CogStateModal["AutomodGuildState", AutomodStore]):
     def __init__(
         self, interaction: Interaction, state: AutomodGuildState, log: LogChannel
     ):
@@ -166,7 +166,7 @@ class ModifyDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
 
         self.stacktrace_input = ui.CheckboxGroup(required=False)
         self.stacktrace_input.add_option(
-            label="\u200b", default=log.stacktrace or False
+            label="\u200B", default=log.stacktrace or False
         )
         self.stacktrace_label = ui.Label(
             text="Print exception stacktraces", component=self.stacktrace_input
@@ -219,3 +219,35 @@ class ModifyDefaultLogModal(CogStateModal["AutomodGuildState", AutomodStore]):
             )
         except ValueError as ex:
             raise CouldNotValidateModifiedLogChannel(ex)
+
+
+class DefaultLogDetails(ui.LayoutView):
+    def __init__(self, log: LogChannel):
+        super().__init__()
+
+        container = ui.Container(accent_color=0x00ACED)
+        self.add_item(container)
+
+        container.add_item(
+            ui.TextDisplay(f"### 🧾 Details for default log channel <#{log.channel}>")
+        )
+        container.add_item(ui.Separator())
+
+        fields: dict[str, str] = {
+            "Channel": f"<#{log.channel}>",
+            "Emoji": log.emoji or "**None!**",
+            "Color": f"`{log.color}`" if log.color is not None else "**None!**",
+            "Stacktrace": "✅" if log.stacktrace else "❌",
+            "Allowed Mentions": "\n".join(
+                (
+                    "",
+                    f"- Everyone: {'✅' if log.allowed_mentions.everyone else '❌'}",
+                    f"- Users: {'✅' if log.allowed_mentions.users else '❌'}",
+                    f"- Roles: {'✅' if log.allowed_mentions.roles else '❌'}",
+                    f"- Replied User: {'✅' if log.allowed_mentions.replied_user else '❌'}",
+                )
+            ),
+        }
+
+        for field_name, field_value in fields.items():
+            container.add_item(ui.TextDisplay(f"**{field_name}**: {field_value}"))
