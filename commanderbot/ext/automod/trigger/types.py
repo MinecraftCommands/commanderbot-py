@@ -15,6 +15,8 @@ type _AutomodTriggerType = (
     | triggers.MemberJoined
     | triggers.MemberLeft
     | triggers.MemberLostFlags
+    | triggers.MemberTimeoutEnded
+    | triggers.MemberTimeoutStarted
     | triggers.MemberTyping
     | triggers.MemberUnbanned
     | triggers.MentionsRemovedFromMessage

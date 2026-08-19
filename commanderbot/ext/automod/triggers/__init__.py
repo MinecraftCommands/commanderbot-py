@@ -6,6 +6,8 @@ from .member_gained_flags import *
 from .member_joined import *
 from .member_left import *
 from .member_lost_flags import *
+from .member_timeout_ended import *
+from .member_timeout_started import *
 from .member_typing import *
 from .member_unbanned import *
 from .mentions_removed_from_message import *
