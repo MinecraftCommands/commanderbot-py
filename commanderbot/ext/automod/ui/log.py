@@ -220,7 +220,7 @@ class DefaultLogDetails(ui.LayoutView):
         self.add_item(container)
 
         container.add_item(
-            ui.TextDisplay(f"### 🧾 Details for default log channel <#{log.channel}>")
+            ui.TextDisplay(f"### 📘 Details for default log channel <#{log.channel}>")
         )
         container.add_item(ui.Separator())
 
@@ -232,10 +232,10 @@ class DefaultLogDetails(ui.LayoutView):
             "Allowed Mentions": "\n".join(
                 (
                     "",
-                    f"- Everyone: {'✅' if log.allowed_mentions.everyone else '❌'}",
-                    f"- Users: {'✅' if log.allowed_mentions.users else '❌'}",
-                    f"- Roles: {'✅' if log.allowed_mentions.roles else '❌'}",
-                    f"- Replied User: {'✅' if log.allowed_mentions.replied_user else '❌'}",
+                    f"- **Everyone**: {'✅' if log.allowed_mentions.everyone else '❌'}",
+                    f"- **Users**: {'✅' if log.allowed_mentions.users else '❌'}",
+                    f"- **Roles**: {'✅' if log.allowed_mentions.roles else '❌'}",
+                    f"- **Replied User**: {'✅' if log.allowed_mentions.replied_user else '❌'}",
                 )
             ),
         }
