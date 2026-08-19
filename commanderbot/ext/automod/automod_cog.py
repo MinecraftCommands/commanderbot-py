@@ -21,6 +21,7 @@ from discord.app_commands import (
     Group,
     allowed_contexts,
     allowed_installs,
+    autocomplete,
     choices,
     command,
     default_permissions,
@@ -36,6 +37,7 @@ from commanderbot.ext.automod.automod_store import AutomodStore
 from commanderbot.ext.automod.enums import BucketTypeChoices
 from commanderbot.ext.automod.rule import AutomodRule
 from commanderbot.lib.cogs import CogGuildStateManager
+from commanderbot.lib.constants import MAX_AUTOCOMPLETE_CHOICES
 from commanderbot.lib.databases.json_db import JsonDB
 from commanderbot.lib.predicates import (
     is_bot,
@@ -76,6 +78,116 @@ class AutomodCog(
             ),
             store=self.store,
         )
+
+    # @@ AUTOCOMPLETE
+
+    async def rule_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        assert is_guild(interaction.guild)
+        guild: Guild = interaction.guild
+        value: str = value.lower()
+        rules: list[Choice[str]] = []
+        async for rule in self.store.yield_rules(guild):
+            # Append rule if the query is in the rule's name
+            rule_name: str = rule.name.lower()
+            if value in rule_name:
+                rules.append(Choice(name=f"📜 {rule.name}", value=rule.name))
+
+            # Break out of loop if we've reached the max autocomplete choices
+            if len(rules) == MAX_AUTOCOMPLETE_CHOICES:
+                break
+        return rules
+
+    async def enabled_rule_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        assert is_guild(interaction.guild)
+        guild: Guild = interaction.guild
+        value: str = value.lower()
+        rules: list[Choice[str]] = []
+        async for rule in self.store.yield_rules(guild):
+            # Append rule if it's enabled and the query is in the rule's name
+            rule_name: str = rule.name.lower()
+            if not rule.disabled and value in rule_name:
+                rules.append(Choice(name=f"📜 {rule.name}", value=rule.name))
+
+            # Break out of loop if we've reached the max autocomplete choices
+            if len(rules) == MAX_AUTOCOMPLETE_CHOICES:
+                break
+        return rules
+
+    async def disabled_rule_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        assert is_guild(interaction.guild)
+        guild: Guild = interaction.guild
+        value: str = value.lower()
+        rules: list[Choice[str]] = []
+        async for rule in self.store.yield_rules(guild):
+            # Append rule if it's disabled and the query is in the rule's name
+            rule_name: str = rule.name.lower()
+            if rule.disabled and value in rule_name:
+                rules.append(Choice(name=f"📜 {rule.name}", value=rule.name))
+
+            # Break out of loop if we've reached the max autocomplete choices
+            if len(rules) == MAX_AUTOCOMPLETE_CHOICES:
+                break
+        return rules
+
+    async def bucket_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        assert is_guild(interaction.guild)
+        guild: Guild = interaction.guild
+        value: str = value.lower()
+        buckets: list[Choice[str]] = []
+        async for bucket in self.store.yield_buckets(guild):
+            # Append bucket if the query is in the bucket's name
+            bucket_name: str = bucket.name.lower()
+            if value in bucket_name:
+                buckets.append(Choice(name=f"🪣 {bucket.name}", value=bucket.name))
+
+            # Break out of loop if we've reached the max autocomplete choices
+            if len(buckets) == MAX_AUTOCOMPLETE_CHOICES:
+                break
+        return buckets
+
+    async def enabled_bucket_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        assert is_guild(interaction.guild)
+        guild: Guild = interaction.guild
+        value: str = value.lower()
+        buckets: list[Choice[str]] = []
+        async for bucket in self.store.yield_buckets(guild):
+            # Append bucket if the query is in the bucket's name
+            bucket_name: str = bucket.name.lower()
+            if not bucket.disabled and value in bucket_name:
+                buckets.append(Choice(name=f"🪣 {bucket.name}", value=bucket.name))
+
+            # Break out of loop if we've reached the max autocomplete choices
+            if len(buckets) == MAX_AUTOCOMPLETE_CHOICES:
+                break
+        return buckets
+
+    async def disabled_bucket_autocomplete(
+        self, interaction: Interaction, value: str
+    ) -> list[Choice[str]]:
+        assert is_guild(interaction.guild)
+        guild: Guild = interaction.guild
+        value: str = value.lower()
+        buckets: list[Choice[str]] = []
+        async for bucket in self.store.yield_buckets(guild):
+            # Append bucket if the query is in the bucket's name
+            bucket_name: str = bucket.name.lower()
+            if bucket.disabled and value in bucket_name:
+                buckets.append(Choice(name=f"🪣 {bucket.name}", value=bucket.name))
+
+            # Break out of loop if we've reached the max autocomplete choices
+            if len(buckets) == MAX_AUTOCOMPLETE_CHOICES:
+                break
+        return buckets
 
     # @@ COMMANDS
 
@@ -133,6 +245,7 @@ class AutomodCog(
     # @@ automod rules modify
     @cmd_automod_rules.command(name="modify", description="Modify a rule")
     @describe(rule="The rule to modify")
+    @autocomplete(rule=rule_autocomplete)
     async def cmd_automod_rules_modify(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_rule(interaction, rule)
@@ -151,6 +264,7 @@ class AutomodCog(
     # @@ automod rules remove
     @cmd_automod_rules.command(name="remove", description="Remove a rule")
     @describe(rule="The rule to remove")
+    @autocomplete(rule=rule_autocomplete)
     async def cmd_automod_rules_remove(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].remove_rule(interaction, rule)
@@ -158,6 +272,7 @@ class AutomodCog(
     # @@ automod rules details
     @cmd_automod_rules.command(name="details", description="Show details about a rule")
     @describe(rule="The rule to show details about")
+    @autocomplete(rule=rule_autocomplete)
     async def cmd_automod_rules_details(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_rule_details(interaction, rule)
@@ -165,6 +280,7 @@ class AutomodCog(
     # @@ automod rules enable
     @cmd_automod_rules.command(name="enable", description="Enable a rule")
     @describe(rule="The rule to enable")
+    @autocomplete(rule=disabled_rule_autocomplete)
     async def cmd_automod_rules_enable(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].enable_rule(interaction, rule)
@@ -172,6 +288,7 @@ class AutomodCog(
     # @@ automod rules disable
     @cmd_automod_rules.command(name="disable", description="Disable a rule")
     @describe(rule="The rule to disable")
+    @autocomplete(rule=enabled_rule_autocomplete)
     async def cmd_automod_rules_disable(self, interaction: Interaction, rule: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].disable_rule(interaction, rule)
@@ -211,6 +328,7 @@ class AutomodCog(
     # @@ automod buckets modify
     @cmd_automod_buckets.command(name="modify", description="Modify a bucket")
     @describe(bucket="The bucket to modify")
+    @autocomplete(bucket=bucket_autocomplete)
     async def cmd_automod_buckets_modify(self, interaction: Interaction, bucket: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].modify_bucket(interaction, bucket)
@@ -218,6 +336,7 @@ class AutomodCog(
     # @@ automod buckets remove
     @cmd_automod_buckets.command(name="remove", description="Remove a bucket")
     @describe(bucket="The bucket to remove")
+    @autocomplete(bucket=bucket_autocomplete)
     async def cmd_automod_buckets_remove(self, interaction: Interaction, bucket: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].remove_bucket(interaction, bucket)
@@ -227,6 +346,7 @@ class AutomodCog(
         name="details", description="Show details about a bucket"
     )
     @describe(bucket="The bucket to show details about")
+    @autocomplete(bucket=bucket_autocomplete)
     async def cmd_automod_buckets_details(self, interaction: Interaction, bucket: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].show_bucket_details(interaction, bucket)
@@ -236,6 +356,7 @@ class AutomodCog(
         name="clear", description="Clear the saved data in a bucket"
     )
     @describe(bucket="The bucket to clear the saved data of")
+    @autocomplete(bucket=bucket_autocomplete)
     async def cmd_automod_buckets_clear(self, interaction: Interaction, bucket: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].clear_bucket(interaction, bucket)
@@ -243,6 +364,7 @@ class AutomodCog(
     # @@ automod buckets enable
     @cmd_automod_buckets.command(name="enable", description="Enable a bucket")
     @describe(bucket="The bucket to enable")
+    @autocomplete(bucket=disabled_bucket_autocomplete)
     async def cmd_automod_buckets_enable(self, interaction: Interaction, bucket: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].enable_bucket(interaction, bucket)
@@ -250,6 +372,7 @@ class AutomodCog(
     # @@ automod buckets disable
     @cmd_automod_buckets.command(name="disable", description="Disable a bucket")
     @describe(bucket="The bucket to disable")
+    @autocomplete(bucket=enabled_bucket_autocomplete)
     async def cmd_automod_buckets_disable(self, interaction: Interaction, bucket: str):
         assert is_guild(interaction.guild)
         await self.state[interaction.guild].disable_bucket(interaction, bucket)
