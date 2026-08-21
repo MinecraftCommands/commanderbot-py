@@ -1,10 +1,11 @@
 import importlib.util
+import os
 import sys
-from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
 from typing import Any, Optional, override
 
+import pebble
 from discord import AppInfo, Asset, Attachment, User
 from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
 from discord.interactions import Interaction
@@ -50,7 +51,10 @@ class CommanderBot(Bot):
         self.application_emojis = ApplicationEmojiManager(self)
 
         # Create a process pool that anything can use.
-        self.pool = ProcessPoolExecutor()
+        # `max_workers` is the number of logical processors minus one.
+        cpu_count: int = os.cpu_count() or 0
+        max_workers: int = max(1, cpu_count - 1)
+        self.pool = pebble.ProcessPool(max_workers)
 
         # Remember when we started and the last time we connected.
         self.started_at: datetime = utcnow()
@@ -236,6 +240,15 @@ class CommanderBot(Bot):
         else:
             await self.command_tree.build_global_cache()
             await self.command_tree.build_guild_cache(self.guilds)
+
+    @override
+    async def close(self):
+        # Clean up process pool
+        self.pool.close()
+        self.pool.join()
+
+        # Actually shut down the bot
+        await super().close()
 
     # Event handler for `Bot`
     async def on_connect(self):

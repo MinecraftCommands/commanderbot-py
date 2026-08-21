@@ -22,6 +22,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pydantic>=2.13.0",
     "aiohttp>=3.14.0",
+    "pebble>=5.2.0",
 
     # These are used for logging.
     "colorama>=0.4.0",
@@ -68,6 +69,7 @@ ignore = [
     "UP007",  # https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/
     "E722",   # https://docs.astral.sh/ruff/rules/bare-except/
     "S110",   # https://docs.astral.sh/ruff/rules/try-except-pass/
+    "S112",   # https://docs.astral.sh/ruff/rules/try-except-continue/
     "BLE001", # https://docs.astral.sh/ruff/rules/blind-except/
     "SIM102", # https://docs.astral.sh/ruff/rules/collapsible-if/
     "SIM103", # https://docs.astral.sh/ruff/rules/needless-bool/

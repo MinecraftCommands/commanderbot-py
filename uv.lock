@@ -193,6 +193,7 @@ dependencies = [
     { name = "mime-enum" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
+    { name = "pebble" },
     { name = "pillow" },
     { name = "psutil" },
     { name = "pydantic" },
@@ -227,6 +228,7 @@ requires-dist = [
     { name = "mime-enum", specifier = ">=0.0.3" },
     { name = "numpy", specifier = ">=2.5.0" },
     { name = "opencv-python-headless", specifier = ">=5.0.0.0" },
+    { name = "pebble", specifier = ">=5.2.0" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "psutil", specifier = ">=7.2.0" },
     { name = "pydantic", specifier = ">=2.13.0" },
@@ -463,6 +465,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9b/21/f6ef335f6e65724aa78b8d792b48d40a48c381715f1e62f5a5049e09d07e/opencv_python_headless-5.0.0.93-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:ed709fdf9aa0bd1f2ed8549e71d19449b03a675bb581eb292285f6861953be37", size = 61204038, upload-time = "2026-07-02T06:56:41.823Z" },
     { url = "https://files.pythonhosted.org/packages/d0/8f/b8756467ea991449a293797f6b3fa80fcfdd29598a0a60d1cd5715b96e61/opencv_python_headless-5.0.0.93-cp37-abi3-win32.whl", hash = "sha256:c6bcd96b185975ea240d22cfdb15a1f6d080cc95264cfbe2621f21bb144d89b9", size = 35411237, upload-time = "2026-07-02T05:50:12.901Z" },
     { url = "https://files.pythonhosted.org/packages/b8/88/763b967f7efd7226b82c9fae16d560cba049b1f0c036647e65c610fd636e/opencv_python_headless-5.0.0.93-cp37-abi3-win_amd64.whl", hash = "sha256:829717b6a95554f273e49e357cee3b3a2a26b6f4842fbc1bed2b45bdd8f87e0e", size = 43825962, upload-time = "2026-07-02T05:50:09.627Z" },
+]
+
+[[package]]
+name = "pebble"
+version = "5.2.1"
+source = { registry = "https://pypi.org/simple/" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/6b/fba8cb6ca12e6bbcfac48da790b6a9d262d5beb6f34dc1b63fccc32a9ff8/pebble-5.2.1.tar.gz", hash = "sha256:9743537aa0e40751a1cbf297928e141bd2202a24624a7c0f9fc14818a7f227b1", size = 40496, upload-time = "2026-07-19T20:18:17.044Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/cf/f838e54b229bb202575daf7542d39da3c38434959d7a9252d4be66cb7d9a/pebble-5.2.1-py3-none-any.whl", hash = "sha256:154feb48f187ffff842cbc2fe0768ed1524d6fa72e90577a78bcea21a2f929f9", size = 34984, upload-time = "2026-07-19T20:18:15.692Z" },
 ]
 
 [[package]]
