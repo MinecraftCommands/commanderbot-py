@@ -67,7 +67,8 @@ class FlaggedImageAttachments(AutomodBucket):
         flagged_at = utcnow()
         for image_attachment, _, phash in image_attachments:
             # The image attachment needs to have a phash
-            assert phash is not None
+            if phash is None:
+                continue
 
             # Skip image attachments that weren't flagged
             if image_attachment.id not in context.metadata.flagged_attachments:
