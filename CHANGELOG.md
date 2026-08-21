@@ -27,10 +27,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Query `SUPPORTS_OCR` in `commanderbot.lib.constants` to check if it was added
   - If added, it will add extra capabilities to the following extensions:
     - `automod`
-- The following library classes now use Pydantic:
+- The following library classes now support Pydantic:
   - `AllowedMentions`
   - `Color`
+  - `ChannelType`
   - `Intents`
+  - `ImageHash`
+  - `Timedelta`
 - `sudo`:
   - Now supports exporting `JsonDB` databases
 
@@ -107,6 +110,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Now uses `JsonDB` and Pydantic models (This is just a direct port with no optimizations)
 
 ### Fixed
+
+- `mcdoc`:
+  - Fixed an issue where application emojis weren't being used
 
 ### Removed
 
