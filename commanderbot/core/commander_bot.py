@@ -52,6 +52,7 @@ class CommanderBot(Bot):
 
         # Create a process pool that anything can use.
         # `max_workers` is the number of logical processors minus one.
+        # The minimum number of workers is `1`.
         cpu_count: int = os.cpu_count() or 0
         max_workers: int = max(1, cpu_count - 1)
         self.pool = pebble.ProcessPool(max_workers)
