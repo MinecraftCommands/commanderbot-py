@@ -23,10 +23,6 @@ class MemberTimeoutEnded(AutomodTrigger):
         timeout_before = event.before.timed_out_until
         timeout_after = event.after.timed_out_until
 
-        if timeout_before is None:
-            return False
-
-        if timeout_after is not None:
-            return False
-
-        return True
+        if timeout_before is not None and timeout_after is None:
+            return True
+        return False
