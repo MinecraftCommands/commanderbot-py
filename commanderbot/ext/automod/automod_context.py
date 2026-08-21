@@ -1,3 +1,4 @@
+import io
 import string
 from collections import defaultdict
 from collections.abc import Iterable
@@ -6,9 +7,7 @@ from itertools import chain
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Optional, cast
 
-import cv2
 import imagehash
-import numpy as np
 from discord import Attachment, Member, User
 from discord.ext.commands import Bot
 from discord.utils import format_dt, utcnow
@@ -155,12 +154,9 @@ class AutomodContext:
                 return (data, None)
 
             # Calculate phash
-            buffer = np.frombuffer(data, np.uint8)
-            image = cv2.imdecode(buffer, cv2.IMREAD_COLOR_RGB)
-            assert image is not None
-            
-            image = Image.fromarray(image)
-            phash = imagehash.phash(image)
+            phash: Optional[ImageHash] = None
+            with Image.open(io.BytesIO(data)) as image:
+                phash = imagehash.phash(image)
 
             # Store image attachment phash
             self.metadata.image_attachment_phashes[attachment.id] = phash
