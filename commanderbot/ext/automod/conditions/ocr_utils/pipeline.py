@@ -26,7 +26,10 @@ def get_text(
     # Turn the bytes into a Numpy array
     buffer = np.frombuffer(image_data, np.uint8)
     image = cv2.imdecode(buffer, cv2.IMREAD_COLOR_RGB)
-    assert image is not None
+
+    # Return `None` if we couldn't decode the image
+    if image is None:
+        return
 
     # Process the image to make the text stand out more
     processed = preprocess(image)
