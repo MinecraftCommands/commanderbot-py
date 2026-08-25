@@ -20,9 +20,7 @@ class MemberTimeoutStarted(AutomodTrigger):
         event = context.event
         assert isinstance(event, events.MemberUpdated)
 
-        timeout_before = event.before.timed_out_until
-        timeout_after = event.after.timed_out_until
+        timeout_before = event.before.is_timed_out()
+        timeout_after = event.after.is_timed_out()
 
-        if timeout_before is None and timeout_after is not None:
-            return True
-        return False
+        return not timeout_before and timeout_after

@@ -10,6 +10,8 @@ __all__ = ("MemberTimeoutEnded",)
 class MemberTimeoutEnded(AutomodTrigger):
     """
     Triggers when a member's timeout ends.
+
+    Due to a Discord limitation, this will not trigger when a member's timeout expires.
     """
 
     type: Literal["member_timeout_ended"]
@@ -20,9 +22,7 @@ class MemberTimeoutEnded(AutomodTrigger):
         event = context.event
         assert isinstance(event, events.MemberUpdated)
 
-        timeout_before = event.before.timed_out_until
-        timeout_after = event.after.timed_out_until
+        timeout_before = event.before.is_timed_out()
+        timeout_after = event.after.is_timed_out()
 
-        if timeout_before is not None and timeout_after is None:
-            return True
-        return False
+        return timeout_before and not timeout_after
