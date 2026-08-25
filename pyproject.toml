@@ -23,6 +23,8 @@ dependencies = [
     "pydantic>=2.13.0",
     "aiohttp>=3.14.0",
     "pebble>=5.2.0",
+    "psutil>=7.2.0",
+    "types-psutil>=7.2.0",
 
     # These are used for logging.
     "colorama>=0.4.0",
@@ -32,8 +34,6 @@ dependencies = [
     "emoji>=2.14.0",
     "allay>=1.3.0",
     "mccq>=1.0.0",
-    "psutil>=7.2.0",
-    "types-psutil>=7.2.0",
     "numpy>=2.5.0",
     "opencv-python-headless>=5.0.0.0",
     "pillow>=12.3.0",
@@ -53,10 +53,7 @@ Changelog = "https://github.com/MinecraftCommands/commanderbot-py/blob/main/CHAN
 commanderbot = "commanderbot:__main__"
 
 [dependency-groups]
-dev = [
-    "ruff>=0.16.0",
-    "ty>=0.0.70",
-]
+dev = ["ruff>=0.16.0", "ty>=0.0.70"]
 
 [tool.ruff.lint]
 ignore = [
