@@ -25,9 +25,9 @@ from .message_has_attachments import *
 from .message_has_embeds import *
 from .message_has_links import *
 from .message_has_mentions import *
+from .message_has_reactions import *
 from .message_mentions_roles import *
 from .message_mentions_users import *
-from .none_of import *
 from .random_chance import *
 from .randomize import *
 from .return_false import *

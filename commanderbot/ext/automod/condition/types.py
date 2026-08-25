@@ -34,9 +34,9 @@ type _AutomodConditionType = (
     | conditions.MessageHasEmbeds
     | conditions.MessageHasLinks
     | conditions.MessageHasMentions
+    | conditions.MessageHasReactions
     | conditions.MessageMentionsRoles
     | conditions.MessageMentionsUsers
-    | conditions.NoneOf
     | conditions.RandomChance
     | conditions.Randomize
     | conditions.ReturnFalse
