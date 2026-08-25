@@ -12,7 +12,7 @@ from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.automod_exceptions import OCRNotSupported
 from commanderbot.ext.automod.condition import AutomodCondition
 from commanderbot.ext.automod.constants import IMAGE_MIME_TYPES
-from commanderbot.lib.constants import SUPPORTS_OCR
+from commanderbot.lib.constants import MAX_ATTACHMENTS, SUPPORTS_OCR
 from commanderbot.lib.types import (
     AttachmentID,
     TesseractLanguages,
@@ -24,8 +24,6 @@ __all__ = ("ImageAttachmentsContain",)
 
 if SUPPORTS_OCR:
     from commanderbot.ext.automod.conditions.ocr_utils.pipeline import get_text
-
-MAX_OCR_WORKERS: int = 4
 
 
 class ImageAttachmentsContain(AutomodCondition):
@@ -78,7 +76,7 @@ class ImageAttachmentsContain(AutomodCondition):
     @classmethod
     def get_semaphore(cls) -> asyncio.Semaphore:
         if cls._semaphore is None:
-            cls._semaphore = asyncio.Semaphore(MAX_OCR_WORKERS)
+            cls._semaphore = asyncio.Semaphore(MAX_ATTACHMENTS)
         return cls._semaphore
 
     @override
