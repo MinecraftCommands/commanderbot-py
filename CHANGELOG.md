@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `Timedelta`
 - `sudo`:
   - Now supports exporting `JsonDB` databases
+- Added a process pool to `CommanderBot` that any extension can use
 
 ### Changed
 
