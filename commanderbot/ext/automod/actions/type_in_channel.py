@@ -17,7 +17,7 @@ class TypeInChannel(AutomodAction):
     Make the bot type in the channel in context for a certain amount of time.
     """
 
-    type: Literal["start_typing"]
+    type: Literal["type_in_channel"]
 
     min_time: PositiveFloat = Field(default=1)
     """The minimum amount of time to type for, in seconds. Defaults to 1 second."""
