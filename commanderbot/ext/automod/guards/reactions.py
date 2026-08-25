@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import Optional
 
 from discord import Reaction
@@ -49,3 +50,18 @@ class ReactionsGuard(BaseModel):
             or self._ignore_by_excludes(reaction)
             or self._ignore_by_count(reaction)
         )
+
+    def reaction_matches(self, reaction: Reaction) -> bool:
+        if self.count and self.count.excludes(reaction.count):
+            return False
+
+        reaction_emoji = str(reaction.emoji)
+        if self.include:
+            return reaction_emoji in self.include
+        if self.exclude:
+            return reaction_emoji not in self.exclude
+        return True
+
+    def filter_reactions(self, reactions: Iterable[Reaction]) -> list[Reaction]:
+        """Filter a sequence of reactions based on the guard."""
+        return [reaction for reaction in reactions if self.reaction_matches(reaction)]
