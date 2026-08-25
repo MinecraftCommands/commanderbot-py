@@ -1,11 +1,11 @@
 import importlib.util
-import os
 import sys
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
 from typing import Any, Optional, override
 
 import pebble
+import psutil
 from discord import AppInfo, Asset, Attachment, User
 from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
 from discord.interactions import Interaction
@@ -53,9 +53,9 @@ class CommanderBot(Bot):
         # Create a process pool that anything can use.
         # `max_workers` is the number of logical processors minus one.
         # The minimum number of workers is `1`.
-        cpu_count: int = os.cpu_count() or 0
-        max_workers: int = max(1, cpu_count - 1)
-        self.pool = pebble.ProcessPool(max_workers)
+        cpu_count: int = psutil.cpu_count() or 0
+        self.max_pool_workers: int = max(1, cpu_count - 1)
+        self.pool = pebble.ProcessPool(self.max_pool_workers)
 
         # Remember when we started and the last time we connected.
         self.started_at: datetime = utcnow()
