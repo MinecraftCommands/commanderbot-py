@@ -1,33 +1,60 @@
 from dataclasses import dataclass
+from typing import Optional, override
 
-from discord import Member, TextChannel, Thread
+from discord import Attachment, Member, Message, Thread, User
 
-from commanderbot.ext.automod.automod_event import AutomodEventBase
-from commanderbot.lib import TextMessage
+from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.lib.predicates import (
+    is_member,
+    is_messagable_guild_channel,
+    is_thread,
+    is_user,
+)
+from commanderbot.lib.types import MessageableGuildChannel
 
 __all__ = ("MessageDeleted",)
 
 
 @dataclass
-class MessageDeleted(AutomodEventBase):
-    _message: TextMessage
+class MessageDeleted(AutomodEvent):
+    _message: Message
 
     @property
-    def channel(self) -> TextChannel | Thread:
+    @override
+    def channel(self) -> MessageableGuildChannel | Thread:
+        assert is_messagable_guild_channel(self._message.channel) or is_thread(
+            self._message.channel
+        )
         return self._message.channel
 
     @property
-    def message(self) -> TextMessage:
+    @override
+    def message(self) -> Message:
         return self._message
 
     @property
-    def author(self) -> Member:
+    @override
+    def attachments(self) -> list[Attachment]:
+        return self._message.attachments
+
+    @property
+    @override
+    def author(self) -> Member | User:
         return self._message.author
 
     @property
-    def actor(self) -> Member:
+    @override
+    def actor(self) -> Member | User:
         return self._message.author
 
     @property
-    def member(self) -> Member:
-        return self._message.author
+    @override
+    def member(self) -> Optional[Member]:
+        if is_member(self._message.author):
+            return self._message.author
+
+    @property
+    @override
+    def user(self) -> Optional[User]:
+        if is_user(self._message.author):
+            return self._message.author

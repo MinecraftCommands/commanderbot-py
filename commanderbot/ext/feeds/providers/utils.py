@@ -1,6 +1,7 @@
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Callable, Coroutine, Literal, Optional, Self
+from datetime import UTC, datetime
+from typing import Any, Literal, Optional, Self
 
 from commanderbot.lib import FromDataMixin
 
@@ -28,7 +29,7 @@ class MinecraftJavaChangelog(FromDataMixin):
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
-            date = datetime.strptime(data["date"], "%Y-%m-%dT%H:%M:%S.%fZ")
+            date = datetime.strptime(data["date"], "%Y-%m-%dT%H:%M:%S.%fZ")  # noqa: DTZ007 - We need aware and naive datetimes
             return cls(
                 id=data["id"],
                 version=data["version"],
@@ -38,7 +39,7 @@ class MinecraftJavaChangelog(FromDataMixin):
                 image_title=data["image"]["title"],
                 image_url=data["image"]["url"],
                 date=date,
-                date_utc=date.astimezone(timezone.utc),
+                date_utc=date.astimezone(UTC),
                 content_url=data["contentPath"],
             )
 
@@ -87,7 +88,7 @@ class MinecraftJavaVersion(FromDataMixin):
                 type=data["type"],
                 time=datetime.fromisoformat(data["time"]),
                 release_time=release_time,
-                release_time_utc=release_time.astimezone(timezone.utc),
+                release_time_utc=release_time.astimezone(UTC),
                 java_version=data["javaVersion"]["majorVersion"],
                 client_jar_url=data["downloads"]["client"]["url"],
                 server_jar_url=data["downloads"]["server"]["url"],
@@ -136,9 +137,9 @@ class ZendeskArticle(FromDataMixin):
     @classmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         if isinstance(data, dict):
-            created_at = datetime.strptime(data["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-            updated_at = datetime.strptime(data["updated_at"], "%Y-%m-%dT%H:%M:%SZ")
-            edited_at = datetime.strptime(data["edited_at"], "%Y-%m-%dT%H:%M:%SZ")
+            created_at = datetime.strptime(data["created_at"], "%Y-%m-%dT%H:%M:%SZ")  # noqa: DTZ007 - We need aware and naive datetimes
+            updated_at = datetime.strptime(data["updated_at"], "%Y-%m-%dT%H:%M:%SZ")  # noqa: DTZ007 - We need aware and naive datetimes
+            edited_at = datetime.strptime(data["edited_at"], "%Y-%m-%dT%H:%M:%SZ")  # noqa: DTZ007 - We need aware and naive datetimes
             return cls(
                 id=data["id"],
                 section_id=data["section_id"],
@@ -149,8 +150,8 @@ class ZendeskArticle(FromDataMixin):
                 created_at=created_at,
                 updated_at=updated_at,
                 edited_at=edited_at,
-                created_at_utc=created_at.astimezone(timezone.utc),
-                updated_at_utc=updated_at.astimezone(timezone.utc),
-                edited_at_utc=edited_at.astimezone(timezone.utc),
+                created_at_utc=created_at.astimezone(UTC),
+                updated_at_utc=updated_at.astimezone(UTC),
+                edited_at_utc=edited_at.astimezone(UTC),
                 body=data["body"],
             )

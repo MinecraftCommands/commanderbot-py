@@ -1,20 +1,23 @@
 from dataclasses import dataclass
+from typing import override
 
 from discord import Thread
 
-from commanderbot.ext.automod.automod_event import AutomodEventBase
+from commanderbot.ext.automod.event import AutomodEvent
 
 __all__ = ("ThreadDeleted",)
 
 
 @dataclass
-class ThreadDeleted(AutomodEventBase):
+class ThreadDeleted(AutomodEvent):
     _thread: Thread
 
     @property
+    @override
     def channel(self) -> Thread:
-        return self.thread
+        return self._thread
 
     @property
+    @override
     def thread(self) -> Thread:
         return self._thread

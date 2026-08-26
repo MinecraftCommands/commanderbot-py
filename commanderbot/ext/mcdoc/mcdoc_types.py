@@ -1,6 +1,8 @@
 import json
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Callable, Mapping, Protocol, Optional, Union
+from typing import Optional, Protocol, Union
+
 from discord import Emoji
 
 
@@ -9,14 +11,11 @@ def cmp_version(a: str, b: str):
 
 
 class McdocLookup(Protocol):
-    def compact_path(self, path: str) -> str:
-        ...
+    def compact_path(self, path: str) -> str: ...
 
-    def get(self, path: str) -> Optional["McdocType"]:
-        ...
+    def get(self, path: str) -> Optional[McdocType]: ...
 
-    def dispatch(self, registry: str, identifier: str) -> Optional["McdocType"]:
-        ...
+    def dispatch(self, registry: str, identifier: str) -> Optional[McdocType]: ...
 
 
 @dataclass
@@ -26,10 +25,10 @@ class McdocContext:
     emojis: Callable[[str], Emoji]
     compact: bool = False
     depth: int = 0
-    type_mapping: Mapping[str, Union[str, "McdocType"]] = field(default_factory=dict)
-    type_args: list["McdocType"] = field(default_factory=list)
+    type_mapping: Mapping[str, Union[str, McdocType]] = field(default_factory=dict)
+    type_args: list[McdocType] = field(default_factory=list)
 
-    def filter(self, attributes: Optional[list["Attribute"]]):
+    def filter(self, attributes: Optional[list[Attribute]]):
         if not attributes:
             return True
         since = next((a.value for a in attributes if a.name == "since"), None)
@@ -43,17 +42,51 @@ class McdocContext:
     def allow_body(self):
         return self.depth <= 2
 
-    def make_compact(self) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, self.emojis, True, self.depth, self.type_mapping, self.type_args)
+    def make_compact(self) -> McdocContext:
+        return McdocContext(
+            self.version,
+            self.symbols,
+            self.emojis,
+            True,
+            self.depth,
+            self.type_mapping,
+            self.type_args,
+        )
 
-    def nested(self, diff=1) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, self.emojis, self.compact, self.depth + diff, self.type_mapping, self.type_args)
+    def nested(self, diff=1) -> McdocContext:
+        return McdocContext(
+            self.version,
+            self.symbols,
+            self.emojis,
+            self.compact,
+            self.depth + diff,
+            self.type_mapping,
+            self.type_args,
+        )
 
-    def with_type_mapping(self, mapping: Mapping[str, Union[str, "McdocType"]]) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, self.emojis, self.compact, self.depth, mapping, self.type_args)
+    def with_type_mapping(
+        self, mapping: Mapping[str, Union[str, McdocType]]
+    ) -> McdocContext:
+        return McdocContext(
+            self.version,
+            self.symbols,
+            self.emojis,
+            self.compact,
+            self.depth,
+            mapping,
+            self.type_args,
+        )
 
-    def with_type_args(self, type_args: list["McdocType"]) -> "McdocContext":
-        return McdocContext(self.version, self.symbols, self.emojis, self.compact, self.depth, self.type_mapping, type_args)
+    def with_type_args(self, type_args: list[McdocType]) -> McdocContext:
+        return McdocContext(
+            self.version,
+            self.symbols,
+            self.emojis,
+            self.compact,
+            self.depth,
+            self.type_mapping,
+            type_args,
+        )
 
 
 @dataclass
@@ -75,7 +108,7 @@ class McdocBaseType:
     def get_attr(self, name: str) -> Optional[dict]:
         for a in self.attributes or []:
             if a.name == name:
-                return a.value or dict()
+                return a.value or {}
         return None
 
     def title(self, name: str, ctx: McdocContext) -> str:
@@ -139,10 +172,10 @@ class DispatcherType(McdocBaseType):
                     return typeDef.title(name, ctx)
         return super().title(name, ctx)
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return f"{self.registry}[{','.join(i.render() for i in self.parallelIndices)}]"
 
-    def render(self, ctx):
+    def render(self, ctx: McdocContext):
         match self.parallelIndices:
             case [StaticIndex(value)]:
                 typeDef = ctx.symbols.dispatch(self.registry, value)
@@ -153,10 +186,10 @@ class DispatcherType(McdocBaseType):
 
 @dataclass
 class IndexedType(McdocBaseType):
-    child: "McdocType"
+    child: McdocType
     parallelIndices: list[DynamicIndex | StaticIndex]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = self.child.suffix(ctx)
         result += f"[{','.join(i.render() for i in self.parallelIndices)}]"
         return result
@@ -164,8 +197,8 @@ class IndexedType(McdocBaseType):
 
 @dataclass
 class StructTypePairField:
-    key: Union[str, "McdocType"]
-    type: "McdocType"
+    key: Union[str, McdocType]
+    type: McdocType
     optional: bool = False
     deprecated: bool = False
     desc: Optional[str] = None
@@ -174,7 +207,9 @@ class StructTypePairField:
     def is_deprecated(self, ctx: McdocContext):
         if self.deprecated:
             return True
-        deprecated = next((a.value for a in self.attributes or [] if a.name == "deprecated"), None)
+        deprecated = next(
+            (a.value for a in self.attributes or [] if a.name == "deprecated"), None
+        )
         if deprecated:
             return cmp_version(ctx.version, deprecated["value"]["value"]) >= 0
         return False
@@ -183,7 +218,7 @@ class StructTypePairField:
         if isinstance(self.key, str):
             key = f"`{self.key}`"
         elif isinstance(self.key, LiteralType):
-            key = f"`{str(self.key.value)}`"
+            key = f"`{self.key.value!s}`"
         else:
             key = f"**[** {self.key.suffix(ctx) or '*a key*'} **]**"
             self.optional = False
@@ -198,7 +233,9 @@ class StructTypePairField:
             result += "**?**"
         desc = self.desc.strip() if self.desc else ""
         if desc:
-            result += "".join(f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip())
+            result += "".join(
+                f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip()
+            )
         if ctx.allow_body():
             body = self.type.body(ctx.make_compact())
             if body:
@@ -208,7 +245,7 @@ class StructTypePairField:
 
 @dataclass
 class StructTypeSpreadField:
-    type: "McdocType"
+    type: McdocType
     attributes: Optional[list[Attribute]] = None
 
     def render(self, ctx: McdocContext):
@@ -232,10 +269,10 @@ class StructType(McdocBaseType):
     def filtered_fields(self, ctx: McdocContext):
         return [f for f in self.fields if ctx.filter(f.attributes)]
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["struct"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         fields = self.filtered_fields(ctx)
         if not fields:
             return "an empty object"
@@ -246,21 +283,21 @@ class StructType(McdocBaseType):
         if not fields:
             return ""
         results = []
-        for field in fields:
-            result = field.render(ctx)
+        for struct_field in fields:
+            result = struct_field.render(ctx)
             if result:
                 results.append(result)
         joiner = "\n" if ctx.compact else "\n\n"
         return joiner.join(results)
 
-    def body(self, ctx):
+    def body(self, ctx: McdocContext):
         lines = self.body_flat(ctx.nested())
         if not lines:
             return ""
         start = "" if ctx.compact else "\n"
         return start + "\n".join(f"> {line}" for line in lines.split("\n"))
 
-    def render(self, ctx):
+    def render(self, ctx: McdocContext):
         return self.body_flat(ctx)
 
 
@@ -283,10 +320,10 @@ class EnumType(McdocBaseType):
     def title(self, name, ctx):
         return f"enum {name}"
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return [self.enumKind]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         values = self.filtered_values(ctx)
         if ctx.allow_body():
             return "*one of:*"
@@ -298,23 +335,25 @@ class EnumType(McdocBaseType):
         if not ctx.allow_body():
             return ""
         results = []
-        for field in self.filtered_values(ctx):
+        for enum_field in self.filtered_values(ctx):
             result = self.prefix(ctx)
-            result += f" `{field.identifier}`"
-            result += f" = {json.dumps(field.value)}"
-            desc = field.desc.strip() if field.desc else ""
+            result += f" `{enum_field.identifier}`"
+            result += f" = {json.dumps(enum_field.value)}"
+            desc = enum_field.desc.strip() if enum_field.desc else ""
             if desc:
-                result += "".join(f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip())
+                result += "".join(
+                    f"\n-# {d.strip()}" for d in desc.split("\n") if d.strip()
+                )
             results.append(result)
         if not results:
             return "*no options*"
         return "\n".join(results)
 
-    def body(self, ctx):
+    def body(self, ctx: McdocContext):
         lines = self.body_flat(ctx)
         return "\n".join(f"> {line}" for line in lines.split("\n"))
 
-    def render(self, ctx):
+    def render(self, ctx: McdocContext):
         return self.body_flat(ctx)
 
 
@@ -325,7 +364,7 @@ class ReferenceType(McdocBaseType):
     def title(self, name, ctx):
         return f"{name} · {ctx.symbols.compact_path(self.path)}"
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         if self.path in ctx.type_mapping:
             mapped = ctx.type_mapping[self.path]
             return mapped if isinstance(mapped, str) else mapped.icons(ctx)
@@ -334,31 +373,32 @@ class ReferenceType(McdocBaseType):
             return typeDef.icons(ctx)
         return super().icons(ctx)
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         if self.path in ctx.type_mapping:
             return ""
         return f"__{ctx.symbols.compact_path(self.path)}__"
 
-    def render(self, ctx):
+    def render(self, ctx: McdocContext):
         typeDef = ctx.symbols.get(self.path)
         if typeDef:
             return typeDef.render(ctx)
         return super().render(ctx)
 
+
 @dataclass
 class UnionType(McdocBaseType):
-    members: list["McdocType"]
+    members: list[McdocType]
 
     def filtered_members(self, ctx: McdocContext):
         return [m for m in self.members if ctx.filter(m.attributes)]
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         all_icons: list[str] = []
         for member in self.filtered_members(ctx):
             all_icons.extend(member.icons(ctx))
         return list(dict.fromkeys(all_icons))
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         members = self.filtered_members(ctx)
         if not members:
             return "*nothing*"
@@ -368,7 +408,7 @@ class UnionType(McdocBaseType):
             return "*one of:*"
         return f"*one of {len(members)} types*"
 
-    def body(self, ctx):
+    def body(self, ctx: McdocContext):
         if not ctx.allow_body():
             return ""
         members = self.filtered_members(ctx)
@@ -392,20 +432,47 @@ class UnionType(McdocBaseType):
         return "\n".join(f"{'' if ctx.compact else '\n'}{r}" for r in results)
 
 
-TEMPLATE_CHARS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"]
+TEMPLATE_CHARS = [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",
+]
 
 
 @dataclass
 class TemplateType(McdocBaseType):
-    child: "McdocType"
+    child: McdocType
     typeParams: list[str]
 
     def abstract_mapping(self):
         mapping = dict[str, str]()
         used_chars = set[str]()
         for param in self.typeParams:
-            letter = param.split('::')[-1][0].upper()
-            preferred_char = TEMPLATE_CHARS[ord(letter) - ord('A')]
+            letter = param.split("::")[-1][0].upper()
+            preferred_char = TEMPLATE_CHARS[ord(letter) - ord("A")]
             if preferred_char in used_chars:
                 for char in TEMPLATE_CHARS:
                     if char not in used_chars:
@@ -416,7 +483,9 @@ class TemplateType(McdocBaseType):
 
     def nest_context(self, ctx: McdocContext) -> McdocContext:
         if ctx.type_args:
-            return ctx.with_type_mapping(dict(zip(self.typeParams, ctx.type_args))).with_type_args([])
+            return ctx.with_type_mapping(
+                dict(zip(self.typeParams, ctx.type_args))
+            ).with_type_args([])
         else:
             return ctx.with_type_mapping(self.abstract_mapping())
 
@@ -424,37 +493,37 @@ class TemplateType(McdocBaseType):
         mapping = self.abstract_mapping()
         return f"{name} < {', '.join(mapping.values())} >"
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return self.child.icons(self.nest_context(ctx))
 
-    def prefix(self, ctx):
+    def prefix(self, ctx: McdocContext):
         return self.child.prefix(self.nest_context(ctx))
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return self.child.suffix(self.nest_context(ctx))
 
-    def body(self, ctx):
+    def body(self, ctx: McdocContext):
         return self.child.body(self.nest_context(ctx))
 
-    def render(self, ctx):
+    def render(self, ctx: McdocContext):
         return self.child.render(self.nest_context(ctx))
 
 
 @dataclass
 class ConcreteType(McdocBaseType):
-    child: "McdocType"
-    typeArgs: list["McdocType"]
+    child: McdocType
+    typeArgs: list[McdocType]
 
     def nest_context(self, ctx: McdocContext) -> McdocContext:
         return ctx.with_type_args(self.typeArgs)
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return self.child.icons(self.nest_context(ctx))
 
-    def prefix(self, ctx):
+    def prefix(self, ctx: McdocContext):
         return self.child.prefix(self.nest_context(ctx))
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = self.child.suffix(self.nest_context(ctx))
         if isinstance(self.child, ReferenceType):
             arg_ctx = self.nest_context(ctx).nested(99)
@@ -468,7 +537,7 @@ class ConcreteType(McdocBaseType):
             result += f" < {', '.join(args)} >"
         return result
 
-    def body(self, ctx):
+    def body(self, ctx: McdocContext):
         return self.child.body(self.nest_context(ctx))
 
 
@@ -479,7 +548,7 @@ class NumericRange(McdocBaseType):
     minExcl: bool
     maxExcl: bool
 
-    def render(self):
+    def render(self, ctx: McdocContext):
         if self.min is None:
             return f"below {self.max}" if self.maxExcl else f"at most {self.max}"
         if self.max is None:
@@ -494,28 +563,28 @@ class NumericRange(McdocBaseType):
             return f"exactly {self.min}"
         return f"between {self.min} and {self.max} (inclusive)"
 
-    def render_length(self):
+    def render_length(self, ctx: McdocContext):
         if self.min == self.max:
             return f"of length {self.min}"
         else:
-            return f"with length {self.render()}"
+            return f"with length {self.render(ctx)}"
 
 
 @dataclass
 class StringType(McdocBaseType):
     lengthRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["string"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a string"
         id = self.get_attr("id")
         if id is not None:
             if id["kind"] == "literal":
                 registry = id["value"]["value"]
             elif id["kind"] == "tree":
-                registry = id["values"]["registry"]["value"]["value"] # TODO
+                registry = id["values"]["registry"]["value"]["value"]  # TODO
             if registry:
                 result = f"a {registry}"
         elif self.has_attr("text_component"):
@@ -545,7 +614,7 @@ class StringType(McdocBaseType):
         elif self.has_attr("command"):
             result = "a command"
         if self.lengthRange:
-            result += f" with length {self.lengthRange.render()}"
+            result += f" with length {self.lengthRange.render(ctx)}"
         return result
 
 
@@ -554,37 +623,37 @@ class LiteralType(McdocBaseType):
     kind: str
     value: bool | str | float
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return [self.kind]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return json.dumps(self.value)
 
 
 @dataclass
 class AnyType(McdocBaseType):
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["any"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return "*anything*"
 
 
 @dataclass
 class UnsafeType(McdocBaseType):
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["any"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return "*anything*"
 
 
 @dataclass
 class BooleanType(McdocBaseType):
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["boolean"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return "a boolean"
 
 
@@ -592,13 +661,13 @@ class BooleanType(McdocBaseType):
 class ByteType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["byte"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a byte"
         if self.valueRange:
-            result += f" {self.valueRange.render()}"
+            result += f" {self.valueRange.render(ctx)}"
         return result
 
 
@@ -606,13 +675,13 @@ class ByteType(McdocBaseType):
 class ShortType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["short"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a short"
         if self.valueRange:
-            result += f" {self.valueRange.render()}"
+            result += f" {self.valueRange.render(ctx)}"
         return result
 
 
@@ -620,13 +689,13 @@ class ShortType(McdocBaseType):
 class IntType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["int"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "an int"
         if self.valueRange:
-            result += f" {self.valueRange.render()}"
+            result += f" {self.valueRange.render(ctx)}"
         return result
 
 
@@ -634,13 +703,13 @@ class IntType(McdocBaseType):
 class LongType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["long"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a long"
         if self.valueRange:
-            result += f" {self.valueRange.render()}"
+            result += f" {self.valueRange.render(ctx)}"
         return result
 
 
@@ -648,13 +717,13 @@ class LongType(McdocBaseType):
 class FloatType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["float"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a float"
         if self.valueRange:
-            result += f" {self.valueRange.render()}"
+            result += f" {self.valueRange.render(ctx)}"
         return result
 
 
@@ -662,13 +731,13 @@ class FloatType(McdocBaseType):
 class DoubleType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["double"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a double"
         if self.valueRange:
-            result += f" {self.valueRange.render()}"
+            result += f" {self.valueRange.render(ctx)}"
         return result
 
 
@@ -677,17 +746,17 @@ class ByteArrayType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
     lengthRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["byte_array"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a byte array"
         if self.lengthRange:
-            result += f" {self.lengthRange.render_length()}"
+            result += f" {self.lengthRange.render_length(ctx)}"
         if self.valueRange:
             if self.lengthRange:
                 result += ", and"
-            result += f" with values {self.valueRange.render()}"
+            result += f" with values {self.valueRange.render(ctx)}"
         return result
 
 
@@ -696,17 +765,17 @@ class IntArrayType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
     lengthRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["int_array"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "an int array"
         if self.lengthRange:
-            result += f" {self.lengthRange.render_length()}"
+            result += f" {self.lengthRange.render_length(ctx)}"
         if self.valueRange:
             if self.lengthRange:
                 result += ", and"
-            result += f" with values {self.valueRange.render()}"
+            result += f" with values {self.valueRange.render(ctx)}"
         return result
 
 
@@ -715,37 +784,37 @@ class LongArrayType(McdocBaseType):
     valueRange: Optional[NumericRange] = None
     lengthRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["long_array"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a long array"
         if self.lengthRange:
-            result += f" {self.lengthRange.render_length()}"
+            result += f" {self.lengthRange.render_length(ctx)}"
         if self.valueRange:
             if self.lengthRange:
                 result += ", and"
-            result += f" with values {self.valueRange.render()}"
+            result += f" with values {self.valueRange.render(ctx)}"
         return result
 
 
 @dataclass
 class ListType(McdocBaseType):
-    item: "McdocType"
+    item: McdocType
     lengthRange: Optional[NumericRange] = None
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["list"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         result = "a list"
         if self.lengthRange:
-            result += f" {self.lengthRange.render_length()}"
+            result += f" {self.lengthRange.render_length(ctx)}"
         else:
             result += " of"
         return f"{result}:"
 
-    def body(self, ctx):
+    def body(self, ctx: McdocContext):
         result = self.item.prefix(ctx)
         suffix = self.item.suffix(ctx)
         if suffix:
@@ -761,12 +830,12 @@ class ListType(McdocBaseType):
 
 @dataclass
 class TupleType(McdocBaseType):
-    items: list["McdocType"]
+    items: list[McdocType]
 
-    def icons(self, ctx):
+    def icons(self, ctx: McdocContext):
         return ["list"]
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return f"a tuple of length {len(self.items)}"
 
 
@@ -774,7 +843,7 @@ class TupleType(McdocBaseType):
 class UnknownType(McdocBaseType):
     kind: str
 
-    def suffix(self, ctx):
+    def suffix(self, ctx: McdocContext):
         return f"UNKNOWN (`{self.kind}`)"
 
 
@@ -812,7 +881,7 @@ def deserialize_attributes(data: dict) -> list[Attribute]:
     for attr in data.get("attributes", []):
         name = attr["name"]
         value = attr.get("value", None)
-        result.append(Attribute(name=name,value=value))
+        result.append(Attribute(name=name, value=value))
     return result
 
 
@@ -866,29 +935,35 @@ def deserialize_mcdoc(data: dict) -> McdocType:
                 key = f["key"]
                 if isinstance(key, dict):
                     key = deserialize_mcdoc(key)
-                fields.append(StructTypePairField(
-                    key=key,
-                    type=deserialize_mcdoc(f["type"]),
-                    optional=f.get("optional", False),
-                    deprecated=f.get("deprecated", False),
-                    desc=f.get("desc"),
-                    attributes=deserialize_attributes(f),
-                ))
+                fields.append(
+                    StructTypePairField(
+                        key=key,
+                        type=deserialize_mcdoc(f["type"]),
+                        optional=f.get("optional", False),
+                        deprecated=f.get("deprecated", False),
+                        desc=f.get("desc"),
+                        attributes=deserialize_attributes(f),
+                    )
+                )
             else:
-                fields.append(StructTypeSpreadField(
-                    type=deserialize_mcdoc(f.get("type")),
-                    attributes=deserialize_attributes(f),
-                ))
+                fields.append(
+                    StructTypeSpreadField(
+                        type=deserialize_mcdoc(f.get("type")),
+                        attributes=deserialize_attributes(f),
+                    )
+                )
         return StructType(fields, attributes=deserialize_attributes(data))
     if kind == "enum":
         values = []
         for v in data.get("values", []):
-            values.append(EnumTypeField(
-                identifier=v["identifier"],
-                value=v["value"],
-                desc=v.get("desc"),
-                attributes=deserialize_attributes(v),
-            ))
+            values.append(
+                EnumTypeField(
+                    identifier=v["identifier"],
+                    value=v["value"],
+                    desc=v.get("desc"),
+                    attributes=deserialize_attributes(v),
+                )
+            )
         return EnumType(
             enumKind=data["enumKind"],
             values=values,
@@ -898,7 +973,7 @@ def deserialize_mcdoc(data: dict) -> McdocType:
         return LiteralType(
             kind=data["value"]["kind"],
             value=data["value"]["value"],
-            attributes=deserialize_attributes(data)
+            attributes=deserialize_attributes(data),
         )
     if kind == "any":
         return AnyType(attributes=deserialize_attributes(data))
@@ -992,6 +1067,4 @@ def deserialize_mcdoc(data: dict) -> McdocType:
             typeArgs=[deserialize_mcdoc(t) for t in data["typeArgs"]],
             attributes=deserialize_attributes(data),
         )
-    return UnknownType(
-        kind=f"{kind}"
-    )
+    return UnknownType(kind=f"{kind}")

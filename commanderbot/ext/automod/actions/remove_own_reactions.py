@@ -1,28 +1,25 @@
-from dataclasses import dataclass
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from pydantic import Field
+
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+
+__all__ = ("RemoveOwnReactions",)
 
 
-@dataclass
-class RemoveOwnReactions(AutomodActionBase):
+class RemoveOwnReactions(AutomodAction):
     """
     Remove the bot's own reactions from the message in context.
-
-    Attributes
-    ----------
-    reactions
-        The reactions to remove.
     """
 
-    reactions: tuple[str]
+    type: Literal["remove_own_reactions"]
 
-    async def apply(self, event: AutomodEvent):
-        if message := event.message:
+    reactions: set[str] = Field(min_length=1)
+    """The reactions to remove."""
+
+    @override
+    async def apply(self, context: AutomodContext):
+        if (message := context.event.message) and (bot_user := context.bot.user):
             for reaction in self.reactions:
-                await message.remove_reaction(reaction, member=event.bot.user)
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return RemoveOwnReactions.from_data(data)
+                await message.remove_reaction(reaction, bot_user)

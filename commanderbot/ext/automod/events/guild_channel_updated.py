@@ -1,17 +1,21 @@
 from dataclasses import dataclass
+from typing import override
 
-from discord import TextChannel, Thread
-
-from commanderbot.ext.automod.automod_event import AutomodEventBase
+from commanderbot.ext.automod.event import AutomodEvent
+from commanderbot.lib.types import GuildChannel
 
 __all__ = ("GuildChannelUpdated",)
 
 
 @dataclass
-class GuildChannelUpdated(AutomodEventBase):
-    _before: TextChannel | Thread
-    _after: TextChannel | Thread
+class GuildChannelUpdated(AutomodEvent):
+    before: GuildChannel
+    """The guild channel's old info."""
+
+    after: GuildChannel
+    """The guild channel's updated info."""
 
     @property
-    def channel(self) -> TextChannel | Thread:
-        return self._after
+    @override
+    def channel(self) -> GuildChannel:
+        return self.after

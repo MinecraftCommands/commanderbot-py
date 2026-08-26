@@ -1,5 +1,6 @@
+from collections.abc import AsyncIterable
 from dataclasses import dataclass
-from typing import AsyncIterable, Optional
+from typing import Optional
 
 from discord import Guild, Role
 
@@ -7,7 +8,7 @@ from commanderbot.ext.roles.roles_data import RolesData
 from commanderbot.ext.roles.roles_store import RoleEntry
 from commanderbot.lib import GuildID, RoleID, RoleSet
 from commanderbot.lib.cogs import CogStore
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 # @implements RolesStore

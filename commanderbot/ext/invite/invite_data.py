@@ -1,8 +1,9 @@
 from collections import defaultdict
+from collections.abc import AsyncIterable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import chain, islice
-from typing import Any, AsyncIterable, Iterable, Optional, Self
+from typing import Any, Optional, Self
 
 from discord import Guild
 from discord.utils import utcnow
@@ -132,11 +133,11 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
 
     def _is_invite_key_available(self, key: str) -> bool:
         # Check whether the given invite key is already in use
-        return key not in self.invite_entries.keys()
+        return key not in self.invite_entries
 
     def _is_invite_tag_available(self, tag: str) -> bool:
         # Check whether the given invite tag is already in use
-        return tag not in self.invite_entries_by_tag.keys()
+        return tag not in self.invite_entries_by_tag
 
     def require_invite(self, key: str) -> InviteEntryData:
         # Returns the invite entry if it exists
@@ -269,7 +270,7 @@ class InviteGuildData(JsonSerializable, FromDataMixin):
             yield from self.invite_entries_by_tag.keys()
         else:
             tag_filter = tag_filter if case_sensitive else tag_filter.lower()
-            for tag in self.invite_entries_by_tag.keys():
+            for tag in self.invite_entries_by_tag:
                 invite_tag: str = tag if case_sensitive else tag.lower()
                 if tag_filter in invite_tag:
                     yield tag

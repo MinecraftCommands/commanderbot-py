@@ -28,13 +28,13 @@ from commanderbot.ext.stacktracer.stacktracer_store import StacktracerStore
 from commanderbot.lib import Color, EventData, is_guild
 from commanderbot.lib.app_commands import ColorTransformer, EmojiTransformer, checks
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.commands import checks as command_checks
+from commanderbot.lib.databases.json_db.v1 import (
     InMemoryDatabaseOptions,
     JsonFileDatabaseAdapter,
     JsonFileDatabaseOptions,
     UnsupportedDatabaseOptions,
 )
-from commanderbot.lib.commands import checks as command_checks
 
 
 def _make_store(bot: Bot, cog: Cog, options: StacktracerOptions) -> StacktracerStore:
@@ -80,7 +80,6 @@ class StacktracerCog(
 
     def __init__(self, bot: Bot, **options):
         self.bot: Bot = bot
-        self.bot = bot
         self.options = StacktracerOptions.from_data(options)
         self.store: StacktracerStore = _make_store(bot, self, self.options)
         self.state = StacktracerState(

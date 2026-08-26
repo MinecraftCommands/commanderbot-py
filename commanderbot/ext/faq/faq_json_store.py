@@ -1,6 +1,7 @@
 import re
+from collections.abc import AsyncIterable
 from dataclasses import dataclass
-from typing import AsyncIterable, Optional
+from typing import Optional
 
 from discord import Guild
 
@@ -8,7 +9,7 @@ from commanderbot.ext.faq.faq_data import FaqData
 from commanderbot.ext.faq.faq_store import CategoryEntry, FaqEntry
 from commanderbot.lib import UserID
 from commanderbot.lib.cogs import CogStore
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 # @implements FaqStore
@@ -105,7 +106,7 @@ class FaqJsonStore(CogStore):
         content: str,
         *,
         sort: bool = False,
-        cap: Optional[int] = None
+        cap: Optional[int] = None,
     ) -> AsyncIterable[FaqEntry]:
         cache = await self.db.get_cache()
         async for entry in cache.query_faqs_by_match(
@@ -129,7 +130,7 @@ class FaqJsonStore(CogStore):
         faq_filter: Optional[str] = None,
         case_sensitive: bool = False,
         sort: bool = False,
-        cap: Optional[int] = None
+        cap: Optional[int] = None,
     ) -> AsyncIterable[FaqEntry]:
         cache = await self.db.get_cache()
         async for entry in cache.get_faqs(
@@ -149,7 +150,7 @@ class FaqJsonStore(CogStore):
         item_filter: Optional[str] = None,
         case_sensitive: bool = False,
         sort: bool = False,
-        cap: Optional[int] = None
+        cap: Optional[int] = None,
     ) -> AsyncIterable[FaqEntry | tuple[str, FaqEntry]]:
         cache = await self.db.get_cache()
         async for item in cache.get_faqs_and_aliases(
@@ -208,7 +209,7 @@ class FaqJsonStore(CogStore):
         category_filter: Optional[str] = None,
         case_sensitive: bool = False,
         sort: bool = False,
-        cap: Optional[int] = None
+        cap: Optional[int] = None,
     ) -> AsyncIterable[CategoryEntry]:
         cache = await self.db.get_cache()
         async for category in cache.get_categories(

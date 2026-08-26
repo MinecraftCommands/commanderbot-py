@@ -1,5 +1,6 @@
+from collections.abc import AsyncIterable
 from dataclasses import dataclass
-from typing import AsyncIterable, Optional
+from typing import Optional
 
 from discord import ChannelType
 
@@ -8,7 +9,7 @@ from commanderbot.ext.feeds.feeds_store import FeedsSubscription
 from commanderbot.ext.feeds.providers import FeedType
 from commanderbot.lib import ChannelID, MessageID, RoleID, UserID
 from commanderbot.lib.cogs import CogStore
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 # @implements FeedsStore

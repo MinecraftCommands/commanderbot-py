@@ -1,6 +1,7 @@
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from logging import Logger
-from typing import Any, Callable, Coroutine, Optional, TypeAlias
+from typing import Any, Optional
 
 from discord import AllowedMentions, Message
 from discord.app_commands import errors as ace
@@ -11,15 +12,15 @@ from discord.interactions import Interaction
 from commanderbot.lib import EventData, ResponsiveException
 from commanderbot.lib.app_commands import command_name, send_or_followup
 
-EventErrorHandler: TypeAlias = Callable[
+type EventErrorHandler = Callable[
     [Exception, EventData, bool], Coroutine[Any, Any, Optional[bool]]
 ]
 
-CommandErrorHandler: TypeAlias = Callable[
+type CommandErrorHandler = Callable[
     [Exception, Context, bool], Coroutine[Any, Any, Optional[bool]]
 ]
 
-AppCommandErrorHandler: TypeAlias = Callable[
+type AppCommandErrorHandler = Callable[
     [Exception, Interaction, bool], Coroutine[Any, Any, Optional[bool]]
 ]
 
@@ -120,7 +121,7 @@ class ErrorHandling:
                 self.log.exception(
                     f"Ignoring unhandled exception in cog `{cog_name}` from command: `{ctx.command}`"
                 )
-            await self.reply(ctx, f"🔥 Something went wrong trying to do that.")
+            await self.reply(ctx, "🔥 Something went wrong trying to do that.")
 
     async def try_handle_command_error(self, error: Exception, ctx: Context) -> bool:
         match error:
@@ -131,16 +132,16 @@ class ErrorHandling:
                 await ctx.send_help(ctx.command)
                 return True
             case ce.MissingPermissions():
-                await self.reply(ctx, f"😠 You don't have permission to do that.")
+                await self.reply(ctx, "😠 You don't have permission to do that.")
                 return True
             case ce.BotMissingPermissions():
-                await self.reply(ctx, f"😳 I don't have permission to do that.")
+                await self.reply(ctx, "😳 I don't have permission to do that.")
                 return True
             case ce.NoPrivateMessage():
-                await self.reply(ctx, f"🤐 You can't do that in a private message.")
+                await self.reply(ctx, "🤐 You can't do that in a private message.")
                 return True
             case ce.CheckFailure():
-                await self.reply(ctx, f"🤔 You can't do that.")
+                await self.reply(ctx, "🤔 You can't do that.")
                 return True
             case ResponsiveException():
                 await error.respond(ctx)
@@ -179,7 +180,7 @@ class ErrorHandling:
                 )
             await send_or_followup(
                 interaction,
-                f"🔥 Something went wrong trying to do that.",
+                "🔥 Something went wrong trying to do that.",
                 ephemeral=True,
             )
 
@@ -199,27 +200,27 @@ class ErrorHandling:
             case ace.MissingPermissions():
                 await send_or_followup(
                     interaction,
-                    f"😠 You don't have permission to do that.",
+                    "😠 You don't have permission to do that.",
                     ephemeral=True,
                 )
                 return True
             case ace.BotMissingPermissions():
                 await send_or_followup(
                     interaction,
-                    f"😳 I don't have permission to do that.",
+                    "😳 I don't have permission to do that.",
                     ephemeral=True,
                 )
                 return True
             case ace.NoPrivateMessage():
                 await send_or_followup(
                     interaction,
-                    f"🤐 You can't do that in a private message.",
+                    "🤐 You can't do that in a private message.",
                     ephemeral=True,
                 )
                 return True
             case ace.CheckFailure():
                 await send_or_followup(
-                    interaction, f"🤔 You can't do that.", ephemeral=True
+                    interaction, "🤔 You can't do that.", ephemeral=True
                 )
                 return True
             case ResponsiveException():

@@ -8,8 +8,8 @@ from urllib.parse import urlparse, urlunparse
 from commanderbot.lib import FromDataMixin
 
 __all__ = (
-    "FeedProviderOptionsBase",
     "FeedProviderBase",
+    "FeedProviderOptionsBase",
 )
 
 
@@ -50,17 +50,17 @@ class FeedProviderBase[OptionsType, CacheType](ABC):
     def start(self):
         # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
         self._log.info("Started polling!")
-        self._on_poll.start()  # type: ignore
+        self._on_poll.start()  # type: ignore[ty:unresolved-attribute] - This will work on subclasses
 
     def stop(self):
         # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
         self._log.info("Stopped polling!")
-        self._on_poll.stop()  # type: ignore
+        self._on_poll.stop()  # type: ignore[ty:unresolved-attribute] - This will work on subclasses
 
     def restart(self):
         # Assumes that `self._on_poll` is a task from `discord.ext.tasks`
         self._log.info("Restarting...")
-        self._on_poll.restart()  # type: ignore
+        self._on_poll.restart()  # type: ignore[ty:unresolved-attribute] - This will work on subclasses
 
     @abstractmethod
     async def _on_poll(self):

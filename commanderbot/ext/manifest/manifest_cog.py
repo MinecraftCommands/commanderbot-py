@@ -5,7 +5,6 @@ from typing import Optional
 
 from discord import Embed, Interaction, Permissions
 from discord.app_commands import (
-    AppCommandContext,
     AppInstallationType,
     Choice,
     Group,
@@ -42,10 +41,10 @@ class ManifestType(Enum):
     with autocompletion of these choices
     """
 
-    addon = [ModuleType.DATA, ModuleType.RESOURCE]
-    behavior = [ModuleType.DATA]
-    resource = [ModuleType.RESOURCE]
-    skin = [ModuleType.SKIN]
+    addon = (ModuleType.DATA, ModuleType.RESOURCE)
+    behavior = (ModuleType.DATA,)
+    resource = (ModuleType.RESOURCE,)
+    skin = (ModuleType.SKIN,)
 
 
 class VersionTransformer(Transformer):
@@ -67,7 +66,7 @@ class ManifestCog(Cog, name="commanderbot.ext.manifest"):
         # Get url option and print a warning if it doesn't exist
         url: Optional[str] = options.get("version_url")
         if not url:
-            self.log.warn(
+            self.log.warning(
                 "No version URL was given in the bot config. "
                 f"Using `{ManifestVersionManager.default_version()}` for the latest min engine version."
             )

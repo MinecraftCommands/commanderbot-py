@@ -115,7 +115,7 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         # Send the embed
         msg: Optional[Message] = None
         try:
-            msg = await channel.send(content=content, embed=embed, view=view)  # type: ignore
+            msg = await channel.send(content, embed=embed, view=view)  # type: ignore[ty:no-matching-overload] - This does work, but we should update this extension to use components v2 #enhance
         except:
             pass
 
@@ -357,7 +357,9 @@ class FeedsState(GuildPartitionedCogState[FeedsGuildState]):
         if dt := provider.next_request_date:
             formatted_next_update = format_dt(dt, "R")
 
-        formatted_prev_status_code = f"`{provider.prev_status_code}`" or "**?**"
+        formatted_prev_status_code: str = "**?**"
+        if status_code := provider.prev_status_code:
+            formatted_prev_status_code = f"`{status_code}`"
 
         # Create feed provider status embed
         embed = Embed(title=feed_provider.value, color=0x00ACED)

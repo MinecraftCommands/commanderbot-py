@@ -1,7 +1,8 @@
 from collections import defaultdict
+from collections.abc import AsyncIterable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import AsyncIterable, Optional
+from typing import Optional
 
 from discord import Guild, Role
 from discord.utils import utcnow
@@ -24,7 +25,7 @@ class RoleEntryData:
     description: Optional[str] = None
 
     @staticmethod
-    def from_data(data: JsonObject) -> "RoleEntryData":
+    def from_data(data: JsonObject) -> RoleEntryData:
         return RoleEntryData(
             role_id=int(data["role_id"]),
             added_on=datetime.fromisoformat(data["added_on"]),
@@ -52,7 +53,7 @@ class RolesGuildData:
     permitted_roles: Optional[RoleSet] = None
 
     @staticmethod
-    def from_data(data: JsonObject) -> "RolesGuildData":
+    def from_data(data: JsonObject) -> RolesGuildData:
         role_entries_flat = [
             RoleEntryData.from_data(raw_entry)
             for raw_entry in data.get("role_entries", [])
@@ -140,7 +141,7 @@ class RolesData:
     )
 
     @staticmethod
-    def from_data(data: JsonObject) -> "RolesData":
+    def from_data(data: JsonObject) -> RolesData:
         guilds = _guilds_defaultdict_factory()
         guilds.update(
             {
@@ -181,7 +182,7 @@ class RolesData:
 
     # @implements RolesStore
     async def get_all_role_entries(self, guild: Guild) -> list[RoleEntry]:
-        return self.guilds[guild.id].get_all_role_entries()  # type: ignore
+        return self.guilds[guild.id].get_all_role_entries()  # type: ignore[ty:invalid-return-type]
 
     # @implements RolesStore
     async def get_role_entry(self, role: Role) -> Optional[RoleEntry]:

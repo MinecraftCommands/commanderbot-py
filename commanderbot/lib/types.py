@@ -1,63 +1,70 @@
-from typing import Any, TypeAlias
+from typing import Any, Literal
 
 from discord import (
     CategoryChannel,
     DMChannel,
     ForumChannel,
     GroupChannel,
-    Guild,
     Member,
-    Message,
-    Reaction,
     StageChannel,
     TextChannel,
     Thread,
     User,
     VoiceChannel,
 )
-from discord.ext.commands import Context, MessageConverter
 
 __all__ = (
-    "IDType",
-    "GuildID",
-    "ChannelID",
-    "MessageID",
-    "RoleID",
-    "UserID",
-    "ForumTagID",
     "AppCommandID",
+    "AttachmentID",
+    "CategoryID",
+    "Channel",
+    "ChannelID",
+    "ChannelTypeNames",
+    "ConnectableChannel",
+    "DiscordAutomodRuleID",
     "EmojiID",
-    "RawOptions",
+    "ForumTagID",
+    "GuildChannel",
+    "GuildID",
+    "IDType",
     "JsonObject",
     "MemberOrUser",
-    "Channel",
-    "GuildChannel",
+    "MessageID",
     "MessageableChannel",
     "MessageableGuildChannel",
-    "ConnectableChannel",
-    "TextMessage",
-    "TextReaction",
+    "RawOptions",
+    "RoleID",
+    "TesseractLanguages",
+    "TesseractScripts",
+    "ThreadID",
+    "ThreadableChannel",
+    "UnicodeNormalizationForms",
+    "UserID",
 )
 
 
-IDType: TypeAlias = int
+type IDType = int
 
-GuildID: TypeAlias = IDType
-ChannelID: TypeAlias = IDType
-MessageID: TypeAlias = IDType
-RoleID: TypeAlias = IDType
-UserID: TypeAlias = IDType
-ForumTagID: TypeAlias = IDType
-AppCommandID: TypeAlias = IDType
-EmojiID: TypeAlias = IDType
+type GuildID = IDType
+type CategoryID = IDType
+type ChannelID = IDType
+type ThreadID = IDType
+type MessageID = IDType
+type RoleID = IDType
+type UserID = IDType
+type ForumTagID = IDType
+type AppCommandID = IDType
+type EmojiID = IDType
+type DiscordAutomodRuleID = IDType
+type AttachmentID = IDType
 
-RawOptions: TypeAlias = Any
+type RawOptions = Any
 
-JsonObject: TypeAlias = dict[str, Any]
+type JsonObject = dict[str, Any]
 
-MemberOrUser: TypeAlias = Member | User
+type MemberOrUser = Member | User
 
-Channel: TypeAlias = (
+type Channel = (
     TextChannel
     | ForumChannel
     | Thread
@@ -67,49 +74,116 @@ Channel: TypeAlias = (
     | GroupChannel
     | CategoryChannel
 )
-GuildChannel: TypeAlias = (
-    TextChannel | ForumChannel | Thread | VoiceChannel | StageChannel | CategoryChannel
+type GuildChannel = (
+    TextChannel | ForumChannel | VoiceChannel | StageChannel | CategoryChannel
 )
-MessageableChannel: TypeAlias = (
-    TextChannel | Thread | VoiceChannel | StageChannel | DMChannel | GroupChannel
+type MessageableChannel = (
+    TextChannel | VoiceChannel | StageChannel | DMChannel | GroupChannel
 )
-MessageableGuildChannel: TypeAlias = TextChannel | Thread | VoiceChannel | StageChannel
-ConnectableChannel: TypeAlias = VoiceChannel | StageChannel
+type MessageableGuildChannel = TextChannel | VoiceChannel | StageChannel
+type ThreadableChannel = TextChannel | ForumChannel
+type ConnectableChannel = VoiceChannel | StageChannel
+
+type ChannelTypeNames = Literal[
+    "text",
+    "news",
+    "forum",
+    "media",
+    "news_thread",
+    "public_thread",
+    "private_thread",
+    "voice",
+    "stage_voice",
+    "private",
+    "group",
+    "category",
+]
+"""
+Contains all enumerator names from `discord.ChannelType`.
+
+https://discordpy.readthedocs.io/en/latest/api.html#discord.ChannelType
+"""
+
+type MemberFlagsNames = Literal[
+    "automod_quarantined_guild_tag",
+    "automod_quarantined_username",
+    "bypasses_verification",
+    "completed_home_actions",
+    "completed_onboarding",
+    "did_rejoin",
+    "dm_settings_upsell_acknowledged",
+    "guest",
+    "started_home_actions",
+    "started_onboarding",
+]
+"""
+Contains all member flag names from `discord.MemberFlags`
+
+https://discordpy.readthedocs.io/en/latest/api.html#memberflags
+"""
+
+type PublicUserFlagsNames = Literal[
+    "active_developer",
+    "bot_http_interactions",
+    "bug_hunter",
+    "bug_hunter_level_2",
+    "discord_certified_moderator",
+    "early_supporter",
+    "hypesquad",
+    "hypesquad_balance",
+    "hypesquad_bravery",
+    "hypesquad_brilliance",
+    "partner",
+    "spammer",
+    "staff",
+    "system",
+    "team_user",
+    "verified_bot",
+    "verified_bot_developer",
+]
+"""
+Contains all public user flag names from `discord.PublicUserFlags`
+
+https://discordpy.readthedocs.io/en/latest/api.html#publicuserflags
+"""
 
 
-class TextMessage(Message):
-    """
-    A [Message] in a [TextChannel] or [Thread].
-
-    This is a dummy class that can be used in casts to convince static analysis that
-    this [Message] does indeed contain a [TextChannel] and [Guild].
-
-    This is not intended to be used anywhere other than type-hinting.
-    """
-
-    channel: TextChannel | Thread
-    guild: Guild
-
-    @classmethod
-    async def convert(cls, ctx: Context, argument: Any):
-        """
-        Attempt to convert the given argument into a `Role` from within a `Guild`.
-
-        Note that discord.py's built-in `Role` is special-cased, so what we do here is
-        explicitly make this subclass convertible and then just return the underlying
-        `Role` anyway.
-        """
-        return await MessageConverter().convert(ctx, argument)
+type UnicodeNormalizationForms = Literal["NFC", "NFD", "NFKC", "NFKD"]
 
 
-class TextReaction(Reaction):
-    """
-    A [Reaction] to a [Message] in a [TextChannel].
+# fmt: off
+type TesseractLanguages = Literal[
+    "afr", "amh", "ara", "asm", "aze", "aze_cyrl", "bel", "ben", "bod", "bos",
+    "bre", "bul", "cat", "ceb", "ces", "chi_sim", "chi_sim_vert", "chi_tra", "chi_tra_vert", "chr",
+    "cos", "cym", "dan", "deu", "deu_latf", "div", "dzo", "ell", "eng", "enm",
+    "epo", "est", "eus", "fao", "fas", "fil", "fin", "fra", "frm", "fry",
+    "gla", "gle", "glg", "grc", "guj", "hat", "heb", "hin", "hrv", "hun",
+    "hye", "iku", "ind", "isl", "ita", "ita_old", "jav", "jpn", "jpn_vert", "kan",
+    "kat", "kat_old", "kaz", "khm", "kir", "kmr", "kor", "kor_vert", "lao",
+    "lat", "lav", "lit", "ltz", "mal", "mar", "mkd", "mlt", "mon", "mri",
+    "msa", "mya", "nep", "nld", "nor", "oci", "ori", "pan", "pol", "por",
+    "pus", "que", "ron", "rus", "san", "sin", "slk", "slv", "snd", "spa",
+    "spa_old", "sqi", "srp", "srp_latn", "sun", "swa", "swe", "syr", "tam", "tat",
+    "tel", "tgk", "tha", "tir", "ton", "tur", "uig", "ukr", "urd", "uzb",
+    "uzb_cyrl", "vie", "yid", "yor",
+]
+"""
+All languages that Tesseract supports (https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html).
+"""
+# fmt: on
 
-    This is a dummy class that can be used in casts to convince static analysis that
-    this [Reaction] does indeed contain a [TextMessage].
-
-    This is not intended to be used anywhere other than type-hinting.
-    """
-
-    message: TextMessage
+# fmt: off
+type TesseractScripts = Literal[
+    "script/Arabic", "script/Armenian", "script/Bengali", "script/Canadian_Aboriginal", "script/Cherokee",
+    "script/Cyrillic", "script/Devanagari", "script/Ethiopic", "script/Fraktur", "script/Georgian",
+    "script/Greek", "script/Gujarati", "script/Gurmukhi", "script/Hangul", "script/Hangul_vert",
+    "script/HanS", "script/HanS_vert", "script/HanT", "script/HanT_vert", "script/Hebrew",
+    "script/Japanese", "script/Japanese_vert", "script/Kannada", "script/Khmer", "script/Lao",
+    "script/Latin", "script/Malayalam", "script/Myanmar", "script/Oriya", "script/Sinhala",
+    "script/Syriac", "script/Tamil", "script/Telugu", "script/Thaana", "script/Thai",
+    "script/Tibetan", "script/Vietnamese",
+]
+"""
+All scripts that Tesseract supports (https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html).
+"""
+# fmt: on

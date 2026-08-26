@@ -50,7 +50,8 @@ def run():
     # Read config file
     log.info(f"Configuration file: {parsed_args.config}")
     log.debug("Parsing configuration file...")
-    config = Config.from_file(parsed_args.config)  # type: ignore
+    config = Config.model_validate_json(parsed_args.config.read_text())
+    config.log_info()
     log.debug("Successfully parsed configuration file!")
 
     # Get bot token
@@ -58,11 +59,11 @@ def run():
 
     if not bot_token:
         log.warning(
-            "Bot token provided in a form other than the BOT_TOKEN environment variable."
+            "Bot token provided in a form other than the BOT_TOKEN environment variable"
         )
 
         if parsed_args.token:
-            log.info("Using bot token provided as an argument.")
+            log.info("Using bot token provided as an argument")
             bot_token = parsed_args.token
 
         elif parsed_args.tokenfile:
@@ -78,6 +79,6 @@ def run():
     bot = CommanderBot(config, parsed_args.synctree)
     bot.run(bot_token)
 
-    log.warning("Bot has shut down.")
+    log.warning("Bot has shut down!")
 
     log.info("Goodbye!")

@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Embed, Interaction, Message, TextStyle
+from discord import Embed, Interaction, Message, TextStyle, Thread
 from discord.ui import TextInput
 from discord.utils import format_dt
 
@@ -39,14 +39,16 @@ class FridayGuildState(CogGuildState):
 
     store: FridayStore
 
-    async def _is_channel_registered(self, channel: MessageableGuildChannel):
+    async def _is_channel_registered(self, channel: MessageableGuildChannel | Thread):
         if is_thread(channel) and channel.parent:
             return await self.store.is_channel_registered(self.guild, channel.parent.id)
         return await self.store.is_channel_registered(self.guild, channel.id)
 
     async def on_message(self, message: Message):
         # Check if the channel the message was sent in was registered
-        assert is_messagable_guild_channel(message.channel)
+        assert is_messagable_guild_channel(message.channel) or is_thread(
+            message.channel
+        )
         if not await self._is_channel_registered(message.channel):
             return
 
@@ -115,9 +117,9 @@ class FridayGuildState(CogGuildState):
                     await interaction.followup.send(
                         content=f"Removed the rule `{rule.name}`"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(

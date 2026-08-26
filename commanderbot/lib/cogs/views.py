@@ -1,10 +1,9 @@
-from typing import Any, Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, override
 
-from discord import Interaction
+from discord import Guild, Interaction, ui
 from discord.ext.commands import Bot, Cog
-from discord.interactions import Interaction
-from discord.ui import Modal, View
-from discord.ui.item import Item
+
+from commanderbot.lib.utils import dict_without_nones
 
 __all__ = ("CogStateModal", "CogStateView")
 
@@ -12,7 +11,7 @@ CogStateType = TypeVar("CogStateType")
 CogStoreType = TypeVar("CogStoreType")
 
 
-class CogStateModal(Generic[CogStateType, CogStoreType], Modal):
+class CogStateModal(Generic[CogStateType, CogStoreType], ui.Modal):  # noqa: PYI059, UP046 - Discord.py has issues with the newer generic syntax
     """
     A base class for modals that can access a cog state.
 
@@ -41,7 +40,7 @@ class CogStateModal(Generic[CogStateType, CogStoreType], Modal):
         state: CogStateType,
         *,
         title: str,
-        custom_id: str,
+        custom_id: Optional[str] = None,
         timeout: Optional[float] = None,
     ):
         self.original_interaction: Interaction = interaction
@@ -50,22 +49,28 @@ class CogStateModal(Generic[CogStateType, CogStoreType], Modal):
         self.state: CogStateType = state
         self.bot: Bot = getattr(state, "bot")
         self.cog: Cog = getattr(state, "cog")
+        self.guild: Guild = getattr(state, "guild")
         self.store: CogStoreType = getattr(state, "store")
 
-        super().__init__(title=title, custom_id=custom_id, timeout=timeout)
+        params = dict_without_nones(
+            title=title,
+            custom_id=custom_id,
+            timeout=timeout,
+        )
+        super().__init__(**params)
 
-    # @overrides View
+    @override
     async def interaction_check(self, interaction: Interaction) -> bool:
         # Check if this interaction and the original interaction are from the same user
         return interaction.user == self.original_interaction.user
 
-    # @overrides Modal
+    @override
     async def on_error(self, interaction: Interaction, error: Exception):
         # Pipe this error through the command tree's error handler
-        await self.bot.tree.on_error(interaction, error)  # type: ignore
+        await self.bot.tree.on_error(interaction, error)  # type: ignore[ty:missing-argument, ty:invalid-argument-type] - Maybe fix this in the future? #enhance
 
 
-class CogStateView(Generic[CogStateType, CogStoreType], View):
+class CogStateView(Generic[CogStateType, CogStoreType], ui.View):  # noqa: PYI059, UP046 - Discord.py has issues with the newer generic syntax
     """
     A base class for views that can access a cog state.
 
@@ -101,16 +106,17 @@ class CogStateView(Generic[CogStateType, CogStoreType], View):
         self.state: CogStateType = state
         self.bot: Bot = getattr(state, "bot")
         self.cog: Cog = getattr(state, "cog")
+        self.guild: Guild = getattr(state, "guild")
         self.store: CogStateType = getattr(state, "store")
 
         super().__init__(timeout=timeout)
 
-    # @overrides View
+    @override
     async def interaction_check(self, interaction: Interaction) -> bool:
         # Check if this interaction and the original interaction are from the same user
         return interaction.user == self.original_interaction.user
 
-    # @overrides View
-    async def on_error(self, interaction: Interaction, error: Exception, item: Item):
+    @override
+    async def on_error(self, interaction: Interaction, error: Exception, item: ui.Item):
         # Pipe this error through the command tree's error handler
-        await self.bot.tree.on_error(interaction, error)  # type: ignore
+        await self.bot.tree.on_error(interaction, error)  # type: ignore[ty:missing-argument, ty:invalid-argument-type] - Maybe fix this in the future? #enhance

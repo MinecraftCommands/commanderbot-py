@@ -21,33 +21,39 @@ from discord.ext.commands import Bot
 
 from commanderbot.lib.types import (
     ConnectableChannel,
+    EmojiID,
+    GuildChannel,
     MessageableChannel,
     MessageableGuildChannel,
+    ThreadableChannel,
     UserID,
 )
 
 __all__ = (
     "is_bot",
-    "is_owner",
-    "is_convertable_to",
-    "is_invite_link",
-    "is_message_link",
-    "is_custom_emoji",
-    "is_user",
-    "is_member",
-    "is_guild",
-    "is_text_channel",
-    "is_forum_channel",
-    "is_thread",
-    "is_voice_channel",
-    "is_stage_channel",
-    "is_dm_channel",
-    "is_group_dm_channel",
     "is_category_channel",
+    "is_connectable_channel",
+    "is_convertable_to",
+    "is_custom_emoji",
+    "is_dm_channel",
+    "is_emoji_id",
+    "is_forum_channel",
+    "is_group_dm_channel",
+    "is_guild",
+    "is_guild_channel",
+    "is_invite_link",
+    "is_member",
     "is_messagable_channel",
     "is_messagable_guild_channel",
-    "is_connectable_channel",
+    "is_message_link",
+    "is_owner",
     "is_partial_messagable",
+    "is_stage_channel",
+    "is_text_channel",
+    "is_thread",
+    "is_threadable_channel",
+    "is_user",
+    "is_voice_channel",
 )
 
 INVITE_LINK_PATTERN = re.compile(
@@ -103,7 +109,7 @@ def is_convertable_to(obj: Any, ty: Any) -> bool:
 
 
 def is_user(obj: object) -> TypeIs[User]:
-    return isinstance(obj, User)
+    return isinstance(obj, (User, Member))
 
 
 def is_member(obj: object) -> TypeIs[Member]:
@@ -146,10 +152,19 @@ def is_category_channel(obj: object) -> TypeIs[CategoryChannel]:
     return isinstance(obj, CategoryChannel)
 
 
+def is_guild_channel(obj: object) -> TypeIs[GuildChannel]:
+    return (
+        is_text_channel(obj)
+        or is_forum_channel(obj)
+        or is_voice_channel(obj)
+        or is_stage_channel(obj)
+        or is_category_channel(obj)
+    )
+
+
 def is_messagable_channel(obj: object) -> TypeIs[MessageableChannel]:
     return (
         is_text_channel(obj)
-        or is_thread(obj)
         or is_voice_channel(obj)
         or is_stage_channel(obj)
         or is_dm_channel(obj)
@@ -158,12 +173,11 @@ def is_messagable_channel(obj: object) -> TypeIs[MessageableChannel]:
 
 
 def is_messagable_guild_channel(obj: object) -> TypeIs[MessageableGuildChannel]:
-    return (
-        is_text_channel(obj)
-        or is_thread(obj)
-        or is_voice_channel(obj)
-        or is_stage_channel(obj)
-    )
+    return is_text_channel(obj) or is_voice_channel(obj) or is_stage_channel(obj)
+
+
+def is_threadable_channel(obj: object) -> TypeIs[ThreadableChannel]:
+    return is_text_channel(obj) or is_forum_channel(obj)
 
 
 def is_connectable_channel(obj: object) -> TypeIs[ConnectableChannel]:
@@ -172,3 +186,7 @@ def is_connectable_channel(obj: object) -> TypeIs[ConnectableChannel]:
 
 def is_partial_messagable(obj: object) -> TypeIs[PartialMessageable]:
     return isinstance(obj, PartialMessageable)
+
+
+def is_emoji_id(obj: object) -> TypeIs[EmojiID]:
+    return isinstance(obj, int)

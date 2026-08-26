@@ -4,8 +4,9 @@ import json
 import os
 import re
 import traceback
+from collections.abc import AsyncIterable, Callable, Coroutine, Mapping
 from enum import Enum
-from typing import Any, AsyncIterable, Callable, Coroutine, Mapping, Optional, cast
+from typing import Any, Optional
 
 from discord import (
     AllowedMentions,
@@ -14,12 +15,13 @@ from discord import (
     Member,
     Message,
     PartialMessageable,
+    Thread,
     User,
 )
 from discord.ext.commands import Context
 
 from commanderbot.lib.predicates import is_text_channel, is_thread, is_user
-from commanderbot.lib.types import MessageableChannel, RoleID, UserID
+from commanderbot.lib.types import MessageableChannel, RoleID
 
 CHARACTER_CAP = 1900
 
@@ -103,8 +105,8 @@ def format_context_cause(ctx: Context | Interaction) -> str:
     return " ".join(parts)
 
 
-def message_to_file(message: Message, filename: Optional[str] = None) -> File:
-    filename = filename or "message.md"
+def message_to_file(message: Message, file_name: Optional[str] = None) -> File:
+    file_name = file_name or "message.md"
     file_lines = []
     if message.content:
         file_lines.append(message.content)
@@ -119,18 +121,18 @@ def message_to_file(message: Message, filename: Optional[str] = None) -> File:
             embed_json = json.dumps(embed.to_dict(), indent=2)
             file_lines.append(f"\n```json\n{embed_json}\n```")
     file_content = "\n".join(file_lines)
-    fp = cast(Any, io.StringIO(file_content))
-    file = File(fp=fp, filename=filename)
+    fp = io.BytesIO(file_content.encode())
+    file = File(fp=fp, filename=file_name)
     return file
 
 
-def str_to_file(contents: str, file_name: str) -> File:
-    fp = cast(Any, io.StringIO(contents))
+def str_to_file(content: str, file_name: str) -> File:
+    fp = io.BytesIO(content.encode())
     return File(fp=fp, filename=file_name)
 
 
 async def send_message_or_file(
-    destination: MessageableChannel | PartialMessageable,
+    destination: MessageableChannel | Thread | PartialMessageable,
     content: str,
     *,
     file_callback: Callable[[], tuple[str, str, str]],
@@ -158,7 +160,7 @@ async def send_message_or_file(
         return await destination.send(content, allowed_mentions=allowed_mentions)
     else:
         alt_content, file_content, file_name = file_callback()
-        fp = cast(Any, io.StringIO(file_content))
+        fp = io.BytesIO(file_content.encode())
         file = File(fp=fp, filename=file_name)
         return await destination.send(
             alt_content,

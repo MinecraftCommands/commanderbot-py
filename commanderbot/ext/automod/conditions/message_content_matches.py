@@ -1,93 +1,70 @@
+import re
 import unicodedata
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject, PatternWrapper
+from pydantic import Field, PositiveInt
 
-ST = TypeVar("ST")
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+from commanderbot.lib.types import UnicodeNormalizationForms
+
+__all__ = ("MessageContentMatches",)
 
 
-DEFAULT_NORMALIZATION_FORM = "NFKD"
-
-
-@dataclass
-class MessageContentMatches(AutomodConditionBase):
+class MessageContentMatches(AutomodCondition):
     """
-    Check if message content matches a number of regular expressions.
-
-    Attributes
-    ----------
-    matches
-        The patterns (regular expressions) to match. Unless `count` is specified, all
-        patterns must be matched in order to pass.
-    count
-        The number of unique patterns to match. For example: a value of 1 requires any
-        of the patterns to be matched, whereas a value of requires at least 2 to be
-        matched. If unspecified, all patterns must be matched.
-    use_search
-        Whether to search the entire string instead of using an anchored match.
-    use_normalization
-        Whether to use unicode normalization or process the string as-is.
-    normalization_form
-        If enabled, the type of normalization to apply. Defaults to NFKD.
+    Check if the message content matches a number of regular expressions.
     """
 
-    matches: tuple[PatternWrapper]
-    count: Optional[int] = None
-    use_search: Optional[bool] = None
-    use_normalization: Optional[bool] = None
-    normalization_form: Optional[str] = None
+    type: Literal["message_content_matches"]
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        raw_matches = data["matches"]
-        if isinstance(raw_matches, (str, dict)):
-            matches = [PatternWrapper.from_data(raw_matches)]
-        else:
-            matches = [PatternWrapper.from_data(item) for item in raw_matches]
-        return cls(
-            description=data.get("description"),
-            matches=matches,
-            count=data.get("count"),
-            use_search=data.get("use_search"),
-            use_normalization=data.get("use_normalization"),
-            normalization_form=data.get("normalization_form"),
-        )
+    matches: set[re.Pattern] = Field(min_length=1)
+    """
+    The patterns (regular expressions) to match. Unless `count` is specified, all
+    patterns must be matched in order to pass.
+    """
 
-    def is_match(self, pattern: PatternWrapper, content: str) -> bool:
+    count: Optional[PositiveInt] = None
+    """
+    The number of unique patterns to match. For example: a value of 1 requires any
+    of the patterns to be matched, whereas a value of 2 requires at least 2 to be
+    matched. If unspecified, all patterns must be matched.
+    """
+
+    use_search: bool = False
+    """Whether to search the entire string instead of using an anchored match."""
+
+    use_normalization: bool = False
+    """Whether to use unicode normalization or process the string as-is."""
+
+    normalization_form: UnicodeNormalizationForms = Field(default="NFKD")
+    """If enabled, the type of normalization to apply. Defaults to NFKD."""
+
+    def is_match(self, pattern: re.Pattern, content: str) -> bool:
         if self.use_search:
-            match = pattern.search(content)
-            return bool(match)
-        match = pattern.match(content)
-        return bool(match)
+            return pattern.search(content) is not None
+        return pattern.match(content) is not None
 
-    async def check(self, event: AutomodEvent) -> bool:
-        message = event.message
-        # Short-circuit if there's no message or the message is empty.
-        if not (message and message.content):
+    @override
+    async def check(self, context: AutomodContext) -> bool:
+        # Return if the event has no message
+        message = context.event.message
+        if not message:
             return False
-        # Grab the message content.
-        content = str(message.content)
-        # Normalize the message content, if enabled.
+
+        # Grab the message content and process it
+        content = message.content
         if self.use_normalization:
-            normalization_form = self.normalization_form or DEFAULT_NORMALIZATION_FORM
-            content = unicodedata.normalize(normalization_form, content)
-        # Check for a sufficient number of matches.
-        remainder = self.count or len(self.matches)
+            content = unicodedata.normalize(self.normalization_form, content)
+
+        # Check for a sufficient number of matches
+        required_matches = self.count or len(self.matches)
+        matches = 0
         for pattern in self.matches:
-            # If there's a match, adjust the counter and check if we're done.
             if self.is_match(pattern, content):
-                remainder -= 1
-                if remainder <= 0:
+                matches += 1
+                if matches == required_matches:
                     return True
-        # If we got this far, there weren't enough matches.
+
+        # If we got this far, we didn't have enough matches
         return False
-
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return MessageContentMatches.from_data(data)

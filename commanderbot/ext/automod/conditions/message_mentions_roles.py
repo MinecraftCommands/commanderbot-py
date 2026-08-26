@@ -1,63 +1,55 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
-from commanderbot.lib.guards import RolesGuard
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+from commanderbot.ext.automod.guards import IntegerRangeGuard, RolesGuard
 
-ST = TypeVar("ST")
+__all__ = ("MessageMentionsRoles",)
 
 
-@dataclass
-class MessageMentionsRoles(AutomodConditionBase):
+class MessageMentionsRoles(AutomodCondition):
     """
     Check if the message contains role mentions.
-
-    Attributes
-    ----------
-    roles
-        The roles to match against. If empty, all roles will match.
     """
 
+    type: Literal["message_mentions_roles"]
+
     roles: Optional[RolesGuard] = None
+    """The roles to match against. If empty, all roles will match."""
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        roles = RolesGuard.from_data(data.get("roles", {}))
-        return cls(
-            description=data.get("description"),
-            roles=roles,
-        )
+    count: Optional[IntegerRangeGuard] = None
+    """The number of role mentions to check for. If empty, the message only needs a single role mention."""
 
-    async def check(self, event: AutomodEvent) -> bool:
-        message = event.message
-        # Short-circuit if there's no message or the message is empty.
-        if not (message and message.content):
+    @override
+    async def check(self, context: AutomodContext) -> bool:
+        # Return if the event has no message
+        message = context.event.message
+        if not message:
             return False
-        # Short-circuit if the message does not mention any roles.
+
+        # Return if the message has no role mentions
         if not message.role_mentions:
             return False
-        # Check if we care about any of the mentioned roles.
-        if self.roles is not None:
+
+        # Check if we care about any of the mentioned roles
+        mentioned_roles = message.role_mentions
+        if self.roles:
             mentioned_roles = self.roles.filter_roles(message.role_mentions)
-        else:
-            mentioned_roles = message.role_mentions
+
+        # Return if we have no role mentions or the number of role mentions is outside
+        # the range of the guard
         if not mentioned_roles:
             return False
-        event.set_metadata(
-            "mentioned_roles",
-            " ".join(role.mention for role in mentioned_roles),
+        if self.count and self.count.excludes(len(mentioned_roles)):
+            return False
+
+        # Add mentioned roles metadata to context
+        context.metadata.mentioned_roles = " ".join(
+            (role.mention for role in mentioned_roles)
         )
-        event.set_metadata(
-            "mentioned_role_names",
-            " ".join(f"`{role}`" for role in mentioned_roles),
+        context.metadata.mentioned_role_names = " ".join(
+            (f"`{role}`" for role in mentioned_roles)
         )
+
+        # If we got this far, the message has role mentions we care about
         return True
-
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return MessageMentionsRoles.from_data(data)

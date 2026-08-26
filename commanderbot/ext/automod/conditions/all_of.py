@@ -1,48 +1,31 @@
-from dataclasses import dataclass
-from typing import Type, TypeVar
+from typing import TYPE_CHECKING, Literal, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-    deserialize_conditions,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from pydantic import Field
 
-ST = TypeVar("ST")
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+
+__all__ = ("AllOf",)
+
+if TYPE_CHECKING:
+    from commanderbot.ext.automod.condition import AutomodConditionType
 
 
-@dataclass
-class AllOf(AutomodConditionBase):
+class AllOf(AutomodCondition):
     """
     Check if all sub-conditions pass (logical AND).
-
-    Note that this is effectively equivalent to `any_of` with a `count` set to the
-    number of sub-conditions. The distinction exists for clarity and convenience.
-
-    Attributes
-    ----------
-    conditions
-        The sub-conditions to check.
     """
 
-    conditions: tuple[AutomodCondition]
+    type: Literal["all_of"]
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        raw_conditions = data["conditions"]
-        conditions = deserialize_conditions(raw_conditions)
-        return cls(
-            description=data.get("description"),
-            conditions=conditions,
-        )
+    conditions: list[AutomodConditionType] = Field(min_length=1)
+    """The sub-conditions to check."""
 
-    async def check(self, event: AutomodEvent) -> bool:
+    @override
+    async def check(self, context: AutomodContext) -> bool:
         for condition in self.conditions:
-            if not await condition.check(event):
+            if condition.disabled:
+                continue
+            if not await condition.check(context):
                 return False
         return True
-
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return AllOf.from_data(data)

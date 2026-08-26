@@ -1,17 +1,41 @@
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from discord import AllowedMentions, Interaction
 from discord.ext.commands import Context
 
 __all__ = (
+    "InstantiationError",
     "MalformedData",
+    "NoSuchFactory",
     "ResponsiveException",
 )
 
 
 class MalformedData(Exception):
-    def __init__(self, cls: Type, data: Any):
-        super().__init__(f"Cannot create {cls.__name__} from {type(data).__name__}")
+    def __init__(self, cls: type, data: Any):
+        super().__init__(f"Cannot create '{cls.__name__}' from '{type(data).__name__}'")
+
+
+class NoSuchFactory(ValueError):
+    """
+    Raised by a Pydantic validator if a factory function wasn't found.
+    """
+
+    def __init__(self, cls: type, factory_name: str):
+        super().__init__(
+            f"'{cls.__name__}' doesn't have a factory function called '{factory_name}'",
+        )
+
+
+class InstantiationError(ValueError):
+    """
+    Raised by a Pydantic validator if there was an error while instantiating a class.
+    """
+
+    def __init__(self, cls: type, exception: Exception):
+        super().__init__(
+            f"An error occurred while instantiating a '{cls.__name__}': {exception}",
+        )
 
 
 class ResponsiveException(Exception):

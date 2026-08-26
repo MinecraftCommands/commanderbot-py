@@ -1,53 +1,40 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Literal, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-    deserialize_conditions,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from pydantic import Field, PositiveInt
 
-ST = TypeVar("ST")
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+
+__all__ = ("AnyOf",)
+
+if TYPE_CHECKING:
+    from commanderbot.ext.automod.condition import AutomodConditionType
 
 
-@dataclass
-class AnyOf(AutomodConditionBase):
+class AnyOf(AutomodCondition):
     """
     Check if a number of sub-conditions pass (logical OR).
-
-    Attributes
-    ----------
-    conditions
-        The sub-conditions to check.
-    count
-        The number of sub-conditions that must pass. If unspecified, only a single
-        sub-condition is required to pass.
     """
 
-    conditions: tuple[AutomodCondition]
-    count: Optional[int] = None
+    type: Literal["any_of"]
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        raw_conditions = data["conditions"]
-        conditions = deserialize_conditions(raw_conditions)
-        return cls(
-            description=data.get("description"),
-            conditions=conditions,
-            count=data.get("count"),
-        )
+    conditions: list[AutomodConditionType] = Field(min_length=1)
+    """The sub-conditions to check."""
 
-    async def check(self, event: AutomodEvent) -> bool:
-        remainder = self.count or 1
+    count: PositiveInt = 1
+    """
+    The number of sub-conditions that must pass. If empty,
+    only a single sub-condition is required to pass.
+    """
+
+    @override
+    async def check(self, context: AutomodContext) -> bool:
+        checks_passed: int = 0
         for condition in self.conditions:
-            if await condition.check(event):
-                remainder -= 1
-                if remainder <= 0:
+            if condition.disabled:
+                continue
+            if await condition.check(context):
+                checks_passed += 1
+                if checks_passed == self.count:
                     return True
         return False
-
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return AnyOf.from_data(data)

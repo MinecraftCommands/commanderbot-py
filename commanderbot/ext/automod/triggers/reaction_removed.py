@@ -1,34 +1,15 @@
-from dataclasses import dataclass
+from typing import Literal
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger
 from commanderbot.ext.automod.triggers.reaction import Reaction
-from commanderbot.lib import JsonObject
+
+__all__ = ("ReactionRemoved",)
 
 
-@dataclass
 class ReactionRemoved(Reaction):
     """
-    Fires when an `on_reaction_remove` event is received.
-
-    See: https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_reaction_remove
-
-    Attributes
-    ----------
-    reactions
-        The reactions to match against. If empty, all reactions will match.
-    channel_types
-        The channel types to match against. If empty, all channel types will match.
-    channels
-        The channels to match against. If empty, all channels will match.
-    author_roles
-        The author roles to match against. If empty, all roles will match.
-    actor_roles
-        The actor roles to match against. If empty, all roles will match.
+    Triggers when a reaction is removed.
     """
 
+    type: Literal["reaction_removed"]
     event_types = (events.ReactionRemoved,)
-
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return ReactionRemoved.from_data(data)

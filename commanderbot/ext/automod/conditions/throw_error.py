@@ -1,31 +1,24 @@
-from dataclasses import dataclass
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.automod_exceptions import AutomodException
+from commanderbot.ext.automod.condition import AutomodCondition
+
+__all__ = ("ThrowError",)
 
 
-@dataclass
-class ThrowError(AutomodConditionBase):
+class ThrowError(AutomodCondition):
     """
     Throw an error when checking the condition.
 
     Intended for testing and debugging.
-
-    Attributes
-    ----------
-    error
-        A human-readable error message.
     """
 
+    type: Literal["throw_error"]
+
     error: str
+    """A human-readable error message."""
 
-    async def check(self, event: AutomodEvent) -> bool:
-        raise Exception(self.error)
-
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return ThrowError.from_data(data)
+    @override
+    async def check(self, context: AutomodContext) -> bool:
+        raise AutomodException(self.error)

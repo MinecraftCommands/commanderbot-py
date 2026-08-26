@@ -12,9 +12,9 @@ CMD_HELP = """
     Example usage:
 
         .allay [indent]
-        `​`​`
+        `\u200b`\u200b`
         text
-        `​`​`
+        `\u200b`\u200b`
     
     Both plain-text, inline code blocks, and normal code blocks are all supported. There should always be a newline in between the command (and optional indent, if supplied), and the text.
 """

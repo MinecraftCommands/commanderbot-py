@@ -1,23 +1,15 @@
-from dataclasses import dataclass
+from typing import Literal
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_trigger import (
-    AutomodTrigger,
-    AutomodTriggerBase,
-)
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.trigger import AutomodTrigger
+
+__all__ = ("MemberJoined",)
 
 
-@dataclass
-class MemberJoined(AutomodTriggerBase):
+class MemberJoined(AutomodTrigger):
     """
-    Fires when an `on_member_join` event is received.
-
-    See: https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_member_join
+    Triggers when a member joins the guild.
     """
 
+    type: Literal["member_joined"]
     event_types = (events.MemberJoined,)
-
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return MemberJoined.from_data(data)

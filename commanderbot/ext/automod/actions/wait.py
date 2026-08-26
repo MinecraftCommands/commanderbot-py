@@ -1,39 +1,25 @@
 import asyncio
-from dataclasses import dataclass
-from datetime import timedelta
-from typing import Type, TypeVar
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject, utils
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.lib.timedelta import Timedelta
 
-ST = TypeVar("ST")
+__all__ = ("Wait",)
 
 
-@dataclass
-class Wait(AutomodActionBase):
+class Wait(AutomodAction):
     """
     Wait a certain amount of time before continuing.
-
-    Attributes
-    ----------
-    delay
-        How long to wait for.
     """
 
-    delay: timedelta
+    type: Literal["wait"]
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        delay = utils.timedelta_from_field_optional(data, "delay")
-        return cls(
-            description=data.get("description"),
-            delay=delay,
-        )
+    delay: Timedelta
+    """
+    How long to wait for.
+    """
 
-    async def apply(self, event: AutomodEvent):
+    @override
+    async def apply(self, context: AutomodContext):
         await asyncio.sleep(self.delay.total_seconds())
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return Wait.from_data(data)

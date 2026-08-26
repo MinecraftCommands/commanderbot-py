@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, Self
 
 from commanderbot.lib import FromDataMixin
-from commanderbot.lib.cogs.database import (
+from commanderbot.lib.databases.json_db.v1 import (
     DatabaseOptions,
     InMemoryDatabaseOptions,
     make_database_options,

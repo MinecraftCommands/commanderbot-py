@@ -10,8 +10,8 @@ except:
 
 
 __all__ = (
-    "setup_logging",
     "preview_logging",
+    "setup_logging",
 )
 
 
@@ -46,7 +46,7 @@ def setup_logging(
 
     try:
         log_handler.setFormatter(
-            colorlog.ColoredFormatter(fmt=log_format, log_colors=log_colors)  # type: ignore
+            colorlog.ColoredFormatter(fmt=log_format, log_colors=log_colors)
         )
     except:
         print(

@@ -2,8 +2,10 @@ import importlib.util
 import sys
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
-from typing import Any, Optional, Type
+from typing import Any, Optional, override
 
+import pebble
+import psutil
 from discord import AppInfo, Asset, Attachment, User
 from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
 from discord.interactions import Interaction
@@ -11,8 +13,7 @@ from discord.utils import utcnow
 
 from commanderbot.core.application_emoji_manager import ApplicationEmojiManager
 from commanderbot.core.command_tree import CachingCommandTree
-from commanderbot.core.config import Config
-from commanderbot.core.configured_extension import ConfiguredExtension
+from commanderbot.core.config import Config, ConfiguredExtension
 from commanderbot.core.error_handling import (
     AppCommandErrorHandler,
     CommandErrorHandler,
@@ -42,24 +43,23 @@ class CommanderBot(Bot):
         self.config: Config = config
         self._sync_tree_on_login: bool = sync_tree_on_login
 
-        # Remember when we started and the last time we connected.
-        self._started_at: datetime = utcnow()
-        self._connected_since: Optional[datetime] = None
-
         # Create an error handling component.
         self.error_handling = ErrorHandling(log=self.log)
-        self.tree.on_error = self.on_app_command_error
+        self.tree.on_error = self.on_app_command_error  # type: ignore[ty:invalid-assignment] - Maybe get rid of this in the future? #enhance
 
         # Create application emoji manager.
         self.application_emojis = ApplicationEmojiManager(self)
 
-    @property
-    def started_at(self) -> datetime:
-        return self._started_at
+        # Create a process pool that anything can use.
+        # `max_workers` is the number of logical processors minus one.
+        # The minimum number of workers is `1`.
+        cpu_count: int = psutil.cpu_count() or 0
+        self.max_pool_workers: int = max(1, cpu_count - 1)
+        self.pool = pebble.ProcessPool(self.max_pool_workers)
 
-    @property
-    def connected_since(self) -> Optional[datetime]:
-        return self._connected_since
+        # Remember when we started and the last time we connected.
+        self.started_at: datetime = utcnow()
+        self.connected_since: Optional[datetime] = None
 
     @property
     def uptime(self) -> Optional[timedelta]:
@@ -68,8 +68,8 @@ class CommanderBot(Bot):
 
     @property
     def command_tree(self) -> CachingCommandTree:
-        # A hack to get the actual app command tree type for type checkers
-        return self.tree  # type: ignore
+        assert isinstance(self.tree, CachingCommandTree)
+        return self.tree
 
     def add_event_error_handler(self, handler: EventErrorHandler):
         self.error_handling.add_event_error_handler(handler)
@@ -80,7 +80,7 @@ class CommanderBot(Bot):
     def add_app_command_error_handler(self, handler: AppCommandErrorHandler):
         self.error_handling.add_app_command_error_handler(handler)
 
-    async def add_configured_cog(self, ext_name: str, cog_class: Type[Cog]):
+    async def add_configured_cog(self, ext_name: str, cog_class: type[Cog]):
         cog: Optional[Cog] = None
         if options := self.config.get_extension_options(ext_name):
             cog = cog_class(self, **options)
@@ -171,7 +171,7 @@ class CommanderBot(Bot):
         except ImportError:
             raise ExtensionNotFound(name)
 
-    # @overrides Bot
+    @override
     async def load_extension(self, name: str, *, package: Optional[str] = None):
         try:
             # Resolve the extension name and get the extension.
@@ -182,11 +182,11 @@ class CommanderBot(Bot):
             self.log.info(f"[--->] {ext.name}")
             await super().load_extension(ext.name)
             self.config.enable_extension(ext.name)
-        except Exception as ex:
+        except Exception:
             self.log.exception(f"Failed to load extension: {name}")
-            raise ex
+            raise
 
-    # @overrides Bot
+    @override
     async def unload_extension(self, name: str, *, package: Optional[str] = None):
         try:
             # Resolve the extension name and get the extension
@@ -197,11 +197,11 @@ class CommanderBot(Bot):
             self.log.info(f"[-x->] {ext.name}")
             await super().unload_extension(name)
             self.config.disable_extension(name)
-        except Exception as ex:
+        except Exception:
             self.log.exception(f"Failed to unload extension: {name}")
-            raise ex
+            raise
 
-    # @overrides Bot
+    @override
     async def reload_extension(self, name: str, *, package: Optional[str] = None):
         try:
             # Resolve the extension name and get the extension
@@ -211,11 +211,11 @@ class CommanderBot(Bot):
             # Reload extension
             self.log.info(f"[-o->] {ext.name}")
             await super().reload_extension(ext.name)
-        except Exception as ex:
+        except Exception:
             self.log.exception(f"Failed to reload extension: {name}")
-            raise ex
+            raise
 
-    # @overrides Bot
+    @override
     async def setup_hook(self):
         # Build application emoji cache before we process extensions.
         self.log.info("Building application emoji cache...")
@@ -242,16 +242,25 @@ class CommanderBot(Bot):
             await self.command_tree.build_global_cache()
             await self.command_tree.build_guild_cache(self.guilds)
 
-    # @overrides Bot
+    @override
+    async def close(self):
+        # Clean up process pool
+        self.pool.close()
+        self.pool.join()
+
+        # Actually shut down the bot
+        await super().close()
+
+    # Event handler for `Bot`
     async def on_connect(self):
         self.log.warning("Connected to Discord.")
         self._connected_since = utcnow()
 
-    # @overrides Bot
+    # Event handler for `Bot`
     async def on_disconnect(self):
         self.log.warning("Disconnected from Discord.")
 
-    # @overrides Bot
+    # Event handler for `Bot`
     async def on_error(self, event_method: str, *args: Any, **kwargs: Any):
         _, ex, _ = sys.exc_info()
         if isinstance(ex, Exception):
@@ -260,7 +269,7 @@ class CommanderBot(Bot):
         else:
             await super().on_error(event_method, *args, **kwargs)
 
-    # @overrides Bot
+    # Event handler for `Bot`
     async def on_command_error(self, ctx: Context, ex: Exception):
         await self.error_handling.on_command_error(ex, ctx)
 

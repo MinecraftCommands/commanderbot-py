@@ -1,10 +1,14 @@
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional, Union
-import re
 
 from commanderbot.ext.mcdoc.mcdoc_exceptions import QueryReturnedNoResults
-from commanderbot.ext.mcdoc.mcdoc_types import McdocContext, McdocType, deserialize_mcdoc
+from commanderbot.ext.mcdoc.mcdoc_types import (
+    McdocContext,
+    McdocType,
+    deserialize_mcdoc,
+)
 
 
 @dataclass
@@ -15,7 +19,7 @@ class SymbolResult:
     def title(self, ctx: McdocContext):
         name = ctx.symbols.compact_path(self.identifier)
         return self.typeDef.title(name, ctx)
-    
+
     def body(self, ctx: McdocContext):
         return self.typeDef.render(ctx)
 
@@ -27,9 +31,9 @@ class DispatchResult:
     typeDef: McdocType
 
     def title(self, ctx: McdocContext):
-        name = f"{self.registry.removeprefix("minecraft:")} [{self.identifier}]"
+        name = f"{self.registry.removeprefix('minecraft:')} [{self.identifier}]"
         return self.typeDef.title(name, ctx)
-    
+
     def body(self, ctx: McdocContext):
         return self.typeDef.render(ctx)
 
@@ -41,7 +45,7 @@ class DisambiguationResult:
 
     def title(self, ctx: McdocContext):
         return f"{len(self.identifiers)} results for {self.query}"
-    
+
     def body(self, ctx: McdocContext):
         return "\n".join([f"* {ctx.symbols.compact_path(i)}" for i in self.identifiers])
 
@@ -54,8 +58,7 @@ class McdocSymbols:
         }
         self.dispatchers = {
             str(registry): {
-                str(key): deserialize_mcdoc(typeDef)
-                for key, typeDef in members.items()
+                str(key): deserialize_mcdoc(typeDef) for key, typeDef in members.items()
             }
             for registry, members in data.get("mcdoc/dispatcher", {}).items()
         }
@@ -74,13 +77,17 @@ class McdocSymbols:
                 continue
             for key in keys:
                 parts = key.split("::")
-                for i in reversed(range(len(parts)-1)):
+                for i in reversed(range(len(parts) - 1)):
                     suffix = "::".join(parts[i:])
-                    if not [k for k in keys if k is not key and k.endswith(f"::{suffix}")]:
+                    if not [
+                        k for k in keys if k is not key and k.endswith(f"::{suffix}")
+                    ]:
                         self.unique_suffixes[key] = suffix
                         break
 
-    def search(self, query: str) -> Union[SymbolResult, DispatchResult, DisambiguationResult]:
+    def search(
+        self, query: str
+    ) -> Union[SymbolResult, DispatchResult, DisambiguationResult]:
         if query in self.symbols:
             return SymbolResult(query, self.symbols[query])
 

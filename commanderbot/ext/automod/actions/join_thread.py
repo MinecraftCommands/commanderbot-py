@@ -1,24 +1,22 @@
-from dataclasses import dataclass
+from typing import Literal, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+
+__all__ = ("JoinThread",)
 
 
-@dataclass
-class JoinThread(AutomodActionBase):
+class JoinThread(AutomodAction):
     """
-    Join the thread in context.
+    Make the bot join the thread in context.
 
-    Even though bots receive events for a thread, they are not listed as a member of the
-    thread automatically. This can cause issues with sending messages; for example, the
-    first message may be duplicated if the bot is not listed as a member of it.
+    Even though bots receive events for threads, they are not listed as a member of the
+    thread automatically. This can cause issues with sending messages.
     """
 
-    async def apply(self, event: AutomodEvent):
-        if thread := event.thread:
+    type: Literal["join_thread"]
+
+    @override
+    async def apply(self, context: AutomodContext):
+        if thread := context.event.thread:
             await thread.join()
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return JoinThread.from_data(data)

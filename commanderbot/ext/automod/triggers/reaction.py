@@ -1,101 +1,65 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger, AutomodTriggerBase
-from commanderbot.lib import JsonObject
-from commanderbot.lib.guards import (
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.guards import (
+    CategoriesGuard,
     ChannelsGuard,
     ChannelTypesGuard,
     ReactionsGuard,
     RolesGuard,
 )
+from commanderbot.ext.automod.trigger import AutomodTrigger
 
-ST = TypeVar("ST")
+__all__ = ("Reaction",)
 
 
-@dataclass
-class Reaction(AutomodTriggerBase):
+class Reaction(AutomodTrigger):
     """
-    Fires when an `on_reaction_add` or `on_reaction_remove` event is received.
-
-    See:
-    - https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_reaction_add
-    - https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_reaction_remove
-
-    Attributes
-    ----------
-    reactions
-        The reactions to match against. If empty, all reactions will match.
-    channel_types
-        The channel types to match against. If empty, all channel types will match.
-    channels
-        The channels to match against. If empty, all channels will match.
-    author_roles
-        The author roles to match against. If empty, all roles will match.
-    actor_roles
-        The actor roles to match against. If empty, all roles will match.
+    Triggers when a member reacts to a message.
     """
 
+    type: Literal["reaction"]
     event_types = (events.ReactionAdded, events.ReactionRemoved)
 
     reactions: Optional[ReactionsGuard] = None
+    """The reactions to match against. If empty, all reactions will match."""
+
+    categories: Optional[CategoriesGuard] = None
+    """The categories to match against. If empty, all categories will match."""
+
     channel_types: Optional[ChannelTypesGuard] = None
+    """The channel types to match against. If empty, all channel types will match."""
+
     channels: Optional[ChannelsGuard] = None
+    """The channels to match against. If empty, all channels will match."""
+
     author_roles: Optional[RolesGuard] = None
+    """The author roles to match against. If empty, all roles will match."""
+
     actor_roles: Optional[RolesGuard] = None
+    """The actor roles to match against. If empty, all roles will match."""
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        reactions = ReactionsGuard.from_field_optional(data, "reactions")
-        channel_types = ChannelTypesGuard.from_field_optional(data, "channel_types")
-        channels = ChannelsGuard.from_field_optional(data, "channels")
-        author_roles = RolesGuard.from_field_optional(data, "author_roles")
-        actor_roles = RolesGuard.from_field_optional(data, "actor_roles")
-        return cls(
-            reactions=reactions,
-            description=data.get("description"),
-            channel_types=channel_types,
-            channels=channels,
-            author_roles=author_roles,
-            actor_roles=actor_roles,
-        )
+    @override
+    async def ignore(self, context: AutomodContext) -> bool:
+        assert isinstance(context.event, (events.ReactionAdded, events.ReactionRemoved))
 
-    def ignore_by_reaction(self, event: AutomodEvent) -> bool:
-        if self.reactions is None:
-            return False
-        return self.reactions.ignore(event.reaction)
+        if self.reactions and self.reactions.ignore(context.event.reaction):
+            return True
 
-    def ignore_by_channel_type(self, event: AutomodEvent) -> bool:
-        if self.channel_types is None:
-            return False
-        return self.channel_types.ignore(event.channel)
+        if self.categories and self.categories.ignore(context.event.category):
+            return True
 
-    def ignore_by_channel(self, event: AutomodEvent) -> bool:
-        if self.channels is None:
-            return False
-        return self.channels.ignore(event.channel)
+        if self.channel_types and self.channel_types.ignore(context.event.channel):
+            return True
 
-    def ignore_by_author_role(self, event: AutomodEvent) -> bool:
-        if self.author_roles is None:
-            return False
-        return self.author_roles.ignore(event.author)
+        if self.channels and self.channels.ignore(context.event.channel):
+            return True
 
-    def ignore_by_actor_role(self, event: AutomodEvent) -> bool:
-        if self.actor_roles is None:
-            return False
-        return self.actor_roles.ignore(event.actor)
+        if self.author_roles and self.author_roles.ignore(context.event.author):
+            return True
 
-    def ignore(self, event: AutomodEvent) -> bool:
-        return (
-            self.ignore_by_reaction(event)
-            or self.ignore_by_channel_type(event)
-            or self.ignore_by_channel(event)
-            or self.ignore_by_author_role(event)
-            or self.ignore_by_actor_role(event)
-        )
+        if self.actor_roles and self.actor_roles.ignore(context.event.actor):
+            return True
 
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return Reaction.from_data(data)
+        return False

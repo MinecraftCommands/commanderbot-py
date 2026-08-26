@@ -16,6 +16,8 @@ from commanderbot.ext.mccq.mccq_exceptions import (
 )
 from commanderbot.ext.mccq.mccq_options import MCCQManagerOptions
 
+type MCCQQueryResults = QueryResults | dict[str, list[str]]
+
 
 class MCCQManager:
     def __init__(
@@ -68,7 +70,7 @@ class MCCQManager:
             logger_name="commanderbot.ext.mccq.bedrock_manager",
         )
 
-    async def _do_query(self, query: str) -> tuple[QueryResults, int]:
+    async def _do_query(self, query: str) -> tuple[MCCQQueryResults, int]:
         try:
             # Get the query results
             full_results = await asyncio.to_thread(self._query_manager.results, query)
@@ -83,7 +85,7 @@ class MCCQManager:
                 return (full_results, 0)
 
             # Trim results
-            trimmed_results = {}
+            trimmed_results: dict[str, list[str]] = {}
             num_results = 0
             for version, lines in full_results.items():
                 trimmed_results[version] = []
@@ -106,7 +108,7 @@ class MCCQManager:
             self._log.info(f"No versions available for the command: {query}")
             raise NoVersionsAvailable
 
-        except (mccq.errors.LoaderFailure, mccq.errors.ParserFailure):
+        except mccq.errors.LoaderFailure, mccq.errors.ParserFailure:
             self._log.exception(f"Failed to load data for the command: {query}")
             raise FailedToLoadData
 

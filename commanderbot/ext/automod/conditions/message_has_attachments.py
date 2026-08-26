@@ -1,46 +1,33 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import IntegerRange, JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+from commanderbot.ext.automod.guards import IntegerRangeGuard
 
-ST = TypeVar("ST")
+__all__ = ("MessageHasAttachments",)
 
 
-@dataclass
-class MessageHasAttachments(AutomodConditionBase):
+class MessageHasAttachments(AutomodCondition):
     """
     Check if the message has attachments.
-
-    Attributes
-    ----------
-    count
-        The number of attachments to check for, if bounded.
     """
 
-    count: Optional[IntegerRange] = None
+    type: Literal["message_has_attachments"]
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        count = IntegerRange.from_field_optional(data, "count")
-        return cls(
-            description=data.get("description"),
-            count=count,
-        )
+    count: Optional[IntegerRangeGuard] = None
+    """The number of attachments to check for. If empty, the message only needs a single attachment."""
 
-    async def check(self, event: AutomodEvent) -> bool:
-        message = event.message
-        if message is None:
+    @override
+    async def check(self, context: AutomodContext) -> bool:
+        # We need to have attachments in context
+        attachments = context.event.attachments
+        if not attachments:
             return False
-        count_attachments = len(message.attachments or [])
-        if self.count is not None:
-            return self.count.includes(count_attachments)
-        return count_attachments > 0
 
+        # Check if the number of attachments is in the range
+        if self.count:
+            attachment_count = len(attachments)
+            return self.count.includes(attachment_count)
 
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return MessageHasAttachments.from_data(data)
+        # Otherwise, return `True` since we have some number of attachments
+        return True

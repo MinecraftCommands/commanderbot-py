@@ -1,73 +1,70 @@
-from dataclasses import dataclass
-from datetime import timedelta
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
-from commanderbot.ext.automod.automod_action import AutomodAction, AutomodActionBase
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import (
-    AllowedMentions,
-    ChannelID,
-    JsonObject,
-    MessageableChannel,
-    utils,
-)
+from discord import Thread
+from pydantic import Field
 
-ST = TypeVar("ST")
+from commanderbot.ext.automod.action import AutomodAction
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.lib.allowed_mentions import AllowedMentions
+from commanderbot.lib.predicates import is_messagable_guild_channel, is_thread
+from commanderbot.lib.timedelta import Timedelta
+from commanderbot.lib.types import ChannelID, MessageableGuildChannel
+from commanderbot.lib.utils import dict_without_nones
+
+__all__ = ("SendMessage",)
 
 
-@dataclass
-class SendMessage(AutomodActionBase):
+class SendMessage(AutomodAction):
     """
     Send a message.
-
-    Attributes
-    ----------
-    content
-        The content of the message to send.
-    channel
-        The channel to send the message in. Defaults to the channel in context.
-    allowed_mentions
-        The types of mentions allowed in the message. Unless otherwise specified, only
-        "everyone" mentions will be suppressed.
-    delete_after
-        The amount of time to delete the message after, if at all.
     """
 
+    type: Literal["send_message"]
+
     content: str
+    """The content of the message to send."""
+
     channel: Optional[ChannelID] = None
-    allowed_mentions: Optional[AllowedMentions] = None
-    delete_after: Optional[timedelta] = None
+    """The channel to send the message in. Defaults to the channel in context."""
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        allowed_mentions = AllowedMentions.from_field_optional(data, "allowed_mentions")
-        delete_after = utils.timedelta_from_field_optional(data, "delete_after")
-        return cls(
-            description=data.get("description"),
-            content=data.get("content"),
-            channel=data.get("channel"),
-            allowed_mentions=allowed_mentions,
-            delete_after=delete_after,
+    allowed_mentions: AllowedMentions = Field(
+        default_factory=AllowedMentions.not_everyone
+    )
+    """
+    The types of mentions allowed in the message. Unless otherwise specified, only
+    "everyone" mentions will be suppressed.
+    """
+
+    delete_after: Optional[Timedelta] = None
+    """The amount of time to wait before deleting the message, if at all."""
+
+    suppress_embeds: Optional[bool] = None
+    """Suppress any embeds for the message, if at all."""
+
+    silent: Optional[bool] = None
+    """Suppress desktop and push notifications for the message, if at all."""
+
+    def _resolve_channel(
+        self, context: AutomodContext
+    ) -> Optional[MessageableGuildChannel | Thread]:
+        channel = context.event.channel
+        if self.channel:
+            channel = context.bot.get_channel(self.channel)
+
+        if is_messagable_guild_channel(channel) or is_thread(channel):
+            return channel
+
+    @override
+    async def apply(self, context: AutomodContext):
+        channel = self._resolve_channel(context)
+        if not channel:
+            return
+
+        content = context.format_content(self.content)
+        params = dict_without_nones(
+            allowed_mentions=self.allowed_mentions,
+            delete_after=td.total_seconds() if (td := self.delete_after) else None,
+            suppress_embeds=self.suppress_embeds,
+            silent=self.silent,
         )
-
-    async def resolve_channel(
-        self, event: AutomodEvent
-    ) -> Optional[MessageableChannel]:
-        if self.channel is not None:
-            return event.bot.get_channel(self.channel)
-        return event.channel
-
-    async def apply(self, event: AutomodEvent):
-        if channel := await self.resolve_channel(event):
-            content = event.format_content(self.content)
-            allowed_mentions = self.allowed_mentions or AllowedMentions.not_everyone()
-            params = dict(
-                allowed_mentions=allowed_mentions,
-            )
-            if self.delete_after is not None:
-                params.update(delete_after=self.delete_after.total_seconds())
-            await channel.send(content, **params)
-
-
-def create_action(data: JsonObject) -> AutomodAction:
-    return SendMessage.from_data(data)
+        await channel.send(content, **params)

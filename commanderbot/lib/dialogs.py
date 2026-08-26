@@ -1,19 +1,16 @@
-import asyncio
 from enum import Enum
-from typing import Optional
+from typing import Optional, override
 
 import discord
-from discord import ButtonStyle, Interaction, Member, Message, Reaction
+from discord import ButtonStyle, Interaction, Member, Message, Reaction, ui
 from discord.ext.commands import Bot, Context
-from discord.interactions import Interaction
-from discord.ui import Button, View, button
 
 from commanderbot.lib import AllowedMentions
 
 __all__ = (
+    "ConfirmView",
     "ConfirmationResult",
     "confirm_with_reaction",
-    "ConfirmView",
     "respond_with_confirmation",
 )
 
@@ -66,9 +63,9 @@ async def confirm_with_reaction(
         )
 
     # If an appropriate reaction is not received soon enough, assume "no."
-    except asyncio.TimeoutError:
-        await conf_message.remove_reaction(reaction_yes, bot.user)  # type: ignore
-        await conf_message.remove_reaction(reaction_no, bot.user)  # type: ignore
+    except TimeoutError:
+        await conf_message.remove_reaction(reaction_yes, bot.user)
+        await conf_message.remove_reaction(reaction_no, bot.user)
         return ConfirmationResult.NO_RESPONSE
 
     # Otherwise, check which reaction was applied.
@@ -76,21 +73,21 @@ async def confirm_with_reaction(
         assert isinstance(conf_reaction, Reaction)
         # Check if the response is a "yes."
         if str(conf_reaction.emoji) == reaction_yes:
-            await conf_message.remove_reaction(reaction_no, bot.user)  # type: ignore
+            await conf_message.remove_reaction(reaction_no, bot.user)
             return ConfirmationResult.YES
 
     # If we get this far, the answer is an explicit "no."
-    await conf_message.remove_reaction(reaction_yes, bot.user)  # type: ignore
+    await conf_message.remove_reaction(reaction_yes, bot.user)
     return ConfirmationResult.NO
 
 
-class ConfirmView(View):
+class ConfirmView(ui.View):
     def __init__(self, interaction: Interaction, timeout: Optional[float] = None):
         self.original_interaction: Interaction = interaction
         self.result = ConfirmationResult.NO_RESPONSE
         super().__init__(timeout=timeout)
 
-    # @overrides View
+    @override
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user != self.original_interaction.user:
             await interaction.response.send_message(
@@ -99,11 +96,11 @@ class ConfirmView(View):
             return False
         return True
 
-    # @overrides View
+    @override
     async def on_timeout(self):
         # Disable all buttons and set their color to gray
         for button in self.children:
-            assert isinstance(button, Button)
+            assert isinstance(button, ui.Button)
             button.style = ButtonStyle.gray
             button.disabled = True
 
@@ -113,28 +110,28 @@ class ConfirmView(View):
         except:
             pass
 
-    @button(
+    @ui.button(
         label="Yes",
         style=ButtonStyle.green,
         custom_id="commanderbot_lib:dialogs.confirm_view.yes",
     )
-    async def yes_callback(self, interaction: Interaction, button: Button):
+    async def yes_callback(self, interaction: Interaction, button: ui.Button):
         self.result = ConfirmationResult.YES
         await self._on_confirm(interaction, button)
 
-    @button(
+    @ui.button(
         label="No",
         style=ButtonStyle.red,
         custom_id="commanderbot_lib:dialogs.confirm_view.no",
     )
-    async def no_callback(self, interaction: Interaction, button: Button):
+    async def no_callback(self, interaction: Interaction, button: ui.Button):
         self.result = ConfirmationResult.NO
         await self._on_confirm(interaction, button)
 
-    async def _on_confirm(self, interaction: Interaction, pressed_button: Button):
+    async def _on_confirm(self, interaction: Interaction, pressed_button: ui.Button):
         # Remove all buttons except for the one that was interacted with
         for button in self.children[:]:
-            assert isinstance(button, Button)
+            assert isinstance(button, ui.Button)
             if button is not pressed_button:
                 self.remove_item(button)
 
@@ -157,7 +154,7 @@ async def respond_with_confirmation(
     *,
     timeout: float = 60.0,
     ephemeral=False,
-    allowed_mentions: discord.AllowedMentions = discord.AllowedMentions.none(),
+    allowed_mentions: Optional[discord.AllowedMentions] = None,
 ) -> ConfirmationResult:
     """
     Ask a user to confirm an action via a `discord.ui.View` with buttons.
@@ -169,6 +166,7 @@ async def respond_with_confirmation(
 
     # Create the view and send it as a response
     view = ConfirmView(interaction, timeout)
+    allowed_mentions = allowed_mentions or discord.AllowedMentions.none()
     if not interaction.response.is_done():
         await interaction.response.send_message(
             content, view=view, ephemeral=ephemeral, allowed_mentions=allowed_mentions

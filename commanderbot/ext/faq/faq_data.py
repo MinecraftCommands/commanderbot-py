@@ -1,9 +1,10 @@
 import re
 from collections import defaultdict
+from collections.abc import AsyncIterable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import chain, islice
-from typing import Any, AsyncIterable, Iterable, Optional, Self
+from typing import Any, Optional, Self
 
 from discord import Guild
 from discord.utils import utcnow
@@ -226,13 +227,13 @@ class FaqGuildData(JsonSerializable, FromDataMixin):
                 self.uncategorized_faq_entries.append(entry)
 
     def _is_faq_key_available(self, key: str) -> bool:
-        return key not in self.faq_entries.keys()
+        return key not in self.faq_entries
 
     def _is_faq_alias_available(self, alias: str) -> bool:
-        return alias not in self.faq_entries_by_alias.keys()
+        return alias not in self.faq_entries_by_alias
 
     def _is_category_key_available(self, key: str) -> bool:
-        return key not in self.categories.keys()
+        return key not in self.categories
 
     def require_faq(self, key: str) -> FaqEntryData:
         if entry := self.faq_entries.get(key):
@@ -713,7 +714,7 @@ class FaqData(JsonSerializable, FromDataMixin):
             maybe_sorted_entries = (
                 sorted(entries, key=lambda e: e.key) if sort else entries
             )
-            yield (display, maybe_sorted_entries)  # type: ignore
+            yield (display, maybe_sorted_entries)
 
     # @implements FaqStore
     async def get_uncategorized_faqs(

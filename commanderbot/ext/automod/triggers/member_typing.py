@@ -1,72 +1,52 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger, AutomodTriggerBase
-from commanderbot.lib import JsonObject
-from commanderbot.lib.guards import ChannelsGuard, ChannelTypesGuard, RolesGuard
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.guards import (
+    CategoriesGuard,
+    ChannelsGuard,
+    ChannelTypesGuard,
+    RolesGuard,
+)
+from commanderbot.ext.automod.trigger import AutomodTrigger
 
-ST = TypeVar("ST")
+__all__ = ("MemberTyping",)
 
 
-@dataclass
-class MemberTyping(AutomodTriggerBase):
+class MemberTyping(AutomodTrigger):
     """
-    Fires when an `on_typing` event is received.
-
-    See: https://discordpy.readthedocs.io/en/stable/api.html?highlight=events#discord.on_typing
-
-    Attributes
-    ----------
-    channel_types
-        The channel types to match against. If empty, all channel types will match.
-    channels
-        The channels to match against. If empty, all channels will match.
-    roles
-        The roles to match against. If empty, all roles will match.
+    Triggers when a user is typing.
     """
 
+    type: Literal["member_typing"]
     event_types = (events.MemberTyping,)
 
+    categories: Optional[CategoriesGuard] = None
+    """The categories to match against. If empty, all categories will match."""
+
     channel_types: Optional[ChannelTypesGuard] = None
+    """The channel types to match against. If empty, all channel types will match."""
+
     channels: Optional[ChannelsGuard] = None
+    """The channels to match against. If empty, all channels will match."""
+
     roles: Optional[RolesGuard] = None
+    """The roles to match against. If empty, all roles will match."""
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        channel_types = ChannelTypesGuard.from_field_optional(data, "channel_types")
-        channels = ChannelsGuard.from_field_optional(data, "channels")
-        roles = RolesGuard.from_field_optional(data, "roles")
-        return cls(
-            description=data.get("description"),
-            channel_types=channel_types,
-            channels=channels,
-            roles=roles,
-        )
+    @override
+    async def ignore(self, context: AutomodContext) -> bool:
+        assert isinstance(context.event, events.MemberTyping)
 
-    def ignore_by_channel_type(self, event: AutomodEvent) -> bool:
-        if self.channel_types is None:
-            return False
-        return self.channel_types.ignore(event.channel)
+        if self.categories and self.categories.ignore(context.event.category):
+            return True
 
-    def ignore_by_channel(self, event: AutomodEvent) -> bool:
-        if self.channels is None:
-            return False
-        return self.channels.ignore(event.channel)
+        if self.channel_types and self.channel_types.ignore(context.event.channel):
+            return True
 
-    def ignore_by_role(self, event: AutomodEvent) -> bool:
-        if self.roles is None:
-            return False
-        return self.roles.ignore(event.member)
+        if self.channels and self.channels.ignore(context.event.channel):
+            return True
 
-    def ignore(self, event: AutomodEvent) -> bool:
-        return (
-            self.ignore_by_channel_type(event)
-            or self.ignore_by_channel(event)
-            or self.ignore_by_role(event)
-        )
+        if self.roles and self.roles.ignore(context.event.member):
+            return True
 
-
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return MemberTyping.from_data(data)
+        return False

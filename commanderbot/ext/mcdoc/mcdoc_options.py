@@ -3,6 +3,7 @@ from typing import Any, Optional, Self
 
 from commanderbot.lib import FromDataMixin
 
+
 @dataclass
 class McdocOptions(FromDataMixin):
     symbols_url: str

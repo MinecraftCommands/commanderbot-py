@@ -1,10 +1,10 @@
 from itertools import islice
+from typing import override
 
 import emoji
 from discord import Interaction, Message
 from discord.app_commands import AppCommandError, Choice, Transformer
 from discord.ext.commands import BadArgument, CommandError, Context, MessageConverter
-from discord.interactions import Interaction
 
 from commanderbot.lib.color import Color
 from commanderbot.lib.constants import MAX_AUTOCOMPLETE_CHOICES
@@ -12,13 +12,13 @@ from commanderbot.lib.exceptions import ResponsiveException
 from commanderbot.lib.predicates import is_custom_emoji, is_message_link
 
 __all__ = (
+    "ColorTransformer",
+    "EmojiTransformer",
+    "InvalidColor",
     "InvalidEmoji",
     "InvalidMessageLink",
-    "UnableToFindMessage",
-    "InvalidColor",
-    "EmojiTransformer",
     "MessageTransformer",
-    "ColorTransformer",
+    "UnableToFindMessage",
 )
 
 
@@ -59,6 +59,7 @@ class EmojiTransformer(Transformer):
     A transformer that validates that a string is a valid Unicode or Discord emoji
     """
 
+    @override
     async def transform(self, interaction: Interaction, value: str) -> str:
         if emoji.is_emoji(value):
             return value
@@ -71,7 +72,8 @@ class MessageTransformer(Transformer):
     """
     Transforms a valid Discord message link into a `discord.Message`
     """
-
+    
+    @override
     async def transform(self, interaction: Interaction, value: str) -> Message:
         # Return early if the string we're trying to transform isn't a valid Discord message link
         if not is_message_link(value):
@@ -79,9 +81,9 @@ class MessageTransformer(Transformer):
 
         # Try to transform `value` into a `discord.Message`
         try:
-            ctx = await Context.from_interaction(interaction)  # type: ignore
-            return await MessageConverter().convert(ctx, value)  # type: ignore
-        except (CommandError, BadArgument):
+            ctx = await Context.from_interaction(interaction)
+            return await MessageConverter().convert(ctx, value)
+        except CommandError, BadArgument:
             raise UnableToFindMessage(value)
 
 
@@ -92,15 +94,18 @@ class ColorTransformer(Transformer):
     Also provides autocomplete suggestions
     """
 
+    @override
     async def transform(self, interaction: Interaction, value: str) -> Color:
         try:
             return Color.from_str(value)
         except ValueError:
             raise InvalidColor(value)
 
+    @override
     async def autocomplete(
-        self, interaction: Interaction, value: str
-    ) -> list[Choice[str]]:
+        self, interaction: Interaction, value: int | float |str
+    ) -> list[Choice[int | float |str]]:
+        assert isinstance(value, str)
         colors: list[Choice] = []
         for name, color in islice(
             Color.presets(color_filter=value).items(), MAX_AUTOCOMPLETE_CHOICES

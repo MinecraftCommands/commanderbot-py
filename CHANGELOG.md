@@ -14,6 +14,112 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Removed
 
+## [0.23.0]
+
+### Added
+
+- Added a new type of database (`JsonDB`) that uses Pydantic models
+  - This should be used going forward
+  - The old database classes can be accessed from `commanderbot.lib.databases.v1`
+- Added an optional dependency group for OCR (Optical Character Recognition)
+  - Uses [tesserocr](https://github.com/sirfz/tesserocr)
+  - This is optional because it requires quite a bit of setup (Especially on Windows)
+  - Query `SUPPORTS_OCR` in `commanderbot.lib.constants` to check if it was added
+  - If added, it will add extra capabilities to the following extensions:
+    - `automod`
+- The following library classes now support Pydantic:
+  - `AllowedMentions`
+  - `Color`
+  - `ChannelType`
+  - `Intents`
+  - `ImageHash`
+  - `Timedelta`
+- `sudo`:
+  - Now supports exporting `JsonDB` databases
+- Added a process pool to `CommanderBot` that any extension can use
+
+### Changed
+
+- Updated discord.py to 2.7
+- The bot config now uses Pydantic
+- `automod`:
+  - Completely rewritten from scratch to fix tons of issues that have piled up over the years
+  - Now uses slash commands
+  - Now uses components v2
+  - Now uses `JsonDB` and Pydantic models
+  - Rule metadata now has it's own class instead of being combined with the rule
+  - Rules **must** be written in Json now (Sorry Arcensoth)
+  - You can now export the Json schema for rules
+    - This is useful for creating rules in a text editor
+  - Rules now receive an `AutomodContext` instead of an `AutomodEvent`
+    - This gives you access to:
+      - The bot
+      - The guild state that received the event
+      - The logger instance for that guild state
+      - The rule being ran
+      - The event
+    - Metadata now uses a dataclass instead of a `dict`
+    - Added support for caching attachment data
+    - String formatting using context data now uses `string.Template`
+  - Added support for buckets
+    - Closes ([Old repo #63](https://github.com/CommanderBot-Dev/commanderbot-py/pull/63))
+    - These can be used to persist data between events
+    - Available bucket types:
+      - `flagged_image_attachments`
+      - `message_history`
+  - New triggers:
+    - `discord_automod_blocked_member_interactions`
+    - `discord_automod_blocked_message`
+    - `discord_automod_timed_out`
+    - `member_gained_flags`
+    - `member_lost_flags`
+    - `member_timeout_started`
+    - `member_timeout_ended`
+    - `message_frequency`
+  - New conditions:
+    - `actor_has_all_flags`
+    - `actor_has_any_flags`
+    - `author_has_all_flags`
+    - `author_has_any_flags`
+    - `has_flagged_image_attachments`
+    - `image_attachments_contain`
+    - `random_chance`
+    - `randomize`
+    - `return_false`
+    - `return_true`
+  - New actions:
+    - `add_to_bucket`
+    - `delete_actor_messages`
+    - `delete_author_messages`
+    - `randomize`
+    - `sequence`
+    - `timeout_actor`
+    - `timeout_author`
+    - `type_in_channel`
+  - New events:
+    - `DiscordAutomodBlockedMemberInteractions`
+    - `DiscordAutomodBlockedMessage`
+    - `DiscordAutomodTimedOut`
+    - `GuildChannelPinsUpdated`
+    - `MessageFrequency`
+  - New guards:
+    - `CategoriesGuard`
+    - `ChannelTypesGuard`
+    - `DiscordAutomodRulesGuard`
+    - `FlagsGuard`
+- `help_forum`:
+  - Now uses `JsonDB` and Pydantic models (This is just a direct port with no optimizations)
+
+### Fixed
+
+- `mcdoc`:
+  - Fixed an issue where application emojis weren't being used
+
+### Removed
+
+- `help_chat`:
+  - It hasn't been used in ages and is pretty outdated now
+
 ## [0.22.0] - 2026-01-06
 
 ### Fixed
@@ -410,7 +516,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Implemented `status` and `faq` extensions as an exercise for developing `commanderbot-lib`
 
-[unreleased]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.22.0...HEAD
+[unreleased]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/MinecraftCommands/commanderbot-py/compare/v0.19.0...v0.20.0

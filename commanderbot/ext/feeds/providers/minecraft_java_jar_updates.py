@@ -14,8 +14,8 @@ from .utils import FeedHandler, MinecraftJavaVersion
 
 __all__ = (
     "MinecraftJavaJarUpdateInfo",
-    "MinecraftJavaJarUpdatesOptions",
     "MinecraftJavaJarUpdates",
+    "MinecraftJavaJarUpdatesOptions",
 )
 
 

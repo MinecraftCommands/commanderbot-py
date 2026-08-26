@@ -26,43 +26,22 @@ from commanderbot.ext.help_forum.help_forum_exceptions import (
     UnableToResolvePinned,
 )
 from commanderbot.ext.help_forum.help_forum_guild_state import HelpForumGuildState
-from commanderbot.ext.help_forum.help_forum_json_store import HelpForumJsonStore
 from commanderbot.ext.help_forum.help_forum_options import HelpForumOptions
 from commanderbot.ext.help_forum.help_forum_state import HelpForumState
 from commanderbot.ext.help_forum.help_forum_store import HelpForumStore
 from commanderbot.lib import is_bot, is_forum_channel, is_guild, is_thread
 from commanderbot.lib.app_commands import EmojiTransformer
 from commanderbot.lib.cogs import CogGuildStateManager
-from commanderbot.lib.cogs.database import (
-    InMemoryDatabaseOptions,
-    JsonFileDatabaseAdapter,
-    JsonFileDatabaseOptions,
-    UnsupportedDatabaseOptions,
-)
-
-
-def _make_store(bot: Bot, cog: Cog, options: HelpForumOptions) -> HelpForumStore:
-    db_options = options.database
-    if isinstance(db_options, InMemoryDatabaseOptions):
-        return HelpForumData()
-    if isinstance(db_options, JsonFileDatabaseOptions):
-        return HelpForumJsonStore(
-            bot=bot,
-            cog=cog,
-            db=JsonFileDatabaseAdapter(
-                options=db_options,
-                serializer=lambda cache: cache.to_json(),
-                deserializer=HelpForumData.from_data,
-            ),
-        )
-    raise UnsupportedDatabaseOptions(db_options)
+from commanderbot.lib.databases.json_db import JsonDB
 
 
 class HelpForumCog(Cog, name="commanderbot.ext.help_forum"):
     def __init__(self, bot: Bot, **options):
         self.bot: Bot = bot
-        self.options = HelpForumOptions.from_data(options)
-        self.store: HelpForumStore = _make_store(self.bot, self, self.options)
+        self.options = HelpForumOptions.model_validate(options)
+        self.store = HelpForumStore(
+            self.bot, self, JsonDB(self.options.database, HelpForumData)
+        )
         self.state = HelpForumState(
             bot=self.bot,
             cog=self,

@@ -1,5 +1,6 @@
+from collections.abc import AsyncIterable
 from dataclasses import dataclass
-from typing import AsyncIterable, Optional
+from typing import Optional
 
 from discord import Guild
 
@@ -7,7 +8,7 @@ from commanderbot.ext.invite.invite_data import InviteData
 from commanderbot.ext.invite.invite_store import InviteEntry
 from commanderbot.lib import UserID
 from commanderbot.lib.cogs import CogStore
-from commanderbot.lib.cogs.database import JsonFileDatabaseAdapter
+from commanderbot.lib.databases.json_db.v1 import JsonFileDatabaseAdapter
 
 
 # @implements InviteStore

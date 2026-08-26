@@ -1,5 +1,5 @@
 import re
-from typing import Iterable, cast
+from collections.abc import Iterable
 
 import emoji
 from discord import Message
@@ -17,7 +17,7 @@ class VoteCog(Cog, name="commanderbot.ext.vote"):
     @staticmethod
     def get_emojis(message: Message) -> Iterable[str]:
         # Get message content and cast it to a string
-        message_content: str = str(message.clean_content)
+        message_content: str = message.clean_content
 
         # Find unicode emoji in the message
         found_emojis: list = emoji.emoji_list(message_content)
@@ -66,8 +66,8 @@ class VoteCog(Cog, name="commanderbot.ext.vote"):
     async def cmd_vote(self, ctx: Context):
         # Determine which emoji reactions to seed the message with, silently ignoring
         # errors raised by any individual emoji.
-        for emoji in self.get_emojis(cast(Message, ctx.message)):
+        for message_emoji in self.get_emojis(ctx.message):
             try:
-                await ctx.message.add_reaction(emoji)
+                await ctx.message.add_reaction(message_emoji)
             except:
                 pass

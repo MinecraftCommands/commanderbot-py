@@ -15,8 +15,8 @@ from .utils import FeedHandler, ZendeskArticle
 
 __all__ = (
     "MinecraftBedrockUpdateInfo",
-    "MinecraftBedrockUpdatesOptions",
     "MinecraftBedrockUpdates",
+    "MinecraftBedrockUpdatesOptions",
 )
 
 VERSION_PATTERN = re.compile(r"\d+\.\d+(?:\.\d+)?(?:\.\d+)?")

@@ -2,14 +2,16 @@
 
 A collection of utilities and extensions for discord.py bots.
 
-[![uv-badge]](https://github.com/astral-sh/uv/)
-[![package-badge]](https://pypi.python.org/pypi/commanderbot/)
-[![version-badge]](https://pypi.python.org/pypi/commanderbot/)
+[![uv-badge]](https://github.com/astral-sh/uv)
+[![ruff-badge]](https://github.com/astral-sh/ruff)
+[![ty-badge]](https://github.com/astral-sh/ty)
+[![package-badge]](https://pypi.python.org/pypi/commanderbot)
+[![version-badge]](https://pypi.python.org/pypi/commanderbot)
 
 ## Requirements
 
 - Python 3.14+
-- discord.py 2.6+
+- discord.py 2.7+
 
 ## Running your bot
 
@@ -75,5 +77,7 @@ The current set of configuration options is limited. The following is an example
 ```
 
 [uv-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=flat-square
+[ruff-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square
+[ty-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json&style=flat-square
 [package-badge]: https://img.shields.io/pypi/v/commanderbot.svg?style=flat-square
 [version-badge]: https://img.shields.io/pypi/pyversions/commanderbot.svg?style=flat-square

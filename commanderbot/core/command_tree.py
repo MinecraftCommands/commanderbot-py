@@ -1,7 +1,8 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Iterable, Optional, TypeAlias
+from typing import Optional, override
 
 from discord import AppCommandType
 from discord.abc import Snowflake
@@ -11,8 +12,8 @@ from commanderbot.lib import AppCommandID, GuildID
 
 __all__ = ("CachingCommandTree",)
 
-Cache: TypeAlias = dict[str, AppCommand]
-GuildType: TypeAlias = Snowflake | GuildID
+type Cache = dict[str, AppCommand]
+type GuildType = Snowflake | GuildID
 
 
 @dataclass
@@ -47,7 +48,7 @@ class CommandCache:
         def traverse_options(options: list[AppCommandGroup | Argument]):
             for option in options:
                 if isinstance(option, AppCommandGroup):
-                    self._cache[option.qualified_name] = option  # type: ignore
+                    self._cache[option.qualified_name] = option  # type: ignore[ty:invalid-assignment]
                     traverse_options(option.options)
 
         # Add commands and their options
@@ -90,7 +91,7 @@ class CachingCommandTree(CommandTree):
         if guild:
             return self._guild_cache.get(self._guild_to_id(guild))
         else:
-            self._global_cache
+            return self._global_cache
 
     def _guild_to_id(self, guild: GuildType) -> GuildID:
         return guild.id if isinstance(guild, Snowflake) else guild
@@ -154,7 +155,7 @@ class CachingCommandTree(CommandTree):
 
         self._log.info("Finished building guild command cache.")
 
-    # @overrides CommandTree
+    @override
     async def fetch_command(
         self,
         command_id: int,
@@ -174,7 +175,7 @@ class CachingCommandTree(CommandTree):
         self.update_cache([command], guild=guild)
         return command
 
-    # @overrides CommandTree
+    @override
     async def fetch_commands(
         self, *, guild: Optional[Snowflake] = None, use_cache: bool = True
     ) -> list[AppCommand]:
@@ -188,7 +189,7 @@ class CachingCommandTree(CommandTree):
         self.update_cache(commands, guild=guild, override=True)
         return commands
 
-    # @overrides CommandTree
+    @override
     async def sync(self, *, guild: Optional[Snowflake] = None) -> list[AppCommand]:
         # Create log messages
         sync_msg: str = "global app commands"
@@ -205,8 +206,8 @@ class CachingCommandTree(CommandTree):
         except Exception as ex:
             # Temporarily handle exception then re-raise it
             # This is only so we can print the warning to the log
-            self._log.warn(f"Unable to sync {sync_msg}. Reason: {ex}")
-            raise ex
+            self._log.warning(f"Unable to sync {sync_msg}. Reason: {ex}")
+            raise
 
         # Update cache
         self._log.info(f"Started updating {cache_msg}...")
@@ -215,7 +216,7 @@ class CachingCommandTree(CommandTree):
 
         return commands
 
-    # @overrides CommandTree
+    @override
     def clear_commands(
         self,
         *,

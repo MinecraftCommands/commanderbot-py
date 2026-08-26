@@ -1,5 +1,3 @@
-from typing import Any
-
 from discord import Object
 from discord.app_commands import AppCommandError
 
@@ -107,11 +105,6 @@ class CogHasNoStore(SudoException):
     def __init__(self, cog_name: str):
         self.cog_name: str = cog_name
         super().__init__(f"😬 The cog `{self.cog_name}` does not use a store")
-
-
-class UnsupportedStoreExport(SudoException):
-    def __init__(self, store: Any):
-        super().__init__(f"😬 Unsupported store export: `{type(store)}`")
 
 
 class BotHasNoAvatar(SudoException):

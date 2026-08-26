@@ -1,18 +1,27 @@
 from dataclasses import dataclass
+from typing import override
 
-from discord import Member, User
+from discord import User
 
-from commanderbot.ext.automod.automod_event import AutomodEventBase
+from commanderbot.ext.automod.event import AutomodEvent
 
 __all__ = ("UserUpdated",)
 
 
 @dataclass
-class UserUpdated(AutomodEventBase):
-    _before: User
-    _after: User
-    _member: Member
+class UserUpdated(AutomodEvent):
+    before: User
+    """The user's old info."""
+
+    after: User
+    """The user's updated info."""
 
     @property
-    def member(self) -> Member:
-        return self._member
+    @override
+    def actor(self) -> User:
+        return self.after
+
+    @property
+    @override
+    def user(self) -> User:
+        return self.after

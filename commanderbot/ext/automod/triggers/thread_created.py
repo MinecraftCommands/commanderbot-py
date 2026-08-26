@@ -1,29 +1,50 @@
-from dataclasses import dataclass
-from typing import TypeVar
+from typing import Literal, Optional, override
 
 from commanderbot.ext.automod import events
-from commanderbot.ext.automod.automod_trigger import AutomodTrigger
-from commanderbot.ext.automod.triggers.abc.thread_base import ThreadBase
-from commanderbot.lib import JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.guards import (
+    CategoriesGuard,
+    ChannelsGuard,
+    ChannelTypesGuard,
+)
+from commanderbot.ext.automod.trigger import AutomodTrigger
 
-ST = TypeVar("ST")
+__all__ = ("ThreadCreated",)
 
 
-@dataclass
-class ThreadCreated(ThreadBase):
+class ThreadCreated(AutomodTrigger):
     """
-    Fires when an `on_thread_create` event is received.
-
-    See: https://discordpy.readthedocs.io/en/stable/api.html#discord.on_thread_create
-
-    Attributes
-    ----------
-    parent_channels
-        The parent channels to match against. If empty, all channels will match.
+    Triggers when a thread is created.
     """
 
+    type: Literal["thread_created"]
     event_types = (events.ThreadCreated,)
 
+    parent_categories: Optional[CategoriesGuard] = None
+    """The parent categories to match against. If empty, all parent categories will match."""
 
-def create_trigger(data: JsonObject) -> AutomodTrigger:
-    return ThreadCreated.from_data(data)
+    parent_channel_types: Optional[ChannelTypesGuard] = None
+    """The parent channel types to match against. If empty, all parent channel types will match."""
+
+    parent_channels: Optional[ChannelsGuard] = None
+    """The parent channels to match against. If empty, all channels will match."""
+
+    @override
+    async def ignore(self, context: AutomodContext) -> bool:
+        assert isinstance(context.event, events.ThreadCreated)
+
+        # The thread must have a parent
+        parent = context.event.thread.parent
+        if not parent:
+            return True
+
+        if self.parent_categories and self.parent_categories.ignore(parent.category):
+            return True
+
+        if self.parent_channel_types and self.parent_channel_types.ignore(parent):
+            return True
+
+        if self.parent_channels and self.parent_channels.ignore(parent):
+            return True
+
+        return False

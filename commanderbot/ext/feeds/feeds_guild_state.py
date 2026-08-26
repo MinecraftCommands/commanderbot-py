@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Embed, Interaction, Role
+from discord import Embed, Interaction, Role, Thread
 from discord.utils import format_dt
 
 from commanderbot.ext.feeds.feeds_exceptions import ChannelHasNoSubscriptions
@@ -36,7 +36,7 @@ class FeedsGuildState(CogGuildState):
     async def subscribe_to_feed(
         self,
         interaction: Interaction,
-        channel: MessageableGuildChannel,
+        channel: MessageableGuildChannel | Thread,
         feed: FeedType,
         notification_role: Optional[Role],
         auto_pin: Optional[bool],
@@ -56,7 +56,7 @@ class FeedsGuildState(CogGuildState):
     async def modify_subscription(
         self,
         interaction: Interaction,
-        channel: MessageableGuildChannel,
+        channel: MessageableGuildChannel | Thread,
         feed: FeedType,
         notification_role: Optional[Role],
         auto_pin: Optional[bool],
@@ -72,7 +72,7 @@ class FeedsGuildState(CogGuildState):
         )
 
     async def unsubscribe_from_feed(
-        self, interaction: Interaction, channel: MessageableGuildChannel, feed: FeedType
+        self, interaction: Interaction, channel: MessageableGuildChannel | Thread, feed: FeedType
     ):
         # Try to get the subscription
         subscription = await self.store.require_subscription(channel.id, feed)
@@ -92,9 +92,9 @@ class FeedsGuildState(CogGuildState):
                     await interaction.followup.send(
                         f"<#{subscription.channel_id}> has unsubscribed from the feed `{feed.value}`"
                     )
-                except Exception as ex:
+                except Exception:
                     await interaction.delete_original_response()
-                    raise ex
+                    raise
             case _:
                 # If the answer was no, send a response
                 await interaction.followup.send(
@@ -102,7 +102,7 @@ class FeedsGuildState(CogGuildState):
                 )
 
     async def show_subscription_details(
-        self, interaction: Interaction, channel: MessageableGuildChannel
+        self, interaction: Interaction, channel: MessageableGuildChannel | Thread
     ):
         subscriptions = await utils.async_expand(
             self.store.get_subscriptions(channel.id)

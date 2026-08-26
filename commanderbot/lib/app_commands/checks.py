@@ -1,8 +1,8 @@
 from discord import Interaction, app_commands
 
-import commanderbot.lib.predicates as predicates
+from commanderbot.lib import predicates
 
-__all__ = ("is_owner", "is_administrator", "is_guild_admin_or_bot_owner")
+__all__ = ("is_administrator", "is_guild_admin_or_bot_owner", "is_owner")
 
 
 def is_owner():

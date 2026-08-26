@@ -5,6 +5,7 @@ from discord.ext.commands import Bot
 
 from commanderbot.core.exceptions import ApplicationEmojiDoesNotExist
 from commanderbot.lib import EmojiID
+from commanderbot.lib.predicates import is_emoji_id
 
 
 class ApplicationEmojiManager:
@@ -19,7 +20,7 @@ class ApplicationEmojiManager:
                 return e
 
         # Try to find the emoji by its ID
-        if isinstance(emoji, EmojiID):
+        if is_emoji_id(emoji):
             for e in self._cache.values():
                 if e.id == emoji:
                     return e

@@ -63,9 +63,9 @@ class JiraCog(Cog, name="commanderbot.ext.jira"):
         # Try to get the issue
         try:
             issue: JiraIssue = await self.jira_client.get_issue(query)
-        except Exception as ex:
+        except Exception:
             await interaction.delete_original_response()
-            raise ex
+            raise
 
         # Create embed title and limit it to 256 characters
         title: str = f"[{issue.issue_id}] {issue.summary}"

@@ -12,6 +12,7 @@ class FromDataMixin(ABC):
     @abstractmethod
     def try_from_data(cls, data: Any) -> Optional[Self]:
         """Override this to return an instance of the class given valid input."""
+        ...
 
     @classmethod
     def from_data(cls, data: Any) -> Self:

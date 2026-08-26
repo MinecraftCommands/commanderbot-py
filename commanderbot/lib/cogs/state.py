@@ -1,6 +1,6 @@
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from logging import Logger, getLogger
-from typing import Callable, Iterable
 
 from discord import Guild
 from discord.ext.commands import Bot, Cog
@@ -9,9 +9,9 @@ from commanderbot.lib.predicates import is_guild
 from commanderbot.lib.types import GuildID
 
 __all__ = (
-    "CogState",
     "CogGuildState",
     "CogGuildStateManager",
+    "CogState",
     "GuildPartitionedCogState",
 )
 

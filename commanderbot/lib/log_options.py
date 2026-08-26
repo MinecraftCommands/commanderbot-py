@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Optional
 
 from discord import Client, Embed, Message, TextChannel, Thread
 
@@ -11,8 +12,8 @@ from commanderbot.lib.constants import (
 )
 from commanderbot.lib.exceptions import ResponsiveException
 from commanderbot.lib.from_data_mixin import FromDataMixin
-from commanderbot.lib.types import ChannelID
 from commanderbot.lib.predicates import is_text_channel, is_thread
+from commanderbot.lib.types import ChannelID
 from commanderbot.lib.utils import (
     sanitize_stacktrace,
     send_message_or_file,
@@ -204,4 +205,4 @@ class LogOptions(FromDataMixin):
         return str(error)
 
     def format_settings(self) -> str:
-        return f"```python\n{repr(self)}\n```"
+        return f"```python\n{self!r}\n```"

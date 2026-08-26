@@ -14,7 +14,7 @@ class Version:
     patch: int
 
     @classmethod
-    def from_str(cls, version_str: str) -> Optional["Version"]:
+    def from_str(cls, version_str: str) -> Optional[Version]:
         if VERSION_PATTERN.match(version_str):
             version_numbers: list[int] = [int(i) for i in version_str.split(".")][:3]
             return cls(*version_numbers)

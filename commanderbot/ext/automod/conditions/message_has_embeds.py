@@ -1,46 +1,29 @@
-from dataclasses import dataclass
-from typing import Optional, Type, TypeVar
+from typing import Literal, Optional, override
 
-from commanderbot.ext.automod.automod_condition import (
-    AutomodCondition,
-    AutomodConditionBase,
-)
-from commanderbot.ext.automod.automod_event import AutomodEvent
-from commanderbot.lib import IntegerRange, JsonObject
+from commanderbot.ext.automod.automod_context import AutomodContext
+from commanderbot.ext.automod.condition import AutomodCondition
+from commanderbot.ext.automod.guards import IntegerRangeGuard
 
-ST = TypeVar("ST")
+__all__ = ("MessageHasEmbeds",)
 
 
-@dataclass
-class MessageHasEmbeds(AutomodConditionBase):
+class MessageHasEmbeds(AutomodCondition):
     """
     Check if the message has embeds.
-
-    Attributes
-    ----------
-    count
-        The number of embeds to check for, if bounded.
     """
 
-    count: Optional[IntegerRange] = None
+    type: Literal["message_has_embeds"]
 
-    @classmethod
-    def from_data(cls: Type[ST], data: JsonObject) -> ST:
-        count = IntegerRange.from_field_optional(data, "count")
-        return cls(
-            description=data.get("description"),
-            count=count,
-        )
+    count: Optional[IntegerRangeGuard] = None
+    """The number of embeds to check for. If empty, the message only needs a single embed."""
 
-    async def check(self, event: AutomodEvent) -> bool:
-        message = event.message
-        if message is None:
+    @override
+    async def check(self, context: AutomodContext) -> bool:
+        message = context.event.message
+        if not message:
             return False
-        count_embeds = len(message.embeds or [])
-        if self.count is not None:
-            return self.count.includes(count_embeds)
-        return count_embeds > 0
 
-
-def create_condition(data: JsonObject) -> AutomodCondition:
-    return MessageHasEmbeds.from_data(data)
+        embed_count = len(message.embeds)
+        if self.count:
+            return self.count.includes(embed_count)
+        return embed_count > 0

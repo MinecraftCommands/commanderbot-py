@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Type
+from typing import Optional
 
 from discord import AllowedMentions, Member, Message, Permissions, Role
 from discord.ext.commands import Context
@@ -233,10 +233,10 @@ class RolesGuildState(CogGuildState):
                 ctx,
                 f"There are {len(role_pairs)} roles registered: {role_pairs_str}"
                 + f"\n\n{ROLE_TIPS}"
-                + f"\n\n**Use `roles about <roles>` for details about roles.**",
+                + "\n\n**Use `roles about <roles>` for details about roles.**",
             )
         else:
-            await self.reply(ctx, f"🤷 There are no roles registered.")
+            await self.reply(ctx, "🤷 There are no roles registered.")
 
     async def show_relevant_roles(self, ctx: Context):
         # List only roles that are relevant to this user.
@@ -248,10 +248,10 @@ class RolesGuildState(CogGuildState):
                 ctx,
                 f"There are {len(role_pairs)} roles relevant to you: {role_pairs_str}"
                 + f"\n\n{ROLE_TIPS}"
-                + f"\n\n**Use `roles about <roles>` for details about roles.**",
+                + "\n\n**Use `roles about <roles>` for details about roles.**",
             )
         else:
-            await self.reply(ctx, f"🤷 There are no roles relevant to you.")
+            await self.reply(ctx, "🤷 There are no roles relevant to you.")
 
     async def get_matching_role_pairs(
         self, roles: list[Role]
@@ -270,7 +270,7 @@ class RolesGuildState(CogGuildState):
                 f"Found {len(role_pairs)} matching roles:\n{role_pairs_str}",
             )
         else:
-            await self.reply(ctx, f"🤷 Couldn't find any matching roles.")
+            await self.reply(ctx, "🤷 Couldn't find any matching roles.")
 
     async def join_roles(self, ctx: Context, roles: list[Role]):
         await self.join_leave_roles(ctx, roles, JoinableRolesResult)
@@ -279,7 +279,7 @@ class RolesGuildState(CogGuildState):
         await self.join_leave_roles(ctx, roles, LeavableRolesResult)
 
     async def join_leave_roles(
-        self, ctx: Context, roles: list[Role], result_type: Type[RolesResult]
+        self, ctx: Context, roles: list[Role], result_type: type[RolesResult]
     ):
         if not roles:
             await self.reply(ctx, "🤔 You didn't provide any roles.")
@@ -305,7 +305,7 @@ class RolesGuildState(CogGuildState):
         ctx: Context,
         roles: list[Role],
         members: list[Member],
-        result_type: Type[RolesResult],
+        result_type: type[RolesResult],
     ):
         if not roles:
             await self.reply(ctx, "🤔 You didn't provide any roles.")
@@ -338,14 +338,14 @@ class RolesGuildState(CogGuildState):
         else:
             await self.reply(
                 ctx,
-                f"No roles are permitted to add/remove other users to/from roles.",
+                "No roles are permitted to add/remove other users to/from roles.",
             )
 
     async def set_permitted_roles(self, ctx: Context, *roles: Role):
         if not roles:
             await self.reply(ctx, "🤷 No roles provided.")
             return
-        new_permitted_roles = RoleSet(set(role.id for role in roles))
+        new_permitted_roles = RoleSet({role.id for role in roles})
         new_role_mentions = new_permitted_roles.to_mentions(self.guild)
         old_permitted_roles = await self.store.set_permitted_roles(
             self.guild, new_permitted_roles
@@ -368,7 +368,7 @@ class RolesGuildState(CogGuildState):
         else:
             await self.reply(
                 ctx,
-                f"🤷 No roles are permitted to add/remove other users to/from roles.",
+                "🤷 No roles are permitted to add/remove other users to/from roles.",
             )
 
     async def member_has_permission(self, member: Member) -> bool:
