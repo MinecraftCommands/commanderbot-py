@@ -73,7 +73,7 @@ class LogChannel(BaseModel):
         If the message is too big, it will be sent as a file instead.
         """
         channel = await self._require_channel(bot)
-        allowed_mentions = self.allowed_mentions or AllowedMentions.none()
+        allowed_mentions = allowed_mentions or self.allowed_mentions
 
         # Create log message view
         log_view = ui.LayoutView()
@@ -122,3 +122,18 @@ class LogChannel(BaseModel):
             file_name=file_name,
             allowed_mentions=allowed_mentions,
         )
+
+    async def send_view(
+        self,
+        bot: Bot,
+        view: ui.View | ui.LayoutView,
+        *,
+        files: Optional[list[File]] = None,
+        allowed_mentions: Optional[AllowedMentions] = None,
+    ):
+        """Send a view to the configured log channel."""
+        channel = await self._require_channel(bot)
+        files = files or []
+        allowed_mentions = allowed_mentions or self.allowed_mentions
+
+        await channel.send(view=view, files=files, allowed_mentions=allowed_mentions)
