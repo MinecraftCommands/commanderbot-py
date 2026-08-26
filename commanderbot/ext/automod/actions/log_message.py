@@ -27,7 +27,11 @@ class LogMessage(AutomodAction):
     """The content of the message to send."""
 
     channel: Optional[ChannelID] = None
-    """The channel to send the message in. Defaults to the channel in context."""
+    """
+    The channel to send the message in. If not set, the action will try to resolve
+    other log channels that may be in context. The order for that is: the rule's log, the default log,
+    and lastly the channel in context.
+    """
 
     emoji: Optional[str] = None
     """The emoji used to represent the type of message."""
@@ -44,7 +48,7 @@ class LogMessage(AutomodAction):
     fields: Optional[dict[ContextFields, str]] = None
     """
     A custom set of fields to display as part of the message. The key should
-    correspond to an event field, and the value is the title to use for it.
+    correspond to a context field, and the value is the title to use for it.
     """
 
     allowed_mentions: AllowedMentions = Field(default_factory=AllowedMentions.none)
@@ -53,15 +57,33 @@ class LogMessage(AutomodAction):
     mentions will be suppressed.
     """
 
-    def _resolve_channel(
+    async def _resolve_channel(
         self, context: AutomodContext
     ) -> Optional[MessageableGuildChannel | Thread]:
-        channel = context.event.channel
-        if self.channel:
+        # Try to resolve the action's log channel
+        if self.channel is not None:
             channel = context.bot.get_channel(self.channel)
+            if is_messagable_guild_channel(channel) or is_thread(channel):
+                return channel
 
-        if is_messagable_guild_channel(channel) or is_thread(channel):
-            return channel
+        # Try to resolve the rule's log channel
+        if (rule_log := context.rule.log) and (channel_id := rule_log.channel):
+            channel = context.bot.get_channel(channel_id)
+            if is_messagable_guild_channel(channel) or is_thread(channel):
+                return channel
+
+        # Try to resolve the default log channel
+        default_log = await context.state.store.get_default_log(context.state.guild)
+        if default_log and (channel_id := default_log.channel):
+            channel = context.bot.get_channel(channel_id)
+            if is_messagable_guild_channel(channel) or is_thread(channel):
+                return channel
+
+        # Try to resolve the channel in context
+        if context.event.channel and (channel_id := context.event.channel.id):
+            channel = context.bot.get_channel(channel_id)
+            if is_messagable_guild_channel(channel) or is_thread(channel):
+                return channel
 
     def _build_log_view(
         self, context: AutomodContext
@@ -129,7 +151,7 @@ class LogMessage(AutomodAction):
 
     @override
     async def apply(self, context: AutomodContext):
-        channel = self._resolve_channel(context)
+        channel = await self._resolve_channel(context)
         if not channel:
             return
 
