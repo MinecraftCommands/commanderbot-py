@@ -6,6 +6,7 @@ from pydantic import Field
 from commanderbot.ext.automod.action import AutomodAction
 from commanderbot.ext.automod.automod_context import AutomodContext
 from commanderbot.ext.automod.types import ContextFields
+from commanderbot.ext.automod.utils import ValueFormatter
 from commanderbot.lib.allowed_mentions import AllowedMentions
 from commanderbot.lib.color import Color
 from commanderbot.lib.constants import MAX_MESSAGE_LENGTH
@@ -141,7 +142,10 @@ class LogMessage(AutomodAction):
             context_fields = context.get_fields()
             for field_name, field_title in self.fields.items():
                 if field_value := context_fields.get(field_name):
-                    field_lines.append(f"- **{field_title}**: `{field_value}`")
+                    if isinstance(field_value, ValueFormatter):
+                        field_lines.append(f"- **{field_title}**: {field_value}")
+                    else:
+                        field_lines.append(f"- **{field_title}**: `{field_value}`")
 
             if field_lines:
                 log_container.add_item(ui.Separator())

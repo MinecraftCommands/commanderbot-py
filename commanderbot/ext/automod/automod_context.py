@@ -18,6 +18,7 @@ from PIL import Image
 from commanderbot.ext.automod.constants import IMAGE_MIME_TYPES
 from commanderbot.ext.automod.event import AutomodEvent
 from commanderbot.ext.automod.types import ContextAttachment
+from commanderbot.ext.automod.utils import ValueFormatter
 from commanderbot.lib.predicates import is_member
 from commanderbot.lib.types import AttachmentID
 
@@ -191,8 +192,10 @@ class AutomodContext:
         template = string.Template(content)
         return template.safe_substitute(fields)
 
-    def _is_value_safe(self, value: Any) -> bool:
-        return type(value) in SAFE_TYPES
+    def _is_value_safe(self, v: Any) -> bool:
+        if isinstance(v, ValueFormatter):
+            return type(v.value) in SAFE_TYPES
+        return type(v) in SAFE_TYPES
 
     def _yield_safe_fields(self) -> Iterable[tuple[str, Any]]:
         # Yield channel fields
@@ -267,7 +270,10 @@ class AutomodContext:
         yield (f"{prefix}_name", user.name)
         yield (f"{prefix}_display_name", user.display_name)
         yield (f"{prefix}_mention", user.mention)
-        yield (f"{prefix}_created_at", format_dt(user.created_at, style="R"))
+        yield (
+            f"{prefix}_created_at",
+            ValueFormatter(user.created_at, lambda dt: format_dt(dt, style="R")),
+        )
 
     def _yield_safe_member_fields(
         self, member: Member, prefix: str
@@ -278,7 +284,10 @@ class AutomodContext:
             yield (f"{prefix}_nick", nick)
 
         if joined_at := member.joined_at:
-            yield (f"{prefix}_joined_at", format_dt(joined_at, style="R"))
+            yield (
+                f"{prefix}_joined_at",
+                ValueFormatter(joined_at, lambda dt: format_dt(dt, style="R")),
+            )
 
             member_for = utcnow() - joined_at
             if member_for.days < 7:
