@@ -1,10 +1,10 @@
 import importlib.util
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from logging import Logger, getLogger
 from typing import Any, Optional, override
 
-import pebble
 import psutil
 from discord import AppInfo, Asset, Attachment, User
 from discord.ext.commands import Bot, Cog, Context, ExtensionNotFound
@@ -55,7 +55,7 @@ class CommanderBot(Bot):
         # The minimum number of workers is `1`.
         cpu_count: int = psutil.cpu_count() or 0
         self.max_pool_workers: int = max(1, cpu_count - 1)
-        self.pool = pebble.ProcessPool(self.max_pool_workers)
+        self.pool = ProcessPoolExecutor(self.max_pool_workers)
 
         # Remember when we started and the last time we connected.
         self.started_at: datetime = utcnow()
@@ -245,8 +245,7 @@ class CommanderBot(Bot):
     @override
     async def close(self):
         # Clean up process pool
-        self.pool.close()
-        self.pool.join()
+        self.pool.shutdown(wait=True, cancel_futures=True)
 
         # Actually shut down the bot
         await super().close()

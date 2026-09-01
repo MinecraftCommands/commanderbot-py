@@ -333,8 +333,10 @@ class AutomodGuildState(CogGuildState):
             await self._handle_rule_error(rule, error)
 
     async def dispatch_event(self, event: AutomodEvent):
+        self.log.debug(f"Dispatching event '{event.__class__.__name__}'")
         async with asyncio.TaskGroup() as tg:
             async for rule in self.store.rules_for_event(self.guild, event):
+                self.log.debug(f"Running rule '{rule.name}'")
                 tg.create_task(self._run_rule(rule, event))
 
     # @@ DISCORD AUTOMOD

@@ -1,10 +1,8 @@
 import asyncio
 import unicodedata
 from itertools import chain
-from logging import Logger
 from typing import Any, ClassVar, Literal, Optional, cast, override
 
-import pebble
 from pydantic import Field, PositiveFloat, PositiveInt
 
 from commanderbot.core.utils import is_commander_bot
@@ -104,29 +102,31 @@ class ImageAttachmentsContain(AutomodCondition):
 
     async def _ocr_worker(
         self,
-        pool: pebble.ProcessPool,
-        log: Logger,
+        context: AutomodContext,
         attachment_id: AttachmentID,
         data: bytes,
         lang: str,
     ) -> Optional[tuple[str, AttachmentID]]:
-        future: Optional[pebble.ProcessFuture] = None
+        log = context.log
+        loop = asyncio.get_running_loop()
+        assert is_commander_bot(context.bot)
+        pool = context.bot.pool
+
+        future: Optional[asyncio.Future] = None
         try:
             async with self.get_semaphore():
-                future = pool.schedule(
-                    get_text, args=[data, lang, attachment_id], timeout=self.timeout
-                )
+                future = loop.run_in_executor(pool, get_text, data, lang, attachment_id)
                 log.debug(
                     f"OCR worker for attachment '{attachment_id}' was submitted to the pool"
                 )
-                result = await asyncio.wrap_future(future)
+                result = await future
                 log.debug(f"OCR worker for attachment '{attachment_id}' is done")
                 return result
-        except TimeoutError:
-            log.warning(f"OCR worker for attachment '{attachment_id}' timed out")
-            return
         except asyncio.CancelledError:
             if future and not future.done():
+                # This actually doesn't stop the execution of a process that's already running
+                # All it does is mark the future as cancelled
+                # TODO Implement a way to forceably stop the process? #enhance
                 future.cancel()
             log.debug(f"OCR worker for attachment '{attachment_id}' was cancelled")
             raise
@@ -146,34 +146,27 @@ class ImageAttachmentsContain(AutomodCondition):
         lang: str = "+".join(v for v in chain(self.languages, self.scripts))
 
         # Submit OCR tasks to the process pool
-        assert is_commander_bot(context.bot)
-        pool = context.bot.pool
-        log = context.log
         tasks = [
-            asyncio.create_task(self._ocr_worker(pool, log, attachment.id, data, lang))
-            for attachment, data, _ in image_attachments
+            asyncio.create_task(self._ocr_worker(context, attachment.id, data, lang))
+            for (attachment, data, _) in image_attachments
         ]
 
         # Check OCR results as they come in
         # This may raise a `TimeoutError`, but it *should* be caught in the guild state
         try:
-            async for completed_task in asyncio.as_completed(tasks):
-                try:
-                    # Check if the text passes the condition and return the attachment ID
-                    if task_result := await completed_task:
-                        text, attachment_id = task_result
-                        if self._check_ocr_result(text):
-                            return attachment_id
-                except Exception:
-                    continue
+            async for completed_task in asyncio.as_completed(
+                tasks, timeout=self.timeout
+            ):
+                if result := await completed_task:
+                    text, attachment_id = result
+                    if self._check_ocr_result(text):
+                        return attachment_id
         finally:
-            # Cancel any remaining tasks
-            for t in tasks:
-                if not t.done():
-                    t.cancel()
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
 
-            # Wait for those tasks to be cleaned up
-            await asyncio.gather(*tasks, return_exceptions=True)
+            asyncio.gather(*tasks, return_exceptions=True)
 
     @override
     async def check(self, context: AutomodContext) -> bool:
