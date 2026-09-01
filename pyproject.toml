@@ -22,7 +22,6 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pydantic>=2.13.0",
     "aiohttp>=3.14.0",
-    "pebble>=5.2.0",
     "psutil>=7.2.0",
     "types-psutil>=7.2.0",
 
