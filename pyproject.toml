@@ -49,7 +49,7 @@ Repository = "https://github.com/MinecraftCommands/commanderbot-py"
 Changelog = "https://github.com/MinecraftCommands/commanderbot-py/blob/main/CHANGELOG.md"
 
 [project.scripts]
-commanderbot = "commanderbot:__main__:main"
+commanderbot = "commanderbot.__main__:main"
 
 [dependency-groups]
 dev = ["ruff>=0.16.0", "ty>=0.0.70"]
