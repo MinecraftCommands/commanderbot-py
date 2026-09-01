@@ -56,7 +56,6 @@ class CommanderBot(Bot):
         cpu_count: int = psutil.cpu_count() or 0
         self.max_pool_workers: int = max(1, cpu_count - 1)
         self.pool = pebble.ProcessPool(self.max_pool_workers)
-        self.pool._start_pool()
 
         # Remember when we started and the last time we connected.
         self.started_at: datetime = utcnow()
