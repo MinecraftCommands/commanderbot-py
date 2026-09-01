@@ -219,16 +219,16 @@ class CommanderBot(Bot):
     @override
     async def setup_hook(self):
         # Warm up process pool
-        self.log.debug("Warming up process pool...")
-
-        loop = asyncio.get_running_loop()
-        futures = [
-            loop.run_in_executor(self.pool, utils.do_nothing)
-            for _ in range(self.max_pool_workers)
-        ]
-        await asyncio.gather(*futures)
-
-        self.log.debug("Finished warming up process pool.")
+        # self.log.debug("Warming up process pool...")
+        #
+        # loop = asyncio.get_running_loop()
+        # futures = [
+        #     loop.run_in_executor(self.pool, utils.do_nothing)
+        #     for _ in range(self.max_pool_workers)
+        # ]
+        # await asyncio.gather(*futures)
+        #
+        # self.log.debug("Finished warming up process pool.")
 
         # Build application emoji cache before we process extensions.
         self.log.info("Building application emoji cache...")
