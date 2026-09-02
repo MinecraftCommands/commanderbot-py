@@ -54,7 +54,7 @@ class CommanderBot(Bot):
         # Create a process pool that anything can use.
         # `max_workers` is the number of logical processors minus one.
         # The minimum number of workers is `1`.
-        cpu_count: int = psutil.cpu_count() or 0
+        cpu_count: int = psutil.cpu_count() or 1
         self.max_pool_workers: int = max(1, cpu_count - 1)
         self.pool = ProcessPoolExecutor(self.max_pool_workers)
 
@@ -218,8 +218,8 @@ class CommanderBot(Bot):
 
     @override
     async def setup_hook(self):
-        # Warm up process pool
-        self.log.debug("Warming up process pool...")
+        # Create all process pool workers
+        self.log.info(f"Creating {self.max_pool_workers} process pool workers...")
 
         loop = asyncio.get_running_loop()
         futures = [
@@ -228,7 +228,7 @@ class CommanderBot(Bot):
         ]
         await asyncio.gather(*futures)
 
-        self.log.debug("Finished warming up process pool.")
+        self.log.info("Finished creating process pool workers.")
 
         # Build application emoji cache before we process extensions.
         self.log.info("Building application emoji cache...")
