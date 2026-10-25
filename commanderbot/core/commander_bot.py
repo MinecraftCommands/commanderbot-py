@@ -266,7 +266,7 @@ class CommanderBot(Bot):
     # Event handler for `Bot`
     async def on_connect(self):
         self.log.warning("Connected to Discord.")
-        self._connected_since = utcnow()
+        self.connected_since = utcnow()
 
     # Event handler for `Bot`
     async def on_disconnect(self):
