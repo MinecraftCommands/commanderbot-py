@@ -10,7 +10,7 @@ A collection of utilities and extensions for discord.py bots.
 
 ## Requirements
 
-- Python 3.14+
+- Python 3.15+
 - discord.py 2.7+
 
 ## Running your bot
@@ -21,9 +21,9 @@ You will need the following:
 
 1. Your own [Discord Application](https://discordapp.com/developers/applications) with a bot token.
 2. A [configuration file](#configuring-your-bot) for the bot.
-3. A Python 3.14+ environment.
+3. A Python 3.15+ environment.
    - It is recommended to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html) for this.
-   - You can use [pyenv](https://github.com/pyenv/pyenv) to build and run Python 3.14.
+   - You can use [pyenv](https://github.com/pyenv/pyenv) to build and run Python 3.15.
 4. Run `pip install commanderbot` to install the bot core package.
 
 The first thing you should do is check the CLI help menu:
